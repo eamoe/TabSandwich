@@ -1,5 +1,5 @@
 let links = []
-const inputEl = document.getElementById("input-el")
+const linkInputEl = document.getElementById("link-input-el")
 const inputBtn = document.getElementById("input-btn")
 const ulEl = document.getElementById("ul-el")
 const deleteBtn = document.getElementById("delete-btn")
@@ -40,8 +40,8 @@ deleteBtn.addEventListener("dblclick", function() {
 })
 
 inputBtn.addEventListener("click", function() {
-    links.push(inputEl.value)
-    inputEl.value = ""
+    links.push(linkInputEl.value)
+    linkInputEl.value = ""
     localStorage.setItem("links", JSON.stringify(links) )
     render(links)
 })
