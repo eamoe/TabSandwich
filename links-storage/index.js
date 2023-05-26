@@ -1,5 +1,6 @@
 let links = []
 const linkInputEl = document.getElementById("link-input-el")
+const descriptionInputEl = document.getElementById("description-input-el")
 const inputBtn = document.getElementById("input-btn")
 const ulEl = document.getElementById("ul-el")
 const deleteBtn = document.getElementById("delete-btn")
@@ -24,8 +25,8 @@ function render(linksToRender) {
     for (let i = 0; i < linksToRender.length; i++) {
         listItems += `
             <li>
-                <a target='_blank' href='${linksToRender[i]}'>
-                    ${linksToRender[i]}
+                <a target='_blank' href='${linksToRender[i][0]}'>
+                    ${linksToRender[i][1]}
                 </a>
             </li>
         `
@@ -40,8 +41,10 @@ deleteBtn.addEventListener("dblclick", function() {
 })
 
 inputBtn.addEventListener("click", function() {
-    links.push(linkInputEl.value)
+    linkDescriptionTuple = [linkInputEl.value, descriptionInputEl.value]
+    links.push(linkDescriptionTuple)
     linkInputEl.value = ""
+    descriptionInputEl.value = ""
     localStorage.setItem("links", JSON.stringify(links) )
     render(links)
 })
