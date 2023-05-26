@@ -14,7 +14,8 @@ if (linksFromLocalStorage) {
 
 tabBtn.addEventListener("click", function(){    
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-        links.push(tabs[0].url)
+        linkDescriptionTuple = [tabs[0].url, descriptionInputEl.value]
+        links.push(linkDescriptionTuple)
         localStorage.setItem("links", JSON.stringify(links) )
         render(links)
     })
