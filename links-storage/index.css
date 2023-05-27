@@ -33,11 +33,29 @@ ul {
 }
 
 li {
-    margin-top: 5px;
+    cursor: pointer;
+    position: relative;
+    padding: 12px 8px 12px 40px;
+    list-style-type: none;
+    background: #eee;
+    font-size: 18px;
+    transition: 0.2s;
+    
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+ul li:nth-child(odd) {
+    background: #f9f9f9;
+}
+
+ul li:hover {
+    background: #ddd;
 }
 
 a {
+    padding: 12px 16px 12px 16px;
     color: #0a1172;
 }
-
-
