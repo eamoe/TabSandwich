@@ -77,7 +77,6 @@ inputBtn.addEventListener("click", function() {
     }
 })
 
-// Add a "checked" symbol when clicking on a list item
 ulEl.addEventListener('dblclick', function(event) {
     if (event.target.tagName === 'LI') {
         const linkHref = event.target.children[0].getAttribute("href")
