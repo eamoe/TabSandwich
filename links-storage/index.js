@@ -18,11 +18,11 @@ const descriptionInputEl = document.getElementById("description-input-el")
 const inputBtn = document.getElementById("input-btn")
 const ulEl = document.getElementById("ul-el")
 const deleteBtn = document.getElementById("delete-btn")
-const linksFromLocalStorage = JSON.parse( localStorage.getItem("links") )
+const localStorageLinks = JSON.parse( localStorage.getItem("links") )
 const tabBtn = document.getElementById("tab-btn")
 
-if (linksFromLocalStorage) {
-    links = linksFromLocalStorage
+if (localStorageLinks) {
+    links = localStorageLinks
     render(links)
 }
 
@@ -88,7 +88,7 @@ ulEl.addEventListener('dblclick', function(event) {
                                 description,
                                 checked)
 
-        removeStorageItem(item, linksFromLocalStorage)
+        removeStorageItem(item, localStorageLinks)
     }
 }, false)
 
