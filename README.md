@@ -27,23 +27,31 @@ To install the TabSandwich Chrome Extension, follow these steps:
 git clone https://github.com/eamoe/TabSandwich.git
 ```
 
-2. Open Chrome Extensions Page
+2. Install dependencies and the project
+
+```console
+npm install
+
+npm run build
+```
+
+3. Open Chrome Extensions Page
 
 Open Google Chrome and navigate to the extensions page by entering the following URL into your address bar:
 
-```console
+```
 chrome://extensions/
 ```
 
-3. Enable Developer Mode
+4. Enable Developer Mode
 
 On the Extensions page, toggle the **Developer mode** switch on (located in the top-right corner of the page).
 
-4. Load the Unpacked Extension
+5. Load the Unpacked Extension
 
 Once Developer mode is enabled, click the **Load unpacked** button. In the dialog that opens, select the folder where you cloned or extracted the extension's repository.
 
-5. Verify the Installation
+6. Verify the Installation
 
 Once the extension is loaded, you should see it in your list of extensions. Its icon will also appear in the Chrome toolbar. Click on the icon to use the TabSandwich extension.
 
