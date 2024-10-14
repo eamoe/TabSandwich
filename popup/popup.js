@@ -197,7 +197,7 @@ var UI = /** @class */ (function () {
         this.descriptionInputEl.value = "";
     };
     UI.prototype.displayInputError = function (message) {
-        this.linkInputEl.style.backgroundColor = "#fa8072"; // Light salmon for error
+        this.linkInputEl.style.backgroundColor = "#fa8072";
         alert(message);
     };
     return UI;
