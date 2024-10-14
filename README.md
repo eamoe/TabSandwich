@@ -27,7 +27,7 @@ To install the TabSandwich Chrome Extension, follow these steps:
 git clone https://github.com/eamoe/TabSandwich.git
 ```
 
-2. Install dependencies and the project
+2. Install dependencies and build the project
 
 ```console
 npm install

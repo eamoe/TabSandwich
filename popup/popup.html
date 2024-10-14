@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html>
-    <head><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+    <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
         <link rel="stylesheet" href="popup.css">
     </head>
     <body>
-        <input type="text" id="link-input-el" placeholder="Paste the link here...">
-        <input type="text" id="description-input-el" placeholder="Add the description here...">
-        <button id="input-btn">SAVE INPUT</button>
-        <button id="tab-btn">SAVE TAB</button>
-        <button id="delete-btn">DELETE ALL</button>
+        <h1>Tab Sandwich</h1>
+        <form id="link-form">
+            <label for="link-input-el"></label>
+            <input type="text" id="link-input-el" placeholder="Paste the link here...">
+    
+            <label for="description-input-el"></label>
+            <input type="text" id="description-input-el" placeholder="Add the description here...">
+            
+            <div>
+                <button id="input-btn">SAVE INPUT</button>
+                <button id="tab-btn">SAVE TAB</button>
+                <button id="delete-btn">DELETE ALL</button>
+            </div>
+        </form>
         <ul id="ul-el"></ul>
         <script type="module" src="js/popup.js"></script>
     </body>
