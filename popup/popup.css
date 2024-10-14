@@ -27,6 +27,10 @@ input:focus {
     outline: none;
 }
 
+.input-error-bg {
+    background-color: #fa8072;
+}
+
 button {
     background: #0a1172;
     color: white;

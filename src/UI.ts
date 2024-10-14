@@ -1,17 +1,23 @@
 import { LinkManager } from './LinkManager';
 import { Item } from './Item';
+import { DOMHelper } from './DOMHelper';
+import { LinkRenderer } from './LinkRenderer';
 
 export class UI {    
     private readonly linkManager: LinkManager;
+    private readonly linkRenderer: LinkRenderer;
     private readonly linkInputEl: HTMLInputElement;
     private readonly descriptionInputEl: HTMLInputElement;
-    private readonly ulEl: HTMLUListElement;
 
-    constructor(linkManager: LinkManager) {
+    constructor(linkManager: LinkManager, private domHelper: DOMHelper = new DOMHelper()) {
         this.linkManager = linkManager;
-        this.linkInputEl = this.getElement<HTMLInputElement>("link-input-el");
-        this.descriptionInputEl = this.getElement<HTMLInputElement>("description-input-el");
-        this.ulEl = this.getElement<HTMLUListElement>("ul-el");
+
+        this.linkInputEl = this.domHelper.getElement<HTMLInputElement>("link-input-el");
+        this.descriptionInputEl = this.domHelper.getElement<HTMLInputElement>("description-input-el");
+
+        const ulEl = this.domHelper.getElement<HTMLUListElement>("ul-el");
+        this.linkRenderer = new LinkRenderer(ulEl);
+
         this.initialize();
     }
 
@@ -20,60 +26,37 @@ export class UI {
         this.setupEventListeners();
     }
 
-    private getElement<T extends HTMLElement>(id: string): T {
-        const el = document.getElementById(id) as T;
-        if (!el) {
-            throw new Error(`Element with ID ${id} not found`);
-        }
-        return el;
-    }
-
     private renderLinks(): void {
         const links = this.linkManager.getLinks();
-        this.ulEl.innerHTML = links.length ? links.map(link => this.renderLink(link)).join('') : "<li>No links available</li>";
-    }
-
-    private renderLink(link: Item): string {
-        return `
-            <li>
-                <a target='_blank' href='${link.getUrl()}'>${link.getDescription()}</a>
-            </li>
-        `;
+        this.linkRenderer.renderLinks(links);
     }
 
     private setupEventListeners(): void {
         this.addClickListener("input-btn", () => this.handleAddLink());
-        this.addDoubleClickListener("delete-btn", () => this.handleClearLinks());
+        this.addClickListener("delete-btn", () => this.handleClearLinks());
         this.addClickListener("tab-btn", () => this.handleAddCurrentTab());
-        this.ulEl.addEventListener('dblclick', (event) => this.handleRemoveLink(event));
+        this.addDoubleClickListener("ul-el", (event) => this.handleRemoveLink(event));
     }
 
     private addClickListener(id: string, handler: () => void): void {
-        const el = this.getElement<HTMLElement>(id);
+        const el = this.domHelper.getElement<HTMLElement>(id);
         el.addEventListener("click", handler);
     }
 
-    private addDoubleClickListener(id: string, handler: () => void): void {
-        const el = this.getElement<HTMLElement>(id);
+    private addDoubleClickListener(id: string, handler: (event: MouseEvent) => void): void {
+        const el = this.domHelper.getElement<HTMLElement>(id);
         el.addEventListener("dblclick", handler);
     }
 
     private handleAddLink(): void {
         try {
-            this.clearInputError();
+            this.domHelper.clearInputError(this.linkInputEl);
             const item = new Item(this.linkInputEl.value, this.descriptionInputEl.value);
             this.linkManager.addLink(item);
             this.resetInputFields();
             this.renderLinks();
         } catch (err) {
-            this.displayInputError((err as Error).message);
-        }
-    }
-
-    private handleClearLinks(): void {
-        if (confirm("Are you sure you want to clear all links?")) {
-            this.linkManager.clearAllLinks();
-            this.renderLinks();
+            this.domHelper.displayInputError(this.linkInputEl, (err as Error).message);
         }
     }
 
@@ -86,12 +69,19 @@ export class UI {
                     this.linkManager.addLink(item);
                     this.renderLinks();
                 } catch (error) {
-                    this.displayInputError((error as Error).message);
+                    this.domHelper.displayInputError(this.linkInputEl, (error as Error).message);
                 }
             } else {
-                this.displayInputError("No active tab found!");
+                this.domHelper.displayInputError(this.linkInputEl, "No active tab found!");
             }
         });
+    }
+
+    private handleClearLinks(): void {
+        if (confirm("Are you sure you want to clear all links?")) {
+            this.linkManager.clearAllLinks();
+            this.renderLinks();
+        }
     }
 
     private handleRemoveLink(event: MouseEvent): void {
@@ -107,17 +97,8 @@ export class UI {
         }
     }
 
-    private clearInputError(): void {
-        this.linkInputEl.style.backgroundColor = "#ffffff";
-    }
-
     private resetInputFields(): void {
         this.linkInputEl.value = "";
         this.descriptionInputEl.value = "";
-    }
-
-    private displayInputError(message: string): void {
-        this.linkInputEl.style.backgroundColor = "#fa8072";
-        alert(message);
     }
 }

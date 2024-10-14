@@ -1,64 +1,48 @@
 import { Item } from './Item.js';
+import { DOMHelper } from './DOMHelper.js';
+import { LinkRenderer } from './LinkRenderer.js';
 export class UI {
-    constructor(linkManager) {
+    constructor(linkManager, domHelper = new DOMHelper()) {
+        this.domHelper = domHelper;
         this.linkManager = linkManager;
-        this.linkInputEl = this.getElement("link-input-el");
-        this.descriptionInputEl = this.getElement("description-input-el");
-        this.ulEl = this.getElement("ul-el");
+        this.linkInputEl = this.domHelper.getElement("link-input-el");
+        this.descriptionInputEl = this.domHelper.getElement("description-input-el");
+        const ulEl = this.domHelper.getElement("ul-el");
+        this.linkRenderer = new LinkRenderer(ulEl);
         this.initialize();
     }
     initialize() {
         this.renderLinks();
         this.setupEventListeners();
     }
-    getElement(id) {
-        const el = document.getElementById(id);
-        if (!el) {
-            throw new Error(`Element with ID ${id} not found`);
-        }
-        return el;
-    }
     renderLinks() {
         const links = this.linkManager.getLinks();
-        this.ulEl.innerHTML = links.length ? links.map(link => this.renderLink(link)).join('') : "<li>No links available</li>";
-    }
-    renderLink(link) {
-        return `
-            <li>
-                <a target='_blank' href='${link.getUrl()}'>${link.getDescription()}</a>
-            </li>
-        `;
+        this.linkRenderer.renderLinks(links);
     }
     setupEventListeners() {
         this.addClickListener("input-btn", () => this.handleAddLink());
-        this.addDoubleClickListener("delete-btn", () => this.handleClearLinks());
+        this.addClickListener("delete-btn", () => this.handleClearLinks());
         this.addClickListener("tab-btn", () => this.handleAddCurrentTab());
-        this.ulEl.addEventListener('dblclick', (event) => this.handleRemoveLink(event));
+        this.addDoubleClickListener("ul-el", (event) => this.handleRemoveLink(event));
     }
     addClickListener(id, handler) {
-        const el = this.getElement(id);
+        const el = this.domHelper.getElement(id);
         el.addEventListener("click", handler);
     }
     addDoubleClickListener(id, handler) {
-        const el = this.getElement(id);
+        const el = this.domHelper.getElement(id);
         el.addEventListener("dblclick", handler);
     }
     handleAddLink() {
         try {
-            this.clearInputError();
+            this.domHelper.clearInputError(this.linkInputEl);
             const item = new Item(this.linkInputEl.value, this.descriptionInputEl.value);
             this.linkManager.addLink(item);
             this.resetInputFields();
             this.renderLinks();
         }
         catch (err) {
-            this.displayInputError(err.message);
-        }
-    }
-    handleClearLinks() {
-        if (confirm("Are you sure you want to clear all links?")) {
-            this.linkManager.clearAllLinks();
-            this.renderLinks();
+            this.domHelper.displayInputError(this.linkInputEl, err.message);
         }
     }
     handleAddCurrentTab() {
@@ -72,13 +56,19 @@ export class UI {
                     this.renderLinks();
                 }
                 catch (error) {
-                    this.displayInputError(error.message);
+                    this.domHelper.displayInputError(this.linkInputEl, error.message);
                 }
             }
             else {
-                this.displayInputError("No active tab found!");
+                this.domHelper.displayInputError(this.linkInputEl, "No active tab found!");
             }
         });
+    }
+    handleClearLinks() {
+        if (confirm("Are you sure you want to clear all links?")) {
+            this.linkManager.clearAllLinks();
+            this.renderLinks();
+        }
     }
     handleRemoveLink(event) {
         var _a, _b, _c;
@@ -93,15 +83,8 @@ export class UI {
             }
         }
     }
-    clearInputError() {
-        this.linkInputEl.style.backgroundColor = "#ffffff";
-    }
     resetInputFields() {
         this.linkInputEl.value = "";
         this.descriptionInputEl.value = "";
-    }
-    displayInputError(message) {
-        this.linkInputEl.style.backgroundColor = "#fa8072";
-        alert(message);
     }
 }
