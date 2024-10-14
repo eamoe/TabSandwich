@@ -35,7 +35,7 @@ ul {
 li {
     cursor: pointer;
     position: relative;
-    padding: 12px 8px 12px 40px;
+    padding: 12px 8px;
     list-style-type: none;
     background: #eee;
     transition: 0.2s;
