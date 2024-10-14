@@ -86,7 +86,7 @@ export class UI {
                     this.linkManager.addLink(item);
                     this.renderLinks();
                 } catch (error) {
-                    this.displayInputError("Invalid tab URL!");
+                    this.displayInputError((error as Error).message);
                 }
             } else {
                 this.displayInputError("No active tab found!");

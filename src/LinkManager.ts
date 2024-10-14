@@ -16,7 +16,7 @@ export class LinkManager {
             this.links.push(item);
             this.updateStorage();
         } else {
-            console.warn('Link already exists in manager');
+            throw new Error('Link already exists in the list.');
         }
     }
 
@@ -26,7 +26,7 @@ export class LinkManager {
         if (this.links.length !== initialLength) {
             this.updateStorage();
         } else {
-            console.warn('Link not found for removal');
+            throw new Error('Link not found for removal.');
         }
     }
 

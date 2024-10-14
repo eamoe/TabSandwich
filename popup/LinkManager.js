@@ -10,7 +10,7 @@ export class LinkManager {
             this.updateStorage();
         }
         else {
-            console.warn('Link already exists in manager');
+            throw new Error('Link already exists in the list.');
         }
     }
     removeLink(item) {
@@ -20,7 +20,7 @@ export class LinkManager {
             this.updateStorage();
         }
         else {
-            console.warn('Link not found for removal');
+            throw new Error('Link not found for removal.');
         }
     }
     clearAllLinks() {

@@ -72,7 +72,7 @@ export class UI {
                     this.renderLinks();
                 }
                 catch (error) {
-                    this.displayInputError("Invalid tab URL!");
+                    this.displayInputError(error.message);
                 }
             }
             else {
