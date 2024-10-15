@@ -62,17 +62,32 @@ export class UI {
 
     private handleAddCurrentTab(): void {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            const tabUrl = tabs[0]?.url;
-            if (tabUrl) {
-                try {
-                    const item = new Item(tabUrl, this.descriptionInputEl.value);
-                    this.linkManager.addLink(item);
-                    this.renderLinks();
-                } catch (error) {
-                    this.domHelper.displayInputError(this.linkInputEl, (error as Error).message);
-                }
+            const tab = tabs[0];
+            if (tab?.id && tab?.url && !tab.url.startsWith('chrome://')) {
+                chrome.scripting.executeScript(
+                    {
+                        target: { tabId: tab.id },
+                        func: () => document.title,
+                    },
+                    (results) => {
+                        const pageTitle = results?.[0]?.result || '';
+                        const tabUrl = tab.url;
+    
+                        if (tabUrl) {
+                            try {
+                                const item = new Item(tabUrl, pageTitle || this.descriptionInputEl.value);
+                                this.linkManager.addLink(item);
+                                this.renderLinks();
+                            } catch (error) {
+                                this.domHelper.displayInputError(this.linkInputEl, (error as Error).message);
+                            }
+                        } else {
+                            this.domHelper.displayInputError(this.linkInputEl, "No active tab found!");
+                        }
+                    }
+                );
             } else {
-                this.domHelper.displayInputError(this.linkInputEl, "No active tab found!");
+                this.domHelper.displayInputError(this.linkInputEl, "Cannot add links from a restricted or unsupported page.");
             }
         });
     }

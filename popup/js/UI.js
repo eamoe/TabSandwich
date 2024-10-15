@@ -47,20 +47,32 @@ export class UI {
     }
     handleAddCurrentTab() {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            var _a;
-            const tabUrl = (_a = tabs[0]) === null || _a === void 0 ? void 0 : _a.url;
-            if (tabUrl) {
-                try {
-                    const item = new Item(tabUrl, this.descriptionInputEl.value);
-                    this.linkManager.addLink(item);
-                    this.renderLinks();
-                }
-                catch (error) {
-                    this.domHelper.displayInputError(this.linkInputEl, error.message);
-                }
+            const tab = tabs[0];
+            if ((tab === null || tab === void 0 ? void 0 : tab.id) && (tab === null || tab === void 0 ? void 0 : tab.url) && !tab.url.startsWith('chrome://')) {
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => document.title,
+                }, (results) => {
+                    var _a;
+                    const pageTitle = ((_a = results === null || results === void 0 ? void 0 : results[0]) === null || _a === void 0 ? void 0 : _a.result) || '';
+                    const tabUrl = tab.url;
+                    if (tabUrl) {
+                        try {
+                            const item = new Item(tabUrl, pageTitle || this.descriptionInputEl.value);
+                            this.linkManager.addLink(item);
+                            this.renderLinks();
+                        }
+                        catch (error) {
+                            this.domHelper.displayInputError(this.linkInputEl, error.message);
+                        }
+                    }
+                    else {
+                        this.domHelper.displayInputError(this.linkInputEl, "No active tab found!");
+                    }
+                });
             }
             else {
-                this.domHelper.displayInputError(this.linkInputEl, "No active tab found!");
+                this.domHelper.displayInputError(this.linkInputEl, "Cannot add links from a restricted or unsupported page.");
             }
         });
     }

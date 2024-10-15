@@ -2,12 +2,13 @@
 
 ## Overview
 
-The **TabSandwich** Chrome extension allows users to store, manage, and organize web links. Users can save the current tab's URL, manually input links with descriptions, and delete all stored links. The extension uses localStorage for persistent link storage and provides an easy-to-use interface for accessing saved links.
+The **TabSandwich** Chrome extension allows users to store, manage, and organize web links. Users can save the current tab's URL, manually input links with descriptions, and delete a particular link or all stored links. The extension uses localStorage for persistent link storage and provides an easy-to-use interface for accessing saved links.
 
 ## Features
 
 * **Save Current Tab**: Click **SAVE TAB** to store the current tab's URL and optionally add a description.
 * **Save Input Links**: Enter a URL and a description manually, then click **SAVE INPUT**.
+* **Delete a Link**: Double-click the list item to completely remove it from the list.
 * **Delete All Links**: Double-click the **DELETE ALL** button to clear all saved links.
 **Persistent Storage**: Links are saved using `localStorage`, so they persist between sessions.
 
@@ -15,7 +16,8 @@ The **TabSandwich** Chrome extension allows users to store, manage, and organize
 
 1. **Add New Links**: Either by pasting a link or saving the current tab's URL.
 2. **View Links**: Links appear in a list. Click on any link to open it in a new tab.
-3. **Delete All Links**: Double-click the delete button to clear all stored links.
+3. **Delete a Link**: Double-click the list item to remove it.
+4. **Delete All Links**: Double-click the delete button to clear all stored links.
 
 ## Installation Guide
 
