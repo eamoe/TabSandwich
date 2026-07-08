@@ -39,31 +39,24 @@ export function renderPills(tabs: SavedTab[], settings: Settings, onChange: () =
         currentFilter = ALL;
     }
 
-    for (const cat of [ALL, ...categories]) {
+    // Outdated sits right after All — clicking any other pill is what "turns it off,"
+    // same as switching between categories, rather than needing its own separate un-toggle.
+    const pillOrder = [ALL, ...(outdatedCount > 0 ? [OUTDATED] : []), ...categories];
+
+    for (const cat of pillOrder) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "pill";
-        btn.textContent = cat;
-        if (cat !== ALL && cat !== UNCATEGORIZED) {
+        btn.textContent = cat === OUTDATED ? `Outdated (${outdatedCount})` : cat;
+        if (cat === OUTDATED) {
+            btn.classList.add("pill-outdated");
+        } else if (cat !== ALL && cat !== UNCATEGORIZED) {
             btn.classList.add("pill-colored");
             btn.style.setProperty("--pill-color", getCategoryColorHex(cat, settings.categoryColors));
         }
         btn.setAttribute("aria-pressed", String(cat === currentFilter));
         btn.addEventListener("click", async () => {
             currentFilter = cat;
-            await onChange();
-        });
-        container.appendChild(btn);
-    }
-
-    if (outdatedCount > 0) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pill pill-outdated";
-        btn.textContent = `Outdated (${outdatedCount})`;
-        btn.setAttribute("aria-pressed", String(currentFilter === OUTDATED));
-        btn.addEventListener("click", async () => {
-            currentFilter = OUTDATED;
             await onChange();
         });
         container.appendChild(btn);

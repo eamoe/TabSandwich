@@ -39,8 +39,8 @@ summary:focus-visible {
 /* ── Hero ── */
 .hero {
   background: linear-gradient(135deg, #7B6EF6, #A78BFA);
-  margin: 12px 12px 8px;
-  border-radius: 20px;
+  margin: 0 0 8px;
+  border-radius: 0;
   padding: 16px;
   color: #fff;
   box-shadow: 0 8px 20px rgba(123, 110, 246, 0.35);
@@ -78,24 +78,28 @@ summary:focus-visible {
 .save-btn:disabled { opacity: 0.7; cursor: default; }
 
 .save-status {
-  min-height: 14px;
   margin-top: 6px;
   font-size: 11px;
   font-weight: 600;
   text-align: center;
 }
+.save-status:empty { display: none; }
 .save-status-success { color: #fff; }
 .save-status-duplicate { color: rgba(255,255,255,0.85); }
 .save-status-error { color: #FFD4D4; }
 
-/* ── Manual entry (secondary, subordinate to Save This Tab) ── */
-.manual-entry { margin-top: 10px; }
-.manual-entry summary {
-  list-style: none; cursor: pointer; font-size: 11.5px; font-weight: 600;
-  color: rgba(255,255,255,0.85); text-align: center; padding: 4px;
+/* ── Manual entry (secondary, subordinate to Save Tab) ── */
+.manual-entry { margin-top: 6px; }
+
+.manual-entry-toggle {
+  display: block; width: 100%; background: none; border: none; cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,0.85); text-align: center; padding: 4px;
 }
-.manual-entry summary::-webkit-details-marker { display: none; }
-.manual-entry summary:hover, .manual-entry summary:focus-visible { color: #fff; }
+.manual-entry-toggle:hover, .manual-entry-toggle:focus-visible { color: #fff; }
+
+.manual-entry-collapse {
+  max-height: 0; overflow: hidden; transition: max-height 0.25s ease;
+}
 
 .manual-entry-form {
   margin-top: 8px; background: rgba(255,255,255,0.12); border-radius: 12px; padding: 10px;
@@ -105,23 +109,35 @@ summary:focus-visible {
 .manual-entry-form input, .manual-entry-form select {
   border: none; border-radius: 8px; padding: 6px 9px; font-size: 12.5px; background: rgba(255,255,255,0.92); color: #2A2447;
 }
-.manual-entry-submit {
-  margin-top: 2px; border: none; border-radius: 8px; background: #fff; color: #7B6EF6;
-  font-size: 12px; font-weight: 700; padding: 6px 10px; cursor: pointer; align-self: flex-start;
+
+.manual-entry-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+.manual-entry-submit, .manual-entry-cancel {
+  border: none; border-radius: 8px; font-size: 12px; font-weight: 700; padding: 6px 12px; cursor: pointer;
 }
+.manual-entry-submit { background: #fff; color: #7B6EF6; }
+.manual-entry-submit:hover, .manual-entry-submit:focus-visible { background: #f0edff; }
+.manual-entry-cancel { background: rgba(255,255,255,0.2); color: #fff; }
+.manual-entry-cancel:hover, .manual-entry-cancel:focus-visible { background: rgba(255,255,255,0.32); }
 
 /* ── Category / outdated pills ── */
-.pills-row { display: flex; gap: 6px; padding: 10px 12px 8px; flex-wrap: wrap; }
+.pills-row {
+  display: flex; gap: 6px; padding: 10px 12px 14px; flex-wrap: nowrap; overflow-x: auto;
+  scrollbar-width: thin; scrollbar-color: #ddd transparent;
+}
+.pills-row::-webkit-scrollbar { height: 4px; }
+.pills-row::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
 .pill {
   flex-shrink: 0; padding: 5px 13px; border-radius: 20px; border: none; background: #fff;
   color: #6b6390; font-size: 11.5px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
 .pill:hover, .pill:focus-visible { background: #f0ece8; }
 .pill[aria-pressed="true"] { background: #7B6EF6; color: #fff; }
-.pill-outdated[aria-pressed="true"] { background: #E8874A; }
 
 .pill-colored { border: 1.5px solid var(--pill-color); color: var(--pill-color); background: #fff; }
 .pill-colored[aria-pressed="true"] { background: var(--pill-color); color: #fff; }
+
+.pill-outdated { color: #E8874A; }
+.pill-outdated[aria-pressed="true"] { background: #E8874A; color: #fff; }
 
 /* ── Tab list ── */
 main {
@@ -175,7 +191,7 @@ main {
   font-size: 12.5px; padding: 6px 8px; border: 1.5px solid #e3ddf7; border-radius: 8px; width: 100%;
 }
 .edit-input.input-error { border-color: #E5484D; }
-.edit-actions { display: flex; gap: 6px; }
+.edit-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
 .edit-save, .edit-cancel {
   font-size: 12px; padding: 5px 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600;
 }

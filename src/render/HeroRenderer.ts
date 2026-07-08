@@ -100,15 +100,40 @@ async function populateManualCategorySelect(select: HTMLSelectElement): Promise<
     select.value = categories.includes(current) ? current : "";
 }
 
+/**
+ * A manually-controlled disclosure rather than native <details>/<summary>: native details
+ * can't animate its close transition at all (the browser just snaps display on/off). An
+ * explicit Cancel button gives a clear third way to close it, alongside toggling the
+ * trigger again or successfully submitting.
+ */
 function bindManualEntryForm(refresh: Refresh): void {
-    const details = getElement<HTMLDetailsElement>("manual-entry");
+    const toggleBtn = getElement<HTMLButtonElement>("manual-entry-toggle");
+    const collapse = getElement<HTMLElement>("manual-entry-collapse");
     const form = getElement<HTMLFormElement>("manual-entry-form");
+    const cancelBtn = getElement<HTMLButtonElement>("manual-entry-cancel");
     const urlInput = getElement<HTMLInputElement>("manual-url");
     const titleInput = getElement<HTMLInputElement>("manual-title");
     const categorySelect = getElement<HTMLSelectElement>("manual-category");
 
-    details.addEventListener("toggle", () => {
-        if (details.open) populateManualCategorySelect(categorySelect);
+    let isOpen = false;
+
+    function setOpen(open: boolean): void {
+        isOpen = open;
+        toggleBtn.setAttribute("aria-expanded", String(open));
+        collapse.inert = !open;
+        if (open) {
+            populateManualCategorySelect(categorySelect);
+            collapse.style.maxHeight = `${collapse.scrollHeight}px`;
+        } else {
+            collapse.style.maxHeight = "0px";
+        }
+    }
+
+    toggleBtn.addEventListener("click", () => setOpen(!isOpen));
+
+    cancelBtn.addEventListener("click", () => {
+        form.reset();
+        setOpen(false);
     });
 
     form.addEventListener("submit", async (e) => {
@@ -125,7 +150,7 @@ function bindManualEntryForm(refresh: Refresh): void {
         await handleSaveResult(result, refresh);
 
         form.reset();
-        details.open = false;
+        setOpen(false);
     });
 }
 
