@@ -201,12 +201,17 @@ main {
 .edit-cancel:hover, .edit-cancel:focus-visible { background: #e3ddf7; }
 
 /* ── Settings view ── */
-.settings-view { display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; overflow-y: auto; flex: 1; }
+.settings-view {
+  display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; overflow-y: auto; flex: 1;
+  margin-top: -8px; /* cancels the hero's own bottom margin so its sticky header sits flush, no gap stripe */
+}
 .settings-view[hidden] { display: none; }
 
 .settings-header {
-  display: flex; align-items: center; padding: 4px 0;
+  display: flex; align-items: center; padding: 4px 12px;
+  margin: 0 -12px;
   position: sticky; top: 0; z-index: 5; background: #F3F1FB;
+  box-shadow: 0 4px 6px -4px rgba(42, 36, 71, 0.15);
 }
 .back-btn {
   display: flex; align-items: center; gap: 4px; background: none; border: none;
