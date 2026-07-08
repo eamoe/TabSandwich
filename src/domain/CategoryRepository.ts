@@ -19,12 +19,13 @@ export async function getSelectableCategories(): Promise<string[]> {
     return [...(await listCategories()), UNCATEGORIZED];
 }
 
+/** New categories go to the front — added at the end would land below the fold in a long list, invisible without scrolling. */
 export async function addCategory(name: string): Promise<void> {
     const trimmed = name.trim();
     if (!trimmed || trimmed === UNCATEGORIZED) return;
     const settings = await getSettings();
     if (settings.categories.includes(trimmed)) return;
-    settings.categories = [...settings.categories, trimmed];
+    settings.categories = [trimmed, ...settings.categories];
     await setSettings(settings);
 }
 

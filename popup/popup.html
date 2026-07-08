@@ -77,7 +77,10 @@
           <label for="outdated-toggle" class="settings-label">Outdated tabs</label>
           <p class="settings-sublabel">Highlight tabs saved longer than the threshold below</p>
         </div>
-        <input type="checkbox" id="outdated-toggle">
+        <label class="toggle-switch">
+          <input type="checkbox" id="outdated-toggle" class="visually-hidden">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
       </div>
       <div class="days-row">
         <label for="outdated-days">Mark as outdated after</label>
@@ -89,20 +92,22 @@
     <div class="settings-section">
       <div class="settings-row">
         <span class="settings-label" id="shortcut-label">Keyboard shortcut</span>
-        <span id="shortcut-display" aria-labelledby="shortcut-label"></span>
-        <button type="button" id="shortcut-customize-btn">Customize</button>
+        <div class="shortcut-controls">
+          <span id="shortcut-display" class="shortcut-badge" aria-labelledby="shortcut-label"></span>
+          <button type="button" id="shortcut-customize-btn" class="btn-accent">Customize</button>
+        </div>
       </div>
     </div>
 
     <div class="settings-section">
       <h2 class="settings-label">Categories</h2>
-      <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
-      <p id="category-status" class="category-status" role="status" aria-live="polite"></p>
       <form id="add-category-form" class="add-category-form">
         <label for="new-category-input" class="visually-hidden">New category</label>
         <input type="text" id="new-category-input" placeholder="New category">
         <button type="submit">Add</button>
       </form>
+      <p id="category-status" class="category-status" role="status" aria-live="polite"></p>
+      <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
     </div>
   </section>
 
