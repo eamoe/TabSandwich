@@ -9,9 +9,10 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 ## Features
 
 - **Save the current tab** — one click, no setup.
-- **Add a link manually** — for anything that isn't your active tab, via a secondary "+ Add a link manually" form.
+- **Add a link manually** — for anything that isn't your active tab, via a secondary "+ Add link manually" form.
 - **Duplicate detection** — saving an already-saved URL highlights the existing entry instead of creating a copy.
 - **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/remove) from Settings.
+- **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings), tinting both its saved tabs and its filter pill so you can scan the list by color at a glance.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a visible badge and their own quick filter.
