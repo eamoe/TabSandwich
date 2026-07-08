@@ -8,9 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { getTabs } from "./storage/chromeStorage.js";
+import { migrateFromLocalStorageIfNeeded } from "./storage/migration.js";
 import { renderList } from "./render/ListRenderer.js";
 import { renderHeroStats, initHero } from "./render/HeroRenderer.js";
 document.addEventListener("DOMContentLoaded", () => __awaiter(void 0, void 0, void 0, function* () {
+    yield migrateFromLocalStorageIfNeeded();
     const tabs = yield getTabs();
     renderList(tabs);
     yield renderHeroStats(tabs);
