@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: Settings = {
     outdatedEnabled: true,
     outdatedDays: 7,
     categories: ["Work", "Personal", "Reading", "Entertainment"],
+    categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
 };
 
 export async function hasStoredTabs(): Promise<boolean> {

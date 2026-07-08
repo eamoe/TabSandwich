@@ -120,6 +120,9 @@ summary:focus-visible {
 .pill[aria-pressed="true"] { background: #7B6EF6; color: #fff; }
 .pill-outdated[aria-pressed="true"] { background: #E8874A; }
 
+.pill-colored { border: 1.5px solid var(--pill-color); color: var(--pill-color); background: #fff; }
+.pill-colored[aria-pressed="true"] { background: var(--pill-color); color: #fff; }
+
 /* ── Tab list ── */
 main {
   flex: 1; min-height: 0; display: flex; flex-direction: column;
@@ -128,8 +131,9 @@ main {
 .tab-list { list-style: none; overflow-y: auto; flex: 1; }
 .tab-list .empty { padding: 20px; color: #aaa; font-style: italic; text-align: center; font-size: 13px; }
 .tab-list li {
-  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  display: flex; align-items: center; gap: 8px;
   padding: 7px 12px; border-bottom: 1px solid #f2f0fa;
+  background: var(--row-tint, #fff);
 }
 .tab-list li:last-child { border-bottom: none; }
 .tab-list li:hover, .tab-list li:focus-within { background: #FAF9FE; }
@@ -139,12 +143,9 @@ main {
 
 @keyframes highlight-fade {
   0%   { background-color: #F0EDFC; }
-  100% { background-color: transparent; }
+  100% { background-color: var(--row-tint, transparent); }
 }
 .tab-list li.new { animation: highlight-fade 2s ease-out forwards; }
-
-.row-top { display: flex; align-items: center; gap: 8px; }
-.row-meta { display: flex; align-items: center; gap: 6px; padding-left: 24px; min-height: 16px; }
 
 .favicon { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 .tab-title {
@@ -158,11 +159,7 @@ main {
   background: #FFEBD6; color: #E8874A; white-space: nowrap; flex-shrink: 0;
 }
 
-.cat-select {
-  font-size: 10px; font-weight: 700; padding: 2px 4px; border-radius: 9px;
-  background: #F0EDFC; color: #7B6EF6; border: none; cursor: pointer; flex-shrink: 0;
-  max-width: 130px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
-}
+.cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
 .row-actions { display: flex; gap: 2px; flex-shrink: 0; margin-left: auto; }
 .icon-btn {
@@ -173,7 +170,7 @@ main {
 .icon-btn.delete:hover, .icon-btn.delete:focus-visible { background: #FDEAEA; color: #E5484D; }
 
 /* ── Inline edit mode ── */
-.tab-list li.editing { gap: 6px; }
+.tab-list li.editing { flex-direction: column; align-items: stretch; gap: 6px; }
 .edit-input {
   font-size: 12.5px; padding: 6px 8px; border: 1.5px solid #e3ddf7; border-radius: 8px; width: 100%;
 }
@@ -229,23 +226,30 @@ main {
 
 .category-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .category-item {
-  display: flex; align-items: center; justify-content: space-between; padding: 5px 8px;
+  display: flex; flex-direction: column; gap: 4px; padding: 6px 8px;
   background: #F7F7FA; border-radius: 8px; font-size: 12.5px; color: #333;
 }
+.category-item-row { display: flex; align-items: center; gap: 6px; }
+.category-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.category-item-message { font-size: 11px; color: #E5484D; font-weight: 600; }
+.category-item-message:empty { display: none; }
+
+.color-picker { display: flex; gap: 4px; flex-shrink: 0; }
+.color-swatch {
+  width: 14px; height: 14px; border-radius: 4px; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
+}
+.color-swatch.selected { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #2A2447; }
+
 .remove-cat {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex-shrink: 0;
   background: none; border: none; color: #b7aede; cursor: pointer; font-size: 15px; line-height: 1;
-  padding: 2px 6px; border-radius: 4px;
+  padding: 0; border-radius: 4px;
 }
 .remove-cat:hover, .remove-cat:focus-visible { color: #E5484D; background: #FDEAEA; }
-.remove-cat:disabled { color: #ddd; cursor: not-allowed; }
-.remove-cat:disabled:hover { background: none; }
-
-.category-status {
-  font-size: 11px;
-  color: #E5484D;
-  font-weight: 600;
-}
-.category-status:empty { display: none; }
+/* Still a real, clickable button (clicking reveals why via the status message) — just visually muted to suggest it's unlikely to work. */
+.remove-cat--muted { color: #ddd; }
+.remove-cat--muted:hover, .remove-cat--muted:focus-visible { color: #ddd; background: none; }
 
 .shortcut-controls { display: flex; align-items: center; gap: 14px; }
 .shortcut-badge {
@@ -263,3 +267,5 @@ main {
 .add-category-form button {
   border: none; border-radius: 8px; background: #7B6EF6; color: #fff; font-weight: 700; font-size: 12px; padding: 6px 12px; cursor: pointer;
 }
+
+.char-counter { font-size: 10px; color: #9a92b8; text-align: right; margin-top: 2px; }

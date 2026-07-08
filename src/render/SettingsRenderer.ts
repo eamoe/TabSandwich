@@ -1,62 +1,124 @@
-import { SavedTab } from "../types";
+import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
 import { getTabs, getSettings, setSettings } from "../storage/chromeStorage";
-import { listCategories, addCategory, removeCategory, getTabCategory } from "../domain/CategoryRepository";
+import {
+    addCategory,
+    removeCategory,
+    getTabCategory,
+    getCategoryColorHex,
+    setCategoryColor,
+    CATEGORY_COLOR_PALETTE,
+} from "../domain/CategoryRepository";
 
 type Refresh = () => void | Promise<void>;
 
-function renderCategoryList(categories: string[], tabs: SavedTab[], refresh: Refresh): void {
-    const list = getElement<HTMLUListElement>("category-list");
-    const status = getElement<HTMLParagraphElement>("category-status");
-    list.innerHTML = "";
-    // Reset on every fresh render — a stale "in use" message shouldn't persist once the
-    // underlying state has changed via some other action (e.g. reassigning tabs elsewhere).
-    status.textContent = "";
+function createColorPicker(categoryName: string, categoryColors: Record<string, string>, refresh: Refresh): HTMLElement {
+    const currentHex = getCategoryColorHex(categoryName, categoryColors);
+    const picker = document.createElement("div");
+    picker.className = "color-picker";
+    picker.setAttribute("role", "group");
+    picker.setAttribute("aria-label", `Color for ${categoryName}`);
 
-    for (const cat of categories) {
+    for (const [key, hex] of Object.entries(CATEGORY_COLOR_PALETTE)) {
+        const swatch = document.createElement("button");
+        swatch.type = "button";
+        swatch.className = "color-swatch" + (hex === currentHex ? " selected" : "");
+        swatch.style.backgroundColor = hex;
+        swatch.setAttribute("aria-label", `${key}`);
+        swatch.setAttribute("aria-pressed", String(hex === currentHex));
+        swatch.addEventListener("click", async () => {
+            await setCategoryColor(categoryName, key);
+            await refresh();
+        });
+        picker.appendChild(swatch);
+    }
+    return picker;
+}
+
+function renderCategoryList(settings: Settings, tabs: SavedTab[], refresh: Refresh): void {
+    const list = getElement<HTMLUListElement>("category-list");
+    list.innerHTML = "";
+
+    for (const cat of settings.categories) {
         const li = document.createElement("li");
         li.className = "category-item";
 
+        const row = document.createElement("div");
+        row.className = "category-item-row";
+
+        const dot = document.createElement("span");
+        dot.className = "cat-dot";
+        dot.style.backgroundColor = getCategoryColorHex(cat, settings.categoryColors);
+        dot.setAttribute("aria-hidden", "true");
+        row.appendChild(dot);
+
         const inUse = tabs.some((t) => getTabCategory(t) === cat);
         const name = document.createElement("span");
-        name.textContent = inUse ? `${cat} · in use` : cat;
-        li.appendChild(name);
+        name.className = "category-name";
+        name.textContent = cat;
+        row.appendChild(name);
 
-        // Always clickable — a disabled button's title tooltip is unreliable (often suppressed
-        // by the browser entirely), so "why can't I remove this" needs to be visible text instead.
+        row.appendChild(createColorPicker(cat, settings.categoryColors, refresh));
+
+        // Per-category message, shown as a second line on this specific card — a single
+        // shared status line was ambiguous about which category it referred to once there
+        // was more than one. Auto-clears after a few seconds, and every fresh render starts
+        // clean, so reopening Settings (which re-renders via refreshCategorySection) never
+        // shows a stale message left over from before.
+        const message = document.createElement("p");
+        message.className = "category-item-message";
+        message.setAttribute("role", "status");
+        message.setAttribute("aria-live", "polite");
+
+        // Visually muted when in use (not the real "why can't I remove this" signal — that's
+        // unreliable via a disabled button's title tooltip, which browsers often suppress).
+        // Stays a real, clickable button so clicking it still reveals the reason via the message.
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
-        removeBtn.className = "remove-cat";
+        removeBtn.className = "remove-cat" + (inUse ? " remove-cat--muted" : "");
         removeBtn.setAttribute("aria-label", `Remove ${cat}`);
         removeBtn.textContent = "×";
         removeBtn.addEventListener("click", async () => {
             const result = await removeCategory(cat, tabs);
             if (!result.removed) {
-                status.textContent = result.reason ?? "Couldn't remove this category.";
+                message.textContent = result.reason ?? "Couldn't remove this category.";
+                window.setTimeout(() => {
+                    message.textContent = "";
+                }, 3000);
                 return;
             }
-            status.textContent = "";
             await refresh();
         });
-        li.appendChild(removeBtn);
+        row.appendChild(removeBtn);
+
+        li.appendChild(row);
+        li.appendChild(message);
         list.appendChild(li);
     }
 }
 
 /**
- * Re-reads categories + tabs and re-renders the category list, including "in use" status.
- * Called both on init and from viewController's refreshView — a tab being deleted or
- * recategorized from the main list changes "in use" status here too, even while this
- * view is hidden, so it's never stale when the user actually opens Settings.
+ * Re-reads categories + tabs and re-renders the category list, including "in use" status
+ * and each category's color. Called both on init and from viewController's refreshView — a
+ * tab being deleted or recategorized from the main list changes "in use" status here too,
+ * even while this view is hidden, so it's never stale when the user actually opens Settings.
  */
 export async function refreshCategorySection(refresh: Refresh): Promise<void> {
-    const [categories, tabs] = await Promise.all([listCategories(), getTabs()]);
-    renderCategoryList(categories, tabs, refresh);
+    const [settings, tabs] = await Promise.all([getSettings(), getTabs()]);
+    renderCategoryList(settings, tabs, refresh);
 }
 
 function bindAddCategoryForm(refresh: Refresh): void {
     const form = getElement<HTMLFormElement>("add-category-form");
     const input = getElement<HTMLInputElement>("new-category-input");
+    const counter = getElement<HTMLElement>("new-category-counter");
+    const maxLength = input.maxLength;
+
+    const updateCounter = () => {
+        counter.textContent = `${input.value.length}/${maxLength}`;
+    };
+
+    input.addEventListener("input", updateCounter);
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -64,6 +126,7 @@ function bindAddCategoryForm(refresh: Refresh): void {
         if (!name) return;
         await addCategory(name);
         input.value = "";
+        updateCounter();
         await refresh();
     });
 }
@@ -122,7 +185,7 @@ function bindShortcutDisplay(): void {
  * sides of the transition — into Settings on open, back to the trigger on close — rather
  * than leaving keyboard/screen-reader users stranded on whichever control they last used.
  */
-function bindViewToggle(): void {
+function bindViewToggle(refresh: Refresh): void {
     const gearBtn = getElement<HTMLButtonElement>("gear-btn");
     const backBtn = getElement<HTMLButtonElement>("back-btn");
     const settingsView = getElement<HTMLElement>("settings-view");
@@ -138,6 +201,9 @@ function bindViewToggle(): void {
         actionRow.hidden = true;
         manualEntry.hidden = true;
         backBtn.focus();
+        // Re-render fresh on every open — belt-and-suspenders alongside the message's own
+        // timeout, so a stale per-category message never survives a trip back to the main view.
+        refreshCategorySection(refresh);
     });
 
     backBtn.addEventListener("click", () => {
@@ -151,7 +217,7 @@ function bindViewToggle(): void {
 }
 
 export async function initSettings(refresh: Refresh): Promise<void> {
-    bindViewToggle();
+    bindViewToggle(refresh);
     bindAddCategoryForm(refresh);
     bindOutdatedControls(refresh);
     bindShortcutDisplay();

@@ -1,11 +1,11 @@
 import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
-import { getTabCategory } from "../domain/CategoryRepository";
+import { getTabCategory, getCategoryColorHex, UNCATEGORIZED } from "../domain/CategoryRepository";
 import { normalizeUrl } from "../util/url";
 import { daysSince, isOutdated } from "../util/time";
+import { tintHex } from "../util/color";
 
 export interface ListCallbacks {
-    onCategoryChange: (tabId: string, category: string) => void | Promise<void>;
     onEdit: (tabId: string, updates: { title: string; url: string; category: string }) => void | Promise<void>;
     onDelete: (tabId: string) => void | Promise<void>;
     onReorder: (draggedId: string, targetId: string) => void | Promise<void>;
@@ -55,6 +55,28 @@ function createCategorySelect(tab: SavedTab, categories: string[], ariaLabel: st
     return select;
 }
 
+/**
+ * Tints the whole row with a pastel version of its category color — rows "stacked like a
+ * sandwich," each layer colored by category, rather than a small separate indicator.
+ * Color can't be the only way to know a tab's category (screen reader / colorblind users
+ * would lose that entirely), so a screen-reader-only label backs it up. No hover tooltip
+ * here — the row's one tooltip slot is reserved for the (possibly truncated) title instead,
+ * and the category is already visible via the matching pill up top.
+ */
+function applyCategoryTint(li: HTMLLIElement, tab: SavedTab, settings: Settings): void {
+    const category = getTabCategory(tab);
+    // Uncategorized stays plain white — it represents "no color applied," not a gray category.
+    if (category !== UNCATEGORIZED) {
+        const tint = tintHex(getCategoryColorHex(category, settings.categoryColors), 0.85);
+        li.style.setProperty("--row-tint", tint);
+    }
+
+    const srLabel = document.createElement("span");
+    srLabel.className = "visually-hidden";
+    srLabel.textContent = `Category: ${category}`;
+    li.appendChild(srLabel);
+}
+
 /** Drag-to-reorder has no keyboard equivalent in this version (FR-019 exemption) — display rows only. */
 function bindDragHandlers(li: HTMLLIElement, tab: SavedTab, callbacks: ListCallbacks): void {
     li.draggable = true;
@@ -89,9 +111,9 @@ function bindDragHandlers(li: HTMLLIElement, tab: SavedTab, callbacks: ListCallb
 }
 
 /**
- * Two lines per row: title gets nearly the full first line (it's the one thing that
- * actually identifies the tab), category/age move to a smaller second line rather than
- * fighting the title for space — cramming everything into one line made titles unreadable.
+ * One line per row. Category used to be a full-width text select competing with the title
+ * for space, which is what forced a two-line layout; tinting the whole row instead frees
+ * that space back up while still identifying each tab's category at a glance.
  */
 function renderDisplayRow(
     li: HTMLLIElement,
@@ -103,18 +125,26 @@ function renderDisplayRow(
     li.innerHTML = "";
     li.classList.remove("editing");
     bindDragHandlers(li, tab, callbacks);
+    applyCategoryTint(li, tab, settings);
 
-    const rowTop = document.createElement("div");
-    rowTop.className = "row-top";
-
-    rowTop.appendChild(createFavicon(tab));
+    li.appendChild(createFavicon(tab));
 
     const titleBtn = document.createElement("button");
     titleBtn.type = "button";
     titleBtn.className = "tab-title";
     titleBtn.textContent = tab.title;
+    titleBtn.title = tab.title;
     titleBtn.addEventListener("click", () => chrome.tabs.create({ url: tab.url }));
-    rowTop.appendChild(titleBtn);
+    li.appendChild(titleBtn);
+
+    if (isOutdated(tab.savedAt, settings.outdatedEnabled, settings.outdatedDays)) {
+        const days = daysSince(tab.savedAt);
+        const badge = document.createElement("span");
+        badge.className = "age-badge";
+        badge.textContent = `${days}d`;
+        badge.title = `Saved ${days} day${days === 1 ? "" : "s"} ago`;
+        li.appendChild(badge);
+    }
 
     const actions = document.createElement("div");
     actions.className = "row-actions";
@@ -135,26 +165,7 @@ function renderDisplayRow(
     deleteBtn.addEventListener("click", () => callbacks.onDelete(tab.id));
     actions.appendChild(deleteBtn);
 
-    rowTop.appendChild(actions);
-    li.appendChild(rowTop);
-
-    const rowMeta = document.createElement("div");
-    rowMeta.className = "row-meta";
-
-    const catSelect = createCategorySelect(tab, categories, `Category for ${tab.title}`);
-    catSelect.addEventListener("change", () => callbacks.onCategoryChange(tab.id, catSelect.value));
-    rowMeta.appendChild(catSelect);
-
-    if (isOutdated(tab.savedAt, settings.outdatedEnabled, settings.outdatedDays)) {
-        const days = daysSince(tab.savedAt);
-        const badge = document.createElement("span");
-        badge.className = "age-badge";
-        badge.textContent = `${days}d`;
-        badge.title = `Saved ${days} day${days === 1 ? "" : "s"} ago`;
-        rowMeta.appendChild(badge);
-    }
-
-    li.appendChild(rowMeta);
+    li.appendChild(actions);
 }
 
 function renderEditRow(

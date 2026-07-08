@@ -103,10 +103,10 @@
       <h2 class="settings-label">Categories</h2>
       <form id="add-category-form" class="add-category-form">
         <label for="new-category-input" class="visually-hidden">New category</label>
-        <input type="text" id="new-category-input" placeholder="New category">
+        <input type="text" id="new-category-input" placeholder="New category" maxlength="15">
         <button type="submit">Add</button>
       </form>
-      <p id="category-status" class="category-status" role="status" aria-live="polite"></p>
+      <div id="new-category-counter" class="char-counter" aria-hidden="true">0/15</div>
       <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
     </div>
   </section>

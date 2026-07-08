@@ -1,6 +1,6 @@
 import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
-import { getTabCategory, UNCATEGORIZED } from "../domain/CategoryRepository";
+import { getTabCategory, UNCATEGORIZED, getCategoryColorHex } from "../domain/CategoryRepository";
 import { isOutdated } from "../util/time";
 
 const ALL = "All";
@@ -44,6 +44,10 @@ export function renderPills(tabs: SavedTab[], settings: Settings, onChange: () =
         btn.type = "button";
         btn.className = "pill";
         btn.textContent = cat;
+        if (cat !== ALL && cat !== UNCATEGORIZED) {
+            btn.classList.add("pill-colored");
+            btn.style.setProperty("--pill-color", getCategoryColorHex(cat, settings.categoryColors));
+        }
         btn.setAttribute("aria-pressed", String(cat === currentFilter));
         btn.addEventListener("click", async () => {
             currentFilter = cat;

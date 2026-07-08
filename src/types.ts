@@ -13,4 +13,6 @@ export interface Settings {
     outdatedDays: number;
     /** User-managed presets. Never includes "Uncategorized" — that's an implicit, protected sentinel. */
     categories: string[];
+    /** Category name -> palette key (see CategoryRepository.CATEGORY_COLOR_PALETTE). Missing entries fall back to a default. */
+    categoryColors: Record<string, string>;
 }

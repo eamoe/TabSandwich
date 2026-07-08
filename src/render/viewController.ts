@@ -20,10 +20,6 @@ export async function refreshView(): Promise<void> {
 
     renderPills(tabs, settings, refreshView);
     renderList(filterTabs(tabs, settings), categories, settings, {
-        onCategoryChange: async (id, category) => {
-            await editTab(id, { category });
-            await refreshView();
-        },
         onEdit: async (id, updates) => {
             await editTab(id, updates);
             await refreshView();
