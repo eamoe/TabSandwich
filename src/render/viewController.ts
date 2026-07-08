@@ -1,6 +1,6 @@
-import { getTabs } from "../storage/chromeStorage";
+import { getTabs, getSettings } from "../storage/chromeStorage";
 import { getSelectableCategories } from "../domain/CategoryRepository";
-import { editTab, deleteTab } from "../domain/TabRepository";
+import { editTab, deleteTab, reorderTabs } from "../domain/TabRepository";
 import { renderPills, filterTabs } from "./PillsRenderer";
 import { renderList } from "./ListRenderer";
 import { renderHeroStats } from "./HeroRenderer";
@@ -16,9 +16,10 @@ import { refreshCategorySection } from "./SettingsRenderer";
 export async function refreshView(): Promise<void> {
     const tabs = await getTabs();
     const categories = await getSelectableCategories();
+    const settings = await getSettings();
 
-    renderPills(tabs, refreshView);
-    renderList(filterTabs(tabs), categories, {
+    renderPills(tabs, settings, refreshView);
+    renderList(filterTabs(tabs, settings), categories, settings, {
         onCategoryChange: async (id, category) => {
             await editTab(id, { category });
             await refreshView();
@@ -29,6 +30,10 @@ export async function refreshView(): Promise<void> {
         },
         onDelete: async (id) => {
             await deleteTab(id);
+            await refreshView();
+        },
+        onReorder: async (draggedId, targetId) => {
+            await reorderTabs(draggedId, targetId);
             await refreshView();
         },
     });

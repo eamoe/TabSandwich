@@ -6,5 +6,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     await migrateFromLocalStorageIfNeeded();
     await refreshView();
     initHero(refreshView);
-    initSettings(refreshView);
+    await initSettings(refreshView);
 });

@@ -1,6 +1,6 @@
 import { SavedTab } from "../types";
 import { getElement } from "../dom/domHelper";
-import { getTabs } from "../storage/chromeStorage";
+import { getTabs, getSettings, setSettings } from "../storage/chromeStorage";
 import { listCategories, addCategory, removeCategory, getTabCategory } from "../domain/CategoryRepository";
 
 type Refresh = () => void | Promise<void>;
@@ -68,6 +68,38 @@ function bindAddCategoryForm(refresh: Refresh): void {
     });
 }
 
+/** Reflects persisted settings into the controls once on load — nothing else changes these two fields. */
+async function syncOutdatedControls(): Promise<void> {
+    const settings = await getSettings();
+    const toggle = getElement<HTMLInputElement>("outdated-toggle");
+    const daysInput = getElement<HTMLInputElement>("outdated-days");
+    toggle.checked = settings.outdatedEnabled;
+    daysInput.value = String(settings.outdatedDays);
+    daysInput.disabled = !settings.outdatedEnabled;
+}
+
+function bindOutdatedControls(refresh: Refresh): void {
+    const toggle = getElement<HTMLInputElement>("outdated-toggle");
+    const daysInput = getElement<HTMLInputElement>("outdated-days");
+
+    toggle.addEventListener("change", async () => {
+        const settings = await getSettings();
+        settings.outdatedEnabled = toggle.checked;
+        await setSettings(settings);
+        daysInput.disabled = !toggle.checked;
+        await refresh();
+    });
+
+    daysInput.addEventListener("change", async () => {
+        const days = Math.max(1, Math.min(365, parseInt(daysInput.value, 10) || 7));
+        daysInput.value = String(days);
+        const settings = await getSettings();
+        settings.outdatedDays = days;
+        await setSettings(settings);
+        await refresh();
+    });
+}
+
 /**
  * Minimal show/hide toggle, pulled forward from Story 5 because Story 3's category
  * management can't be exercised at all without a way to reach the Settings view.
@@ -99,7 +131,9 @@ function bindViewToggle(): void {
     });
 }
 
-export function initSettings(refresh: Refresh): void {
+export async function initSettings(refresh: Refresh): Promise<void> {
     bindViewToggle();
     bindAddCategoryForm(refresh);
+    bindOutdatedControls(refresh);
+    await syncOutdatedControls();
 }

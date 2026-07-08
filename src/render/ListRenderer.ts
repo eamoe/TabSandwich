@@ -1,16 +1,21 @@
-import { SavedTab } from "../types";
+import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
 import { getTabCategory } from "../domain/CategoryRepository";
 import { normalizeUrl } from "../util/url";
+import { daysSince, isOutdated } from "../util/time";
 
 export interface ListCallbacks {
     onCategoryChange: (tabId: string, category: string) => void | Promise<void>;
     onEdit: (tabId: string, updates: { title: string; url: string; category: string }) => void | Promise<void>;
     onDelete: (tabId: string) => void | Promise<void>;
+    onReorder: (draggedId: string, targetId: string) => void | Promise<void>;
 }
 
 const EDIT_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const DELETE_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+
+// Module-level: only one drag can be in progress at a time across the whole list.
+let dragId: string | null = null;
 
 function placeholderIconHtml(): string {
     return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b7aede" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
@@ -50,21 +55,66 @@ function createCategorySelect(tab: SavedTab, categories: string[], ariaLabel: st
     return select;
 }
 
-function renderDisplayRow(li: HTMLLIElement, tab: SavedTab, categories: string[], callbacks: ListCallbacks): void {
+/** Drag-to-reorder has no keyboard equivalent in this version (FR-019 exemption) — display rows only. */
+function bindDragHandlers(li: HTMLLIElement, tab: SavedTab, callbacks: ListCallbacks): void {
+    li.draggable = true;
+
+    li.addEventListener("dragstart", (e) => {
+        dragId = tab.id;
+        li.classList.add("dragging");
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    });
+
+    li.addEventListener("dragend", () => {
+        dragId = null;
+        li.classList.remove("dragging");
+        document.querySelectorAll(".tab-list li.drag-over").forEach((el) => el.classList.remove("drag-over"));
+    });
+
+    li.addEventListener("dragover", (e) => {
+        if (!dragId || dragId === tab.id) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        li.classList.add("drag-over");
+    });
+
+    li.addEventListener("dragleave", () => li.classList.remove("drag-over"));
+
+    li.addEventListener("drop", (e) => {
+        e.preventDefault();
+        li.classList.remove("drag-over");
+        if (!dragId || dragId === tab.id) return;
+        callbacks.onReorder(dragId, tab.id);
+    });
+}
+
+/**
+ * Two lines per row: title gets nearly the full first line (it's the one thing that
+ * actually identifies the tab), category/age move to a smaller second line rather than
+ * fighting the title for space — cramming everything into one line made titles unreadable.
+ */
+function renderDisplayRow(
+    li: HTMLLIElement,
+    tab: SavedTab,
+    categories: string[],
+    settings: Settings,
+    callbacks: ListCallbacks
+): void {
     li.innerHTML = "";
     li.classList.remove("editing");
-    li.appendChild(createFavicon(tab));
+    bindDragHandlers(li, tab, callbacks);
+
+    const rowTop = document.createElement("div");
+    rowTop.className = "row-top";
+
+    rowTop.appendChild(createFavicon(tab));
 
     const titleBtn = document.createElement("button");
     titleBtn.type = "button";
     titleBtn.className = "tab-title";
     titleBtn.textContent = tab.title;
     titleBtn.addEventListener("click", () => chrome.tabs.create({ url: tab.url }));
-    li.appendChild(titleBtn);
-
-    const catSelect = createCategorySelect(tab, categories, `Category for ${tab.title}`);
-    catSelect.addEventListener("change", () => callbacks.onCategoryChange(tab.id, catSelect.value));
-    li.appendChild(catSelect);
+    rowTop.appendChild(titleBtn);
 
     const actions = document.createElement("div");
     actions.className = "row-actions";
@@ -74,7 +124,7 @@ function renderDisplayRow(li: HTMLLIElement, tab: SavedTab, categories: string[]
     editBtn.className = "icon-btn";
     editBtn.setAttribute("aria-label", `Edit ${tab.title}`);
     editBtn.innerHTML = EDIT_ICON;
-    editBtn.addEventListener("click", () => renderEditRow(li, tab, categories, callbacks));
+    editBtn.addEventListener("click", () => renderEditRow(li, tab, categories, settings, callbacks));
     actions.appendChild(editBtn);
 
     const deleteBtn = document.createElement("button");
@@ -85,11 +135,37 @@ function renderDisplayRow(li: HTMLLIElement, tab: SavedTab, categories: string[]
     deleteBtn.addEventListener("click", () => callbacks.onDelete(tab.id));
     actions.appendChild(deleteBtn);
 
-    li.appendChild(actions);
+    rowTop.appendChild(actions);
+    li.appendChild(rowTop);
+
+    const rowMeta = document.createElement("div");
+    rowMeta.className = "row-meta";
+
+    const catSelect = createCategorySelect(tab, categories, `Category for ${tab.title}`);
+    catSelect.addEventListener("change", () => callbacks.onCategoryChange(tab.id, catSelect.value));
+    rowMeta.appendChild(catSelect);
+
+    if (isOutdated(tab.savedAt, settings.outdatedEnabled, settings.outdatedDays)) {
+        const days = daysSince(tab.savedAt);
+        const badge = document.createElement("span");
+        badge.className = "age-badge";
+        badge.textContent = `${days}d`;
+        badge.title = `Saved ${days} day${days === 1 ? "" : "s"} ago`;
+        rowMeta.appendChild(badge);
+    }
+
+    li.appendChild(rowMeta);
 }
 
-function renderEditRow(li: HTMLLIElement, tab: SavedTab, categories: string[], callbacks: ListCallbacks): void {
+function renderEditRow(
+    li: HTMLLIElement,
+    tab: SavedTab,
+    categories: string[],
+    settings: Settings,
+    callbacks: ListCallbacks
+): void {
     li.innerHTML = "";
+    li.draggable = false;
     li.classList.add("editing");
 
     const titleInput = document.createElement("input");
@@ -131,7 +207,7 @@ function renderEditRow(li: HTMLLIElement, tab: SavedTab, categories: string[], c
     cancelBtn.type = "button";
     cancelBtn.className = "edit-cancel";
     cancelBtn.textContent = "Cancel";
-    cancelBtn.addEventListener("click", () => renderDisplayRow(li, tab, categories, callbacks));
+    cancelBtn.addEventListener("click", () => renderDisplayRow(li, tab, categories, settings, callbacks));
     actionsRow.appendChild(cancelBtn);
 
     li.appendChild(actionsRow);
@@ -139,7 +215,7 @@ function renderEditRow(li: HTMLLIElement, tab: SavedTab, categories: string[], c
     titleInput.select();
 }
 
-export function renderList(tabs: SavedTab[], categories: string[], callbacks: ListCallbacks): void {
+export function renderList(tabs: SavedTab[], categories: string[], settings: Settings, callbacks: ListCallbacks): void {
     const list = getElement<HTMLUListElement>("tab-list");
     list.innerHTML = "";
 
@@ -154,7 +230,7 @@ export function renderList(tabs: SavedTab[], categories: string[], callbacks: Li
     for (const tab of tabs) {
         const li = document.createElement("li");
         li.dataset.tabId = tab.id;
-        renderDisplayRow(li, tab, categories, callbacks);
+        renderDisplayRow(li, tab, categories, settings, callbacks);
         list.appendChild(li);
     }
 }

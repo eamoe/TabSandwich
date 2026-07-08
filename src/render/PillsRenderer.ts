@@ -1,12 +1,19 @@
-import { SavedTab } from "../types";
+import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
 import { getTabCategory, UNCATEGORIZED } from "../domain/CategoryRepository";
+import { isOutdated } from "../util/time";
 
 const ALL = "All";
+const OUTDATED = "Outdated";
 let currentFilter: string = ALL;
 
-export function filterTabs(tabs: SavedTab[]): SavedTab[] {
+function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
+    return isOutdated(tab.savedAt, settings.outdatedEnabled, settings.outdatedDays);
+}
+
+export function filterTabs(tabs: SavedTab[], settings: Settings): SavedTab[] {
     if (currentFilter === ALL) return tabs;
+    if (currentFilter === OUTDATED) return tabs.filter((t) => isTabOutdated(t, settings));
     return tabs.filter((t) => getTabCategory(t) === currentFilter);
 }
 
@@ -18,13 +25,17 @@ function getUniqueCategoriesInUse(tabs: SavedTab[]): string[] {
     return sorted;
 }
 
-export function renderPills(tabs: SavedTab[], onChange: () => void | Promise<void>): void {
+export function renderPills(tabs: SavedTab[], settings: Settings, onChange: () => void | Promise<void>): void {
     const container = getElement<HTMLElement>("pills-container");
     container.innerHTML = "";
 
-    // A filter selecting a category no longer present in any tab has nothing left to show — fall back to All.
     const categories = getUniqueCategoriesInUse(tabs);
-    if (currentFilter !== ALL && !categories.includes(currentFilter)) {
+    const outdatedCount = tabs.filter((t) => isTabOutdated(t, settings)).length;
+
+    // A filter that no longer has anything to show (category gone, or nothing's outdated
+    // anymore / flagging got disabled) falls back to All rather than displaying an empty list silently.
+    const availableFilters = [ALL, ...categories, ...(outdatedCount > 0 ? [OUTDATED] : [])];
+    if (!availableFilters.includes(currentFilter)) {
         currentFilter = ALL;
     }
 
@@ -36,6 +47,19 @@ export function renderPills(tabs: SavedTab[], onChange: () => void | Promise<voi
         btn.setAttribute("aria-pressed", String(cat === currentFilter));
         btn.addEventListener("click", async () => {
             currentFilter = cat;
+            await onChange();
+        });
+        container.appendChild(btn);
+    }
+
+    if (outdatedCount > 0) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pill pill-outdated";
+        btn.textContent = `Outdated (${outdatedCount})`;
+        btn.setAttribute("aria-pressed", String(currentFilter === OUTDATED));
+        btn.addEventListener("click", async () => {
+            currentFilter = OUTDATED;
             await onChange();
         });
         container.appendChild(btn);

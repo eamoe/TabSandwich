@@ -128,10 +128,14 @@ main {
 .tab-list { list-style: none; overflow-y: auto; flex: 1; }
 .tab-list .empty { padding: 20px; color: #aaa; font-style: italic; text-align: center; font-size: 13px; }
 .tab-list li {
-  display: flex; align-items: center; gap: 8px; padding: 7px 12px; min-height: 34px; border-bottom: 1px solid #f2f0fa;
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  padding: 7px 12px; border-bottom: 1px solid #f2f0fa;
 }
 .tab-list li:last-child { border-bottom: none; }
 .tab-list li:hover, .tab-list li:focus-within { background: #FAF9FE; }
+.tab-list li:not(.editing) { cursor: grab; }
+.tab-list li.dragging { opacity: 0.4; cursor: grabbing; }
+.tab-list li.drag-over { box-shadow: 0 0 0 2px #7B6EF6 inset; }
 
 @keyframes highlight-fade {
   0%   { background-color: #F0EDFC; }
@@ -139,9 +143,12 @@ main {
 }
 .tab-list li.new { animation: highlight-fade 2s ease-out forwards; }
 
+.row-top { display: flex; align-items: center; gap: 8px; }
+.row-meta { display: flex; align-items: center; gap: 6px; padding-left: 24px; min-height: 16px; }
+
 .favicon { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 .tab-title {
-  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 12.5px;
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 12.5px;
   background: none; border: none; text-align: left; cursor: pointer; color: #2A2447; padding: 0;
 }
 .tab-title:hover, .tab-title:focus-visible { color: #7B6EF6; }
@@ -154,10 +161,10 @@ main {
 .cat-select {
   font-size: 10px; font-weight: 700; padding: 2px 4px; border-radius: 9px;
   background: #F0EDFC; color: #7B6EF6; border: none; cursor: pointer; flex-shrink: 0;
-  max-width: 108px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  max-width: 130px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
 }
 
-.row-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.row-actions { display: flex; gap: 2px; flex-shrink: 0; margin-left: auto; }
 .icon-btn {
   width: 22px; height: 22px; border-radius: 6px; border: none; background: transparent;
   color: #b7aede; cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -166,7 +173,7 @@ main {
 .icon-btn.delete:hover, .icon-btn.delete:focus-visible { background: #FDEAEA; color: #E5484D; }
 
 /* ── Inline edit mode ── */
-.tab-list li.editing { flex-direction: column; align-items: stretch; gap: 6px; }
+.tab-list li.editing { gap: 6px; }
 .edit-input {
   font-size: 12.5px; padding: 6px 8px; border: 1.5px solid #e3ddf7; border-radius: 8px; width: 100%;
 }
