@@ -33,7 +33,7 @@
       <span class="storage-usage" id="storage-usage"></span>
     </div>
 
-    <div class="action-row">
+    <div class="action-row" id="action-row">
       <button type="button" id="save-btn" class="save-btn">Save This Tab</button>
     </div>
     <p id="save-status" class="save-status" role="status" aria-live="polite"></p>
@@ -59,7 +59,7 @@
 
   <nav class="pills-row" id="pills-container" aria-label="Filter saved tabs"></nav>
 
-  <main>
+  <main id="main-view">
     <ul id="tab-list" class="tab-list" aria-label="Saved tabs"></ul>
   </main>
 
@@ -97,6 +97,7 @@
     <div class="settings-section">
       <h2 class="settings-label">Categories</h2>
       <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
+      <p id="category-status" class="category-status" role="status" aria-live="polite"></p>
       <form id="add-category-form" class="add-category-form">
         <label for="new-category-input" class="visually-hidden">New category</label>
         <input type="text" id="new-category-input" placeholder="New category">

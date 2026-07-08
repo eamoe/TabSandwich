@@ -33,3 +33,17 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
     await setTabs([newTab, ...tabs]);
     return { tab: newTab, duplicate: false };
 }
+
+export async function editTab(
+    id: string,
+    updates: Partial<Pick<SavedTab, "title" | "url" | "category">>
+): Promise<void> {
+    const tabs = await getTabs();
+    const updated = tabs.map((t) => (t.id === id ? { ...t, ...updates } : t));
+    await setTabs(updated);
+}
+
+export async function deleteTab(id: string): Promise<void> {
+    const tabs = await getTabs();
+    await setTabs(tabs.filter((t) => t.id !== id));
+}

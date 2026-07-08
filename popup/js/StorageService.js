@@ -8,7 +8,7 @@ export class StorageService {
             const items = JSON.parse(localStorage.getItem(this.storageKey) || "[]");
             return items.map((item) => new Item(item.url, item.description, item.checked));
         }
-        catch (_a) {
+        catch {
             return [];
         }
     }

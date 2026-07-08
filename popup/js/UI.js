@@ -48,13 +48,12 @@ export class UI {
     handleAddCurrentTab() {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             const tab = tabs[0];
-            if ((tab === null || tab === void 0 ? void 0 : tab.id) && (tab === null || tab === void 0 ? void 0 : tab.url) && !tab.url.startsWith('chrome://')) {
+            if (tab?.id && tab?.url && !tab.url.startsWith('chrome://')) {
                 chrome.scripting.executeScript({
                     target: { tabId: tab.id },
                     func: () => document.title,
                 }, (results) => {
-                    var _a;
-                    const pageTitle = ((_a = results === null || results === void 0 ? void 0 : results[0]) === null || _a === void 0 ? void 0 : _a.result) || '';
+                    const pageTitle = results?.[0]?.result || '';
                     const tabUrl = tab.url;
                     if (tabUrl) {
                         try {
@@ -83,11 +82,10 @@ export class UI {
         }
     }
     handleRemoveLink(event) {
-        var _a, _b, _c;
         const target = event.target;
         if (target.tagName === 'LI') {
-            const linkHref = (_a = target.querySelector('a')) === null || _a === void 0 ? void 0 : _a.getAttribute('href');
-            const description = ((_c = (_b = target.querySelector('a')) === null || _b === void 0 ? void 0 : _b.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '';
+            const linkHref = target.querySelector('a')?.getAttribute('href');
+            const description = target.querySelector('a')?.textContent?.trim() || '';
             if (linkHref) {
                 const item = new Item(linkHref, description, true);
                 this.linkManager.removeLink(item);
