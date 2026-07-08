@@ -38,7 +38,14 @@ export function isSupportedTabUrl(url: string | undefined): url is string {
     return /^https?:\/\//i.test(url);
 }
 
-/** Compares two URLs the way a user would judge "the same page" — scheme/host/path, ignoring a trailing slash. */
+/**
+ * Compares two URLs the way a user would judge "the same page" — scheme/host/path (ignoring
+ * a trailing slash) AND query string. The query string matters: on many real sites (YouTube's
+ * /watch?v=..., search results, etc.) the path is identical across completely different pages
+ * and the actual content lives entirely in the query — comparing path alone treated every
+ * YouTube video as a duplicate of every other one. The URL fragment (#...) is still ignored,
+ * since it more often marks a spot within the same page than a genuinely different resource.
+ */
 export function urlsMatch(a: string, b: string): boolean {
     try {
         const ua = new URL(a);
@@ -46,7 +53,8 @@ export function urlsMatch(a: string, b: string): boolean {
         return (
             ua.protocol === ub.protocol &&
             ua.host === ub.host &&
-            ua.pathname.replace(/\/$/, "") === ub.pathname.replace(/\/$/, "")
+            ua.pathname.replace(/\/$/, "") === ub.pathname.replace(/\/$/, "") &&
+            ua.search === ub.search
         );
     } catch {
         return a === b;
