@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "Tab Sandwich",
-    "version": "1.5",
-    "description": "A straightforward Chrome extension designed to save browser tabs.",
+    "version": "2.0.0",
+    "description": "Save, organize, and revisit browser tabs — with categories, quick filters, and outdated-tab tracking.",
     "action": {
         "default_popup": "popup/popup.html",
         "default_icon": {

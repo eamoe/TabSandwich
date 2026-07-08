@@ -1,60 +1,50 @@
-# TabSandwich
+# Tab Sandwich
 
 ## Overview
 
-The **TabSandwich** Chrome extension allows users to store, manage, and organize web links. Users can save the current tab's URL, manually input links with descriptions, and delete a particular link or all stored links. The extension uses localStorage for persistent link storage and provides an easy-to-use interface for accessing saved links.
+**Tab Sandwich** is a Chrome extension for saving and organizing browser tabs. Save the tab you're on with one click, or add any link manually. Organize saved tabs into categories, filter and search visually, edit or delete entries in place, and get a nudge when something's been sitting around long enough to be worth revisiting.
+
+Data is stored locally via `chrome.storage.local` — nothing leaves your browser.
 
 ## Features
 
-* **Save Current Tab**: Click **SAVE TAB** to store the current tab's URL and optionally add a description.
-* **Save Input Links**: Enter a URL and a description manually, then click **SAVE INPUT**.
-* **Delete a Link**: Double-click the list item to completely remove it from the list.
-* **Delete All Links**: Click the **DELETE ALL** button to clear all saved links.
-**Persistent Storage**: Links are saved using `localStorage`, so they persist between sessions.
+- **Save the current tab** — one click, no setup.
+- **Add a link manually** — for anything that isn't your active tab, via a secondary "+ Add a link manually" form.
+- **Duplicate detection** — saving an already-saved URL highlights the existing entry instead of creating a copy.
+- **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/remove) from Settings.
+- **Inline editing** — fix a title, URL, or category without deleting and re-adding.
+- **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
+- **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a visible badge and their own quick filter.
+- **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
+- **Keyboard accessible** — every core action (save, filter, edit, delete, settings) works without a mouse.
 
-## Usage
+## Installation
 
-1. **Add New Links**: Either by pasting a link or saving the current tab's URL.
-2. **View Links**: Links appear in a list. Click on any link to open it in a new tab.
-3. **Delete a Link**: Double-click the list item to remove it.
-4. **Delete All Links**: Click the delete button to clear all stored links.
+### From a release (recommended)
 
-## Installation Guide
+1. Go to the [Releases](../../releases) page and download the zip attached to the latest release.
+2. Unzip it.
+3. Open `chrome://extensions` in Chrome.
+4. Enable **Developer mode** (top-right toggle).
+5. Click **Load unpacked** and select the unzipped folder.
 
-To install the TabSandwich Chrome Extension, follow these steps:
-
-1. Clone or Download the Repository
+### From source (for development)
 
 ```console
 git clone https://github.com/eamoe/TabSandwich.git
-```
-
-2. Install dependencies and build the project
-
-```console
+cd TabSandwich
 npm install
-
 npm run build
 ```
 
-3. Open Chrome Extensions Page
+Then load the repository root as an unpacked extension via `chrome://extensions` → **Load unpacked**, same as above. After any code change, run `npm run build` again and click the reload icon on the extension's card.
 
-Open Google Chrome and navigate to the extensions page by entering the following URL into your address bar:
+## Development
 
-```
-chrome://extensions/
-```
+- `npm run build` — compile once.
+- `npm run watch` — compile on every save.
+- Compiled output (`popup/js/`) is not committed to version control; a GitHub Actions workflow builds and packages a release zip for each tagged release (see `.github/workflows/release.yml`).
 
-4. Enable Developer Mode
+## License
 
-On the Extensions page, toggle the **Developer mode** switch on (located in the top-right corner of the page).
-
-5. Load the Unpacked Extension
-
-Once Developer mode is enabled, click the **Load unpacked** button. In the dialog that opens, select the folder where you cloned or extracted the extension's repository.
-
-6. Verify the Installation
-
-Once the extension is loaded, you should see it in your list of extensions. Its icon will also appear in the Chrome toolbar. Click on the icon to use the TabSandwich extension.
-
-Now, the extension is successfully installed, and you can begin using it to save and manage your links!
+See [LICENSE](LICENSE).

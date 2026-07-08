@@ -21,14 +21,35 @@ function setStatus(message: string, kind: "success" | "duplicate" | "error"): vo
     }, 2500);
 }
 
-/** Real usage against the real quota (FR-013) — no invented ceiling. */
+/** Rounds to a friendly magnitude rather than a false-precision exact count (e.g. 41,000 not 41,238). */
+function roundedEstimate(n: number): string {
+    if (n < 100) return Math.max(n, 0).toLocaleString();
+    return (Math.round(n / 100) * 100).toLocaleString();
+}
+
+/**
+ * Real usage against the real quota (FR-013) — no invented ceiling — but expressed in tabs,
+ * not bytes or percent, since neither is a unit a regular user can judge ("is 24KB a lot?").
+ * chrome.storage.local's quota is ~10MB, so a percentage rounds to a flat, broken-looking
+ * "0%" for any realistic tab count. Instead we measure the real average size of a saved tab
+ * from actual usage and estimate remaining capacity in the same unit the user already thinks
+ * in — still grounded in real data, just translated into something meaningful.
+ */
 export async function renderHeroStats(tabs: SavedTab[]): Promise<void> {
     getElement<HTMLElement>("header-stats").textContent = `${tabs.length} saved`;
 
     const { bytesInUse, quotaBytes } = await getStorageUsage();
     const pct = quotaBytes > 0 ? Math.min((bytesInUse / quotaBytes) * 100, 100) : 0;
 
-    getElement<HTMLElement>("storage-usage").textContent = `${Math.round(pct)}% of storage used`;
+    const storageUsageEl = getElement<HTMLElement>("storage-usage");
+    if (tabs.length === 0 || bytesInUse === 0) {
+        storageUsageEl.textContent = "";
+    } else {
+        const avgBytesPerTab = bytesInUse / tabs.length;
+        const remainingTabs = (quotaBytes - bytesInUse) / avgBytesPerTab;
+        storageUsageEl.textContent = `room for ~${roundedEstimate(remainingTabs)} more at this rate`;
+    }
+
     getElement<HTMLElement>("progress-fill").style.width = `${pct}%`;
     getElement<HTMLElement>("progress-bar").setAttribute("aria-valuenow", String(Math.round(pct)));
 }
