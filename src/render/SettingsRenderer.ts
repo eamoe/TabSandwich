@@ -100,10 +100,27 @@ function bindOutdatedControls(refresh: Refresh): void {
     });
 }
 
+function bindShortcutDisplay(): void {
+    const shortcutDisplay = getElement<HTMLElement>("shortcut-display");
+    const customizeBtn = getElement<HTMLButtonElement>("shortcut-customize-btn");
+
+    chrome.commands.getAll((commands) => {
+        const cmd = commands.find((c) => c.name === "_execute_action");
+        shortcutDisplay.textContent = cmd?.shortcut || "Not set";
+    });
+
+    customizeBtn.addEventListener("click", () => {
+        chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+    });
+}
+
 /**
- * Minimal show/hide toggle, pulled forward from Story 5 because Story 3's category
- * management can't be exercised at all without a way to reach the Settings view.
- * Story 5 adds the keyboard-shortcut display and focus-management polish on top of this.
+ * Show/hide toggle (the show/hide mechanics were pulled forward into Story 3, since that
+ * story's category management couldn't be exercised at all without a way to reach Settings).
+ * Story 5 adds the focus management here: hiding an element doesn't reliably move focus
+ * away from a now-hidden descendant across browsers, so focus is moved explicitly on both
+ * sides of the transition — into Settings on open, back to the trigger on close — rather
+ * than leaving keyboard/screen-reader users stranded on whichever control they last used.
  */
 function bindViewToggle(): void {
     const gearBtn = getElement<HTMLButtonElement>("gear-btn");
@@ -120,6 +137,7 @@ function bindViewToggle(): void {
         pillsRow.hidden = true;
         actionRow.hidden = true;
         manualEntry.hidden = true;
+        backBtn.focus();
     });
 
     backBtn.addEventListener("click", () => {
@@ -128,6 +146,7 @@ function bindViewToggle(): void {
         pillsRow.hidden = false;
         actionRow.hidden = false;
         manualEntry.hidden = false;
+        gearBtn.focus();
     });
 }
 
@@ -135,5 +154,6 @@ export async function initSettings(refresh: Refresh): Promise<void> {
     bindViewToggle();
     bindAddCategoryForm(refresh);
     bindOutdatedControls(refresh);
+    bindShortcutDisplay();
     await syncOutdatedControls();
 }
