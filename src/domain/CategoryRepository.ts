@@ -6,14 +6,15 @@ export const UNCATEGORIZED = "Uncategorized";
 
 /** Fixed set compatible with the app's purple/coral design language — picking a color is choosing from this, not a raw color input. */
 export const CATEGORY_COLOR_PALETTE: Record<string, string> = {
-    purple: "#7B6EF6",
-    coral: "#E8874A",
+    purple: "#6C63C5",
+    coral: "#D47663",
     teal: "#2DBEA6",
     pink: "#E8547E",
     amber: "#E8B93A",
     blue: "#4A90D9",
-    green: "#5CB85C",
+    green: "#6B8A68",
     slate: "#7A8699",
+    sand: "#E5E2D5",
 };
 
 const PALETTE_KEYS = Object.keys(CATEGORY_COLOR_PALETTE);

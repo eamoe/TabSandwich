@@ -2,6 +2,7 @@ import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
 import { getTabCategory, UNCATEGORIZED, getCategoryColorHex } from "../domain/CategoryRepository";
 import { isOutdated } from "../util/time";
+import { isLightColor } from "../util/color";
 
 const ALL = "All";
 const OUTDATED = "Outdated";
@@ -52,7 +53,11 @@ export function renderPills(tabs: SavedTab[], settings: Settings, onChange: () =
             btn.classList.add("pill-outdated");
         } else if (cat !== ALL && cat !== UNCATEGORIZED) {
             btn.classList.add("pill-colored");
-            btn.style.setProperty("--pill-color", getCategoryColorHex(cat, settings.categoryColors));
+            const hex = getCategoryColorHex(cat, settings.categoryColors);
+            const pale = isLightColor(hex);
+            btn.style.setProperty("--pill-color", hex);
+            btn.style.setProperty("--pill-text", pale ? "#2A2447" : "#fff");
+            if (pale) btn.classList.add("pill-colored--pale");
         }
         btn.setAttribute("aria-pressed", String(cat === currentFilter));
         btn.addEventListener("click", async () => {
