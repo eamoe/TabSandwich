@@ -62,11 +62,12 @@ Tab Sandwich stores everything locally on your device using Chrome's own storage
 
 ### Screenshots
 
-Upload all three from `store-assets/` (each already sized to the required 1280×800):
+Upload all four from `store-assets/` (each already sized to the required 1280×800):
 
-1. `screenshot-1-main-list.png` — main list with color-coded categories
+1. `screenshot-1-main-list.png` — main list with color-coded categories, branded with the logo
 2. `screenshot-2-settings-categories.png` — Settings view with the color picker
-3. `screenshot-3-manual-entry.png` — the manual-entry form open
+3. `screenshot-3-edit-item.png` — a saved tab's inline edit mode open
+4. `screenshot-4-manual-entry.png` — the manual-entry form open
 
 ### Icon
 
