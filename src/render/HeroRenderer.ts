@@ -8,16 +8,35 @@ import { scrollToAndHighlight } from "./ListRenderer";
 
 type Refresh = () => void | Promise<void>;
 
+const DEFAULT_SAVE_LABEL = "Save Tab";
+// Success has no color flash of its own — it's the expected, everyday outcome, so it only
+// needs the text change. Duplicate/error are the surprising outcomes worth calling out with color.
+const STATUS_COLOR_KINDS = ["save-btn-duplicate", "save-btn-error"];
+
 let statusTimeout: number | undefined;
 
+/**
+ * Feedback lands directly on the Save button instead of a message line below it — a
+ * below-the-button line reserves no space when empty, so its appearance and disappearance
+ * shoved the rest of the popup up and down on every save. A visually-hidden live region still
+ * announces the message for screen readers, since a button's text changing while it isn't
+ * focused/hovered by assistive tech isn't reliably announced on its own.
+ */
 function setStatus(message: string, kind: "success" | "duplicate" | "error"): void {
-    const statusEl = getElement<HTMLParagraphElement>("save-status");
-    statusEl.textContent = message;
-    statusEl.className = `save-status save-status-${kind}`;
+    const saveBtn = getElement<HTMLButtonElement>("save-btn");
+    const srStatus = getElement<HTMLElement>("save-status");
+
     if (statusTimeout) window.clearTimeout(statusTimeout);
+
+    saveBtn.textContent = message;
+    saveBtn.classList.remove(...STATUS_COLOR_KINDS);
+    if (kind !== "success") saveBtn.classList.add(`save-btn-${kind}`);
+    srStatus.textContent = message;
+
     statusTimeout = window.setTimeout(() => {
-        statusEl.textContent = "";
-        statusEl.className = "save-status";
+        saveBtn.textContent = DEFAULT_SAVE_LABEL;
+        saveBtn.classList.remove(...STATUS_COLOR_KINDS);
+        srStatus.textContent = "";
     }, 2500);
 }
 
@@ -68,7 +87,7 @@ function bindSaveButton(refresh: Refresh): void {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab || !isSupportedTabUrl(tab.url)) {
-                setStatus("This page can't be saved.", "error");
+                setStatus("Only web pages can be saved", "error");
                 return;
             }
             const title = tab.title?.trim() || tab.url;
@@ -140,7 +159,7 @@ function bindManualEntryForm(refresh: Refresh): void {
         e.preventDefault();
         const normalized = normalizeUrl(urlInput.value);
         if (!normalized) {
-            setStatus("Enter a valid URL.", "error");
+            setStatus("Enter a valid URL", "error");
             return;
         }
 

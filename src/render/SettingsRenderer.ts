@@ -82,8 +82,10 @@ function renderCategoryList(settings: Settings, tabs: SavedTab[], refresh: Refre
             const result = await removeCategory(cat, tabs);
             if (!result.removed) {
                 message.textContent = result.reason ?? "Couldn't remove this category.";
+                removeBtn.classList.add("remove-cat--flash-error");
                 window.setTimeout(() => {
                     message.textContent = "";
+                    removeBtn.classList.remove("remove-cat--flash-error");
                 }, 3000);
                 return;
             }
