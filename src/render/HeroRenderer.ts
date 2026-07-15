@@ -40,19 +40,15 @@ function setStatus(message: string, kind: "success" | "duplicate" | "error"): vo
     }, 2500);
 }
 
-/** Rounds to a friendly magnitude rather than a false-precision exact count (e.g. 41,000 not 41,238). */
-function roundedEstimate(n: number): string {
-    if (n < 100) return Math.max(n, 0).toLocaleString();
-    return (Math.round(n / 100) * 100).toLocaleString();
-}
-
 /**
- * Real usage against the real quota (FR-013) — no invented ceiling — but expressed in tabs,
- * not bytes or percent, since neither is a unit a regular user can judge ("is 24KB a lot?").
- * chrome.storage.local's quota is ~10MB, so a percentage rounds to a flat, broken-looking
- * "0%" for any realistic tab count. Instead we measure the real average size of a saved tab
- * from actual usage and estimate remaining capacity in the same unit the user already thinks
- * in — still grounded in real data, just translated into something meaningful.
+ * Real usage against the real quota (FR-013) — no invented ceiling — reported directly as a
+ * percentage of bytes used rather than translated into "~N more tabs at this rate." That
+ * tabs-estimate divided remaining bytes by the *average* bytes-per-tab so far, which made it
+ * swing in the wrong direction whenever a newly saved tab happened to be smaller than average
+ * (more room turned into a bigger "N", even though you'd just used more storage, not less) —
+ * confusing for something that reads like a literal, decrement-by-one countdown. A percentage
+ * has no such trap: it only ever tracks bytes actually used, in either direction. Below 1% it's
+ * shown as "<1%" rather than rounding to a flat, broken-looking "0%".
  */
 export async function renderHeroStats(tabs: SavedTab[]): Promise<void> {
     getElement<HTMLElement>("header-stats").textContent = `${tabs.length} saved`;
@@ -64,9 +60,8 @@ export async function renderHeroStats(tabs: SavedTab[]): Promise<void> {
     if (tabs.length === 0 || bytesInUse === 0) {
         storageUsageEl.textContent = "";
     } else {
-        const avgBytesPerTab = bytesInUse / tabs.length;
-        const remainingTabs = (quotaBytes - bytesInUse) / avgBytesPerTab;
-        storageUsageEl.textContent = `room for ~${roundedEstimate(remainingTabs)} more at this rate`;
+        const pctLabel = pct < 1 ? "<1%" : `${Math.round(pct)}%`;
+        storageUsageEl.textContent = `${pctLabel} of storage used`;
     }
 
     getElement<HTMLElement>("progress-fill").style.width = `${pct}%`;
