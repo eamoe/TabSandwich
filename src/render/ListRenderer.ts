@@ -111,6 +111,111 @@ function bindDragHandlers(li: HTMLLIElement, tab: SavedTab, callbacks: ListCallb
 }
 
 /**
+ * Swapping a row's content between the single-line display layout and the taller stacked
+ * edit layout happens via an instant innerHTML replacement — the row's height otherwise jumps
+ * to its new size in one frame. "height: auto" can't be transitioned directly, so this clamps
+ * the row to its pre-swap height, runs the swap, then animates to the new natural height
+ * before releasing back to auto (so later content changes aren't left clipped).
+ */
+function animateRowHeightChange(li: HTMLLIElement, mutate: () => void): void {
+    const startHeight = li.getBoundingClientRect().height;
+
+    mutate();
+
+    const endHeight = li.scrollHeight;
+    if (startHeight === endHeight) return;
+
+    li.style.height = `${startHeight}px`;
+    li.style.overflow = "hidden";
+    li.style.transition = "height 0.18s ease";
+    li.getBoundingClientRect(); // force layout to commit the clamped start height before animating
+
+    requestAnimationFrame(() => {
+        li.style.height = `${endHeight}px`;
+    });
+
+    li.addEventListener(
+        "transitionend",
+        () => {
+            li.style.height = "";
+            li.style.overflow = "";
+            li.style.transition = "";
+        },
+        { once: true }
+    );
+}
+
+type CollapsibleValues = { height: string; paddingTop: string; paddingBottom: string; borderBottomWidth: string; opacity: string };
+
+/** Reads the row's current rendered box as explicit values, so it can be locked in place with
+ *  inline styles before animating away from (or back to) them — "height: auto" can't transition. */
+function currentCollapsibleValues(li: HTMLLIElement): CollapsibleValues {
+    const cs = getComputedStyle(li);
+    return {
+        height: `${li.getBoundingClientRect().height}px`,
+        paddingTop: cs.paddingTop,
+        paddingBottom: cs.paddingBottom,
+        borderBottomWidth: cs.borderBottomWidth,
+        opacity: cs.opacity,
+    };
+}
+
+function setCollapsibleValues(li: HTMLLIElement, values: CollapsibleValues): void {
+    li.style.height = values.height;
+    li.style.paddingTop = values.paddingTop;
+    li.style.paddingBottom = values.paddingBottom;
+    li.style.borderBottomWidth = values.borderBottomWidth;
+    li.style.opacity = values.opacity;
+}
+
+const ZERO_COLLAPSIBLE_VALUES: CollapsibleValues = { height: "0px", paddingTop: "0px", paddingBottom: "0px", borderBottomWidth: "0px", opacity: "0" };
+
+/**
+ * Filtering (pill clicks) and deletion otherwise remove a row straight out of the DOM in one
+ * frame — this shrinks it to nothing first (height, padding, and border together, or it'd
+ * just get stuck at its padding/border floor) so the rows below slide up instead of jumping.
+ */
+function collapseAndRemove(li: HTMLLIElement): void {
+    // Marked so a tab that reappears (e.g. a filter pill double-clicked) while this row is
+    // still animating out gets a fresh row instead of one that's about to remove itself.
+    li.classList.add("row-removing");
+    setCollapsibleValues(li, currentCollapsibleValues(li));
+    li.style.overflow = "hidden";
+    li.style.transition = "height 0.16s ease, padding 0.16s ease, border-width 0.16s ease, opacity 0.12s ease";
+    li.getBoundingClientRect(); // force layout to commit the current size before animating
+
+    requestAnimationFrame(() => setCollapsibleValues(li, ZERO_COLLAPSIBLE_VALUES));
+
+    li.addEventListener("transitionend", () => li.remove(), { once: true });
+}
+
+/** Mirror of collapseAndRemove for a row that just became visible (a tab entering the current
+ *  filter, or a freshly saved tab) — grows in from nothing instead of just appearing. */
+function animateRowInsert(li: HTMLLIElement): void {
+    const end = currentCollapsibleValues(li);
+    setCollapsibleValues(li, ZERO_COLLAPSIBLE_VALUES);
+    li.style.overflow = "hidden";
+    li.getBoundingClientRect(); // force layout to commit the collapsed starting point before animating
+
+    li.style.transition = "height 0.16s ease, padding 0.16s ease, border-width 0.16s ease, opacity 0.18s ease";
+    requestAnimationFrame(() => setCollapsibleValues(li, end));
+
+    li.addEventListener(
+        "transitionend",
+        () => {
+            li.style.height = "";
+            li.style.paddingTop = "";
+            li.style.paddingBottom = "";
+            li.style.borderBottomWidth = "";
+            li.style.opacity = "";
+            li.style.overflow = "";
+            li.style.transition = "";
+        },
+        { once: true }
+    );
+}
+
+/**
  * One line per row. Category used to be a full-width text select competing with the title
  * for space, which is what forced a two-line layout; tinting the whole row instead frees
  * that space back up while still identifying each tab's category at a glance.
@@ -154,7 +259,9 @@ function renderDisplayRow(
     editBtn.className = "icon-btn";
     editBtn.setAttribute("aria-label", `Edit ${tab.title}`);
     editBtn.innerHTML = EDIT_ICON;
-    editBtn.addEventListener("click", () => renderEditRow(li, tab, categories, settings, callbacks));
+    editBtn.addEventListener("click", () =>
+        animateRowHeightChange(li, () => renderEditRow(li, tab, categories, settings, callbacks))
+    );
     actions.appendChild(editBtn);
 
     const deleteBtn = document.createElement("button");
@@ -210,7 +317,14 @@ function renderEditRow(
             return;
         }
         const title = titleInput.value.trim() || normalized;
-        callbacks.onEdit(tab.id, { title, url: normalized, category: catSelect.value });
+        const category = catSelect.value;
+
+        // Exits edit mode immediately with the same smooth collapse Cancel uses, using the
+        // edited values directly, rather than waiting on the round trip through storage and
+        // a full refresh — which also lands (eventually, invisibly) with identical content.
+        const updatedTab: SavedTab = { ...tab, title, url: normalized, category };
+        animateRowHeightChange(li, () => renderDisplayRow(li, updatedTab, categories, settings, callbacks));
+        callbacks.onEdit(tab.id, { title, url: normalized, category });
     });
     actionsRow.appendChild(saveBtn);
 
@@ -218,7 +332,9 @@ function renderEditRow(
     cancelBtn.type = "button";
     cancelBtn.className = "edit-cancel";
     cancelBtn.textContent = "Cancel";
-    cancelBtn.addEventListener("click", () => renderDisplayRow(li, tab, categories, settings, callbacks));
+    cancelBtn.addEventListener("click", () =>
+        animateRowHeightChange(li, () => renderDisplayRow(li, tab, categories, settings, callbacks))
+    );
     actionsRow.appendChild(cancelBtn);
 
     li.appendChild(actionsRow);
@@ -226,11 +342,21 @@ function renderEditRow(
     titleInput.select();
 }
 
+/**
+ * Reconciles against whatever rows are already in the DOM instead of wiping and rebuilding
+ * the whole list on every call (which this used to do, unconditionally) — a full rebuild is
+ * what made switching category pills, and finishing an edit, look like an instant swap rather
+ * than a transition, since every row was a brand-new element with no time to animate anything.
+ * Rows dropped by a filter/deletion collapse away; rows newly shown grow in; everything else
+ * is repositioned in place and left alone — except a row mid-edit, which is skipped so an
+ * unrelated refresh elsewhere (e.g. deleting a different tab) can't clobber an open edit.
+ */
 export function renderList(tabs: SavedTab[], categories: string[], settings: Settings, callbacks: ListCallbacks): void {
     const list = getElement<HTMLUListElement>("tab-list");
-    list.innerHTML = "";
+    list.querySelector("li.empty")?.remove();
 
     if (tabs.length === 0) {
+        for (const li of Array.from(list.children) as HTMLLIElement[]) collapseAndRemove(li);
         const li = document.createElement("li");
         li.className = "empty";
         li.textContent = "No saved tabs yet.";
@@ -238,11 +364,33 @@ export function renderList(tabs: SavedTab[], categories: string[], settings: Set
         return;
     }
 
+    const existingById = new Map<string, HTMLLIElement>();
+    for (const child of Array.from(list.children) as HTMLLIElement[]) {
+        if (child.dataset.tabId && !child.classList.contains("row-removing")) existingById.set(child.dataset.tabId, child);
+    }
+
+    const nextIds = new Set(tabs.map((t) => t.id));
+    for (const [id, li] of existingById) {
+        if (!nextIds.has(id)) collapseAndRemove(li);
+    }
+
+    let previousSibling: HTMLLIElement | null = null;
     for (const tab of tabs) {
-        const li = document.createElement("li");
-        li.dataset.tabId = tab.id;
-        renderDisplayRow(li, tab, categories, settings, callbacks);
-        list.appendChild(li);
+        const existing = existingById.get(tab.id);
+        const li = existing ?? document.createElement("li");
+        const isNew = !existing;
+        if (isNew) li.dataset.tabId = tab.id;
+
+        const insertAfter: ChildNode | null = previousSibling ? previousSibling.nextSibling : list.firstChild;
+        if (insertAfter !== li) list.insertBefore(li, insertAfter);
+
+        if (isNew) {
+            renderDisplayRow(li, tab, categories, settings, callbacks);
+            animateRowInsert(li);
+        } else if (!li.classList.contains("editing")) {
+            renderDisplayRow(li, tab, categories, settings, callbacks);
+        }
+        previousSibling = li;
     }
 }
 
