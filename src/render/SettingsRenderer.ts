@@ -202,6 +202,11 @@ function bindViewToggle(refresh: Refresh): void {
         pillsRow.hidden = true;
         actionRow.hidden = true;
         manualEntry.hidden = true;
+        // The gear button was otherwise left showing, unchanged, right next to the Settings
+        // header it opened — a "go to Settings" control makes no sense once you're already
+        // there, and it looked identical to its main-screen state with nothing to tell the
+        // two apart. Back is the only way in and out from here.
+        gearBtn.hidden = true;
         backBtn.focus();
         // Re-render fresh on every open — belt-and-suspenders alongside the message's own
         // timeout, so a stale per-category message never survives a trip back to the main view.
@@ -214,6 +219,7 @@ function bindViewToggle(refresh: Refresh): void {
         pillsRow.hidden = false;
         actionRow.hidden = false;
         manualEntry.hidden = false;
+        gearBtn.hidden = false;
         gearBtn.focus();
     });
 }
