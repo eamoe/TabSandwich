@@ -48,8 +48,11 @@ summary:focus-visible {
 
 .hero-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 
+/* No chip/background here on purpose — it used to share the gear button's rounded, translucent
+   "pill" treatment (same size, same white-on-tint look), which read as a second clickable
+   button next to it. This is decorative branding, not a control, so it gets no button styling. */
 .mark {
-  width: 30px; height: 30px; background: rgba(255,255,255,0.2); border-radius: 10px;
+  width: 30px; height: 30px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
