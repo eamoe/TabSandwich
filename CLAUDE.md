@@ -46,12 +46,14 @@ src/
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
     color.ts               tintHex (pastel row-tint generation from palette colors)
+    favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
+                            icons come from Chrome's local favicon cache, never the page's own site
   dom/domHelper.ts          getElement<T>(id) helper
   popup.ts                  DOMContentLoaded entry point — migrate → refreshView → wire hero/settings
 
 popup/popup.html / popup.css   markup + styles (hand-written, no CSS framework)
 popup/js/                      tsc build output — gitignored, never commit this
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage only
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
 fix-extensions.js              post-build import-path fixer (see above)
 ```
 
@@ -79,8 +81,8 @@ future automation in mind — element IDs are noted for that purpose).
   exception is `src/storage/migration.ts`, which reads legacy
   `localStorage` data on first run *in order to migrate it away* — never
   add new code that reads or writes `localStorage` for anything else.
-- **Manifest permissions are minimal on purpose** (`activeTab`, `storage`
-  only). If a new feature needs a new permission, that's a deliberate,
+- **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
+  `favicon`). If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
 - **No UI framework/state library.** Vanilla DOM APIs are the default;
   only reach for something heavier if a specific feature genuinely can't

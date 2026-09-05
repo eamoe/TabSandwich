@@ -4,6 +4,7 @@ import { getTabCategory, getCategoryColorHex, UNCATEGORIZED } from "../domain/Ca
 import { normalizeUrl } from "../util/url";
 import { daysSince, isOutdated } from "../util/time";
 import { tintHex } from "../util/color";
+import { localFaviconUrl } from "../util/favicon";
 import { MatchRange } from "../domain/search";
 
 export interface ListCallbacks {
@@ -38,20 +39,16 @@ function placeholderIconHtml(): string {
 function createFavicon(tab: SavedTab): HTMLElement {
     const wrapper = document.createElement("span");
     wrapper.className = "favicon";
-    if (tab.faviconUrl) {
-        const img = document.createElement("img");
-        img.src = tab.faviconUrl;
-        img.width = 16;
-        img.height = 16;
-        img.alt = "";
-        img.addEventListener("error", () => {
-            img.remove();
-            wrapper.innerHTML = placeholderIconHtml();
-        });
-        wrapper.appendChild(img);
-    } else {
+    const img = document.createElement("img");
+    img.src = localFaviconUrl(tab.url);
+    img.width = 16;
+    img.height = 16;
+    img.alt = "";
+    img.addEventListener("error", () => {
+        img.remove();
         wrapper.innerHTML = placeholderIconHtml();
-    }
+    });
+    wrapper.appendChild(img);
     return wrapper;
 }
 

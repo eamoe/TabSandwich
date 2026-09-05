@@ -5,7 +5,6 @@ import { urlsMatch } from "../util/url";
 export interface AddTabInput {
     title: string;
     url: string;
-    faviconUrl?: string;
     category?: string;
 }
 
@@ -26,7 +25,6 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
         id: Date.now().toString(),
         title: input.title,
         url: input.url,
-        faviconUrl: input.faviconUrl,
         category: input.category,
         savedAt: Date.now(),
     };

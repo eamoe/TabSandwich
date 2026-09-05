@@ -86,7 +86,7 @@ function bindSaveButton(refresh: Refresh): void {
                 return;
             }
             const title = tab.title?.trim() || tab.url;
-            const result = await addTab({ title, url: tab.url, faviconUrl: tab.favIconUrl });
+            const result = await addTab({ title, url: tab.url });
             await handleSaveResult(result, refresh);
         } finally {
             saveBtn.disabled = false;

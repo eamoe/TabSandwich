@@ -22,7 +22,7 @@ export function backupFileName(): string {
     return `tab-sandwich-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`;
 }
 
-type ImportedTab = Pick<SavedTab, "title" | "url" | "faviconUrl" | "category" | "savedAt">;
+type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt">;
 
 export interface ParsedImport {
     tabs: ImportedTab[];
@@ -43,7 +43,6 @@ function readImportedTab(raw: unknown): ImportedTab | null {
     return {
         title: raw.title,
         url,
-        faviconUrl: typeof raw.faviconUrl === "string" ? raw.faviconUrl : undefined,
         category: typeof raw.category === "string" ? raw.category : undefined,
         savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now(),
     };

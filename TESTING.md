@@ -306,17 +306,22 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Click **Save Tab** twice in quick succession on the same page.
 - Expected: Only one entry ever exists for that URL.
 
-**TC-102 — Favicon load failure falls back to placeholder (P3)**
-- Preconditions: a saved tab whose `faviconUrl` points to a broken/unreachable image.
-- Expected: Placeholder icon shown instead of a broken image.
+**TC-102 — Favicon with no local cache entry falls back to placeholder (P3)**
+- Preconditions: a saved tab for a page Chrome has never visited (so its local favicon cache has nothing for that URL) — e.g. manually add a link to a domain you've never opened in this browser.
+- Expected: Chrome's own generic fallback icon or the app's placeholder icon is shown — never a broken-image glyph.
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is exactly `["activeTab", "storage"]`; no unused permission has crept back in.
+- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `npm run build`.
 - Expected: `popup/js/` does not appear as new/modified tracked content (it's gitignored and untracked).
+
+**TC-105 — Favicon lookup makes no request to the page's own site (P2)**
+- Preconditions: a saved tab for a page you *have* visited before (so Chrome has a cached favicon for it); DevTools Network tab open on the popup (right-click the popup → Inspect → Network), filtered to that page's domain.
+- Steps: Reload the popup.
+- Expected: No request to the saved page's own domain appears in the Network tab for its favicon, or at all — the icon loads from `chrome-extension://<id>/_favicon/…`, sourced from Chrome's local cache, never the site.
 
 ---
 

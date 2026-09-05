@@ -10,7 +10,6 @@ When you save a tab, Tab Sandwich stores:
 
 - The page's title
 - The page's URL
-- The page's favicon (an image URL supplied by the page/browser)
 - A category you assign (optional)
 - The date and time you saved it
 
@@ -18,7 +17,7 @@ This data is stored **only on your own device**, using Chrome's built-in `chrome
 
 ## Favicons
 
-What's stored for a favicon is a URL, not the image itself. To show that icon, the popup loads it directly from the page's own site — the same thing your browser does for any bookmark. This means that when you open the extension, the sites behind your saved tabs may see a request for their favicon; that request carries nothing beyond what loading any image normally does, and Tab Sandwich doesn't attach any tracking to it.
+No favicon data is stored at all. To show a saved tab's icon, the popup asks Chrome's built-in favicon cache for whatever it already has locally for that page's URL — the `favicon` permission is what allows this. The sites behind your saved tabs never see a request for their favicon: nothing is fetched over the network for this. A page Chrome has no cached icon for just shows a generic placeholder instead.
 
 ## Export & import
 
@@ -34,8 +33,9 @@ Settings includes an optional Export/Import feature. Export writes everything li
 
 ## Permissions
 
-- **`activeTab`** — used only at the moment you click the extension's icon or use its keyboard shortcut, to read the title, URL, and favicon of the tab you're currently viewing so it can be saved. Tab Sandwich cannot see any other tab, and cannot see this information at any other time.
+- **`activeTab`** — used only at the moment you click the extension's icon or use its keyboard shortcut, to read the title and URL of the tab you're currently viewing so it can be saved. Tab Sandwich cannot see any other tab, and cannot see this information at any other time.
 - **`storage`** — used to save your saved tabs and settings locally via `chrome.storage.local`, so they persist between browser sessions.
+- **`favicon`** — lets the popup read icons out of Chrome's own local favicon cache to show next to each saved tab, instead of fetching them from the page's own site. See "Favicons" above.
 
 ## Data deletion
 
