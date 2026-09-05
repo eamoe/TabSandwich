@@ -32,7 +32,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-  outline: 2px solid #2A2447;
+  outline: 2px solid #6C63C5;
   outline-offset: 2px;
 }
 
@@ -94,6 +94,7 @@ summary:focus-visible {
 .manual-entry-toggle {
   display: block; width: 100%; background: none; border: none; cursor: pointer;
   font-size: 11.5px; font-weight: 600; color: #E5E2D5; text-align: center; padding: 4px;
+  border-radius: 6px; /* shapes the focus-visible outline only — see .tab-title for why */
 }
 .manual-entry-toggle:hover, .manual-entry-toggle:focus-visible { color: #fff; }
 
@@ -124,11 +125,24 @@ summary:focus-visible {
   display: flex; align-items: center; gap: 6px; margin: 10px 12px 0; padding: 7px 10px;
   background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
+/* Hidden while Settings is open — deliberately a separate mechanism from the [hidden]
+   attribute JS sets on this element, which stays solely owned by "is anything saved yet" (see
+   SearchRenderer) so the two never fight over the same property. display:none also makes the
+   input itself unreachable, which is what actually matters: a query typed here while the list
+   behind it is display:none corrupts row-insert animations (getBoundingClientRect returns
+   zero for anything under a hidden ancestor) — this closes that path off entirely, not just
+   cosmetically. */
+body.settings-open .search-row { display: none; }
 .search-icon { color: #b7aede; flex-shrink: 0; }
 .search-input {
   flex: 1; min-width: 0; border: none; font-size: 12.5px; color: #2A2447; background: none;
 }
 .search-input::placeholder { color: #b7aede; }
+/* The focus ring moves to the pill-shaped row instead of the bare input — the input has no
+   border-radius of its own, so the browser's default focus-visible outline on it draws a
+   sharp rectangle that clashes with the rounded container around it. */
+.search-input:focus-visible { outline: none; }
+.search-row:has(.search-input:focus-visible) { outline: 2px solid #6C63C5; outline-offset: 2px; }
 .search-clear {
   flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; border: none; background: #F0EDFC;
   color: #6C63C5; font-size: 13px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -192,6 +206,11 @@ main {
 .tab-title {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 12.5px;
   background: none; border: none; text-align: left; cursor: pointer; color: #2A2447; padding: 0;
+  /* No visible box in the normal/hover state (background stays none), so this is purely about
+     shaping the focus-visible outline — without it, this is the one focusable control with no
+     border-radius, so its outline renders as a sharp rectangle while every other button/input/
+     pill in the app rounds off to match its own shape. */
+  border-radius: 6px;
 }
 .tab-title:hover, .tab-title:focus-visible { color: #6C63C5; }
 
@@ -262,7 +281,7 @@ main {
 }
 .toggle-switch input:checked + .toggle-track { background: #6C63C5; }
 .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
-.toggle-switch input:focus-visible + .toggle-track { outline: 2px solid #2A2447; outline-offset: 2px; }
+.toggle-switch input:focus-visible + .toggle-track { outline: 2px solid #6C63C5; outline-offset: 2px; }
 
 .days-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #555; }
 .days-row input[type="number"] {

@@ -166,6 +166,12 @@ function bindManualEntryForm(refresh: Refresh): void {
         form.reset();
         setOpen(false);
     });
+
+    // Every other "closed" state goes through setOpen(false) above, which is what actually
+    // applies `inert` — without this, the static HTML's collapsed-by-CSS-only starting state
+    // never gets `inert` set at all, so its fields stay reachable by Tab (and by a screen
+    // reader) on a fresh popup open, until the toggle happens to be clicked once.
+    setOpen(false);
 }
 
 export function initHero(refresh: Refresh): void {

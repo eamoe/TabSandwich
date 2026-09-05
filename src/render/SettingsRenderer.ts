@@ -207,6 +207,13 @@ function bindViewToggle(refresh: Refresh): void {
         // there, and it looked identical to its main-screen state with nothing to tell the
         // two apart. Back is the only way in and out from here.
         gearBtn.hidden = true;
+        // Drives the search row's visibility via CSS rather than setting its own [hidden]
+        // here — that attribute stays owned solely by whether anything's saved yet (see
+        // SearchRenderer), so this can't fight it over the same property. Making the input
+        // itself unreachable, not just visually tucked away, matters: a query typed while the
+        // list behind it is hidden corrupts row-insert animations (getBoundingClientRect
+        // returns zero for anything under display:none) — this closes off that path entirely.
+        document.body.classList.add("settings-open");
         backBtn.focus();
         // Re-render fresh on every open — belt-and-suspenders alongside the message's own
         // timeout, so a stale per-category message never survives a trip back to the main view.
@@ -220,6 +227,7 @@ function bindViewToggle(refresh: Refresh): void {
         actionRow.hidden = false;
         manualEntry.hidden = false;
         gearBtn.hidden = false;
+        document.body.classList.remove("settings-open");
         gearBtn.focus();
     });
 }

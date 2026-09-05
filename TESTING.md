@@ -262,6 +262,11 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-094 — Drag-reorder has no keyboard equivalent (documented exemption) (P3)**
 - Expected: Confirm this is a known, accepted gap (FR-019 exemption) — not something to fail the suite over.
 
+**TC-095 — Collapsed manual-entry fields are unreachable on a fresh popup open (P1)**
+- Preconditions: a freshly opened popup where **+ Add link manually** has never been clicked this session.
+- Steps: Tab to **+ Add link manually**, then press **Tab** once more.
+- Expected: Focus moves to the next visible control (e.g. the search input), not into the collapsed form's URL/Title/Category fields. (Regression case: `inert` on the collapsed form was only ever applied reactively via toggle/cancel/submit, never on initial load, so its fields were tabbable until the form had been opened and closed at least once.)
+
 ---
 
 ## 11. Edge Cases
@@ -342,3 +347,13 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-121 — Rapid typing doesn't show stale results (P2)**
 - Steps: Type a multi-character query very quickly (fast enough that renders could overlap).
 - Expected: Final displayed results match the final typed query — no flash of an intermediate query's results after typing stops.
+
+**TC-122 — Search is hidden and non-interactive while Settings is open (P1)**
+- Preconditions: several saved tabs.
+- Steps: Open Settings (gear icon). Try to click into where the search box was.
+- Expected: The search row is not visible and cannot receive focus or input while Settings is open.
+
+**TC-123 — Searching, then visiting Settings and back, doesn't corrupt the list (P1)**
+- Preconditions: 5+ saved tabs.
+- Steps: Type a query that narrows the list to a subset → clear the query (list returns to full) → open Settings → click **Back**.
+- Expected: Every row renders at its normal height with normal spacing — no squished, overlapping, or zero-height rows. (Regression case: TC-122 closes off the only path that could previously cause this — typing into a search box left reachable while the list behind it was hidden corrupted row-insert animations.)
