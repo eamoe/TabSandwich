@@ -5,6 +5,7 @@
     "typescript": "^5.6.3"
   },
   "scripts": {
-    "build": "tsc && node fix-extensions.js"
+    "build": "tsc && node fix-extensions.js",
+    "watch": "node watch.js"
   }
 }

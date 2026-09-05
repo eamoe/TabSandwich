@@ -233,11 +233,11 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-080 — Capacity estimate reflects real usage (P2)**
 - Preconditions: several tabs saved.
 - Steps: Read the hero's storage line.
-- Expected: Shows "room for ~N more at this rate" with a plausible, non-zero, non-placeholder number (not "0%").
+- Expected: Shows "N% of storage used" against the real `chrome.storage.local` quota (below 1%, shows "<1%" rather than rounding to "0%").
 
 **TC-081 — No capacity text on empty list (P3)**
 - Steps: Clear all tabs.
-- Expected: Storage-usage text is blank (not "room for ~0 more" or similar nonsense).
+- Expected: Storage-usage text is blank (not "0% of storage used" or similar).
 
 ---
 

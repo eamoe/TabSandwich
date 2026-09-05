@@ -28,11 +28,14 @@ src/
   domain/
     TabRepository.ts      add/edit/delete/reorder saved tabs, duplicate detection
     CategoryRepository.ts category CRUD, color palette, "Uncategorized" sentinel
+    search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
+                            so an omnibox or service-worker search can reuse it unchanged
   render/
-    ListRenderer.ts        tab list rows (display + edit modes, drag handlers)
+    ListRenderer.ts        tab list rows (display + edit modes, drag handlers, search highlight)
     PillsRenderer.ts       category filter pills + "Outdated" pill
     HeroRenderer.ts         hero stats, save actions, manual-entry disclosure
     SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display)
+    SearchRenderer.ts      search input wiring (query state, clear, result announcements)
     viewController.ts      central refreshView() orchestrator — exists to avoid
                             circular imports between the render modules above
   util/
@@ -94,6 +97,17 @@ future automation in mind — element IDs are noted for that purpose).
   themselves — when asked for a commit, provide the message text, don't
   run the command. Tagging and pushing a release tag (`git tag -a vX.Y.Z`,
   `git push origin vX.Y.Z`) is fine to run directly once asked to do so.
+- **Docs are part of the change, not a follow-up.** A change isn't done
+  until every doc it affects agrees with the code: `README.md` (features,
+  dev workflow), this file's `src/` breakdown, `TESTING.md` (new manual
+  cases for new behavior; existing cases whose expected UI text changed),
+  `PRIVACY.md` (any change to what's stored, computed, or requested over
+  the network — its URL is the live Store-listing policy, so drift here
+  is a compliance problem, not just a stale comment), and the manifest's
+  `permissions` list. Check this before considering a spec finished, the
+  same way a clean `tsc` build is checked — not as a separate pass at
+  release time. This keeps a Store submission a packaging step rather
+  than a scramble to reverse-engineer what actually shipped.
 
 ## Spec-driven development
 
