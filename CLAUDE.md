@@ -113,7 +113,10 @@ future automation in mind — element IDs are noted for that purpose).
   cases for new behavior; existing cases whose expected UI text changed),
   `PRIVACY.md` (any change to what's stored, computed, or requested over
   the network — its URL is the live Store-listing policy, so drift here
-  is a compliance problem, not just a stale comment), and the manifest's
+  is a compliance problem, not just a stale comment), `PUBLISHING.md`
+  (its listing copy and permission justifications quote the current
+  permission set and feature list — easy to forget since it's only
+  touched at release time, not on every spec), and the manifest's
   `permissions` list. Check this before considering a spec finished, the
   same way a clean `tsc` build is checked — not as a separate pass at
   release time. This keeps a Store submission a packaging step rather
@@ -134,9 +137,12 @@ once.
 
 ## Publishing
 
-`PUBLISHING.md` (local-only) has the full Chrome Web Store submission
+`PUBLISHING.md` (committed) has the full Chrome Web Store submission
 playbook — listing copy, permission justifications, data-usage
-disclosures, and the update flow for subsequent versions. `PRIVACY.md`
+disclosures, and the update flow for subsequent versions. Its listing
+copy quotes the current permission set and feature list directly, so it
+drifts the same way `PRIVACY.md` does: a spec that changes either needs
+to update this file too, not just at release time. `PRIVACY.md`
 (committed — its URL is the declared privacy policy in the Store listing,
 so it must stay live on `main`) is the actual privacy policy shown to
 users and reviewers.
