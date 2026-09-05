@@ -1,5 +1,5 @@
 import { SavedTab } from "../types";
-import { getSettings, setSettings } from "../storage/chromeStorage";
+import { getSettings, setSettings, setTabs } from "../storage/chromeStorage";
 
 /** Reserved sentinel — never stored in Settings.categories, structurally impossible to rename or remove (FR-007). */
 export const UNCATEGORIZED = "Uncategorized";
@@ -69,6 +69,73 @@ export async function setCategoryColor(name: string, colorKey: string): Promise<
     if (!(colorKey in CATEGORY_COLOR_PALETTE)) return;
     const settings = await getSettings();
     settings.categoryColors = { ...settings.categoryColors, [name]: colorKey };
+    await setSettings(settings);
+}
+
+export interface RenameCategoryResult {
+    renamed: boolean;
+    reason?: string;
+}
+
+/**
+ * Renames a category everywhere it's referenced: the categories list, its color mapping, and
+ * every tab currently tagged with the old name. Tabs store a category by name, not by a
+ * stable id (see SavedTab.category), so a rename that only touched Settings would silently
+ * orphan every tab that used the old name — they'd fall back to displaying as Uncategorized.
+ */
+export async function renameCategory(oldName: string, newName: string, tabs: SavedTab[]): Promise<RenameCategoryResult> {
+    const trimmed = newName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
+    if (!trimmed) return { renamed: false, reason: "Name can't be empty." };
+    if (trimmed === oldName) return { renamed: true }; // unchanged — nothing to do, not an error
+
+    const settings = await getSettings();
+    if (!settings.categories.includes(oldName)) {
+        return { renamed: false, reason: "Category no longer exists." };
+    }
+    if (trimmed === UNCATEGORIZED || settings.categories.includes(trimmed)) {
+        return { renamed: false, reason: "That name is already used by another category." };
+    }
+
+    settings.categories = settings.categories.map((c) => (c === oldName ? trimmed : c));
+    const { [oldName]: colorKey, ...remainingColors } = settings.categoryColors;
+    settings.categoryColors = colorKey ? { ...remainingColors, [trimmed]: colorKey } : remainingColors;
+    await setSettings(settings);
+
+    if (tabs.some((t) => t.category === oldName)) {
+        await setTabs(tabs.map((t) => (t.category === oldName ? { ...t, category: trimmed } : t)));
+    }
+
+    return { renamed: true };
+}
+
+export type MoveDirection = "up" | "down";
+
+/** Swaps a category with its immediate neighbor — sufficient for up/down controls; no-ops at either end of the list. */
+export async function moveCategory(name: string, direction: MoveDirection): Promise<void> {
+    const settings = await getSettings();
+    const index = settings.categories.indexOf(name);
+    if (index === -1) return;
+    const swapWith = direction === "up" ? index - 1 : index + 1;
+    if (swapWith < 0 || swapWith >= settings.categories.length) return;
+
+    const categories = [...settings.categories];
+    [categories[index], categories[swapWith]] = [categories[swapWith], categories[index]];
+    settings.categories = categories;
+    await setSettings(settings);
+}
+
+/** Moves draggedName to sit where targetName currently is — drag-and-drop's counterpart to moveCategory's adjacent-only swap. */
+export async function reorderCategories(draggedName: string, targetName: string): Promise<void> {
+    if (draggedName === targetName) return;
+    const settings = await getSettings();
+    const fromIndex = settings.categories.indexOf(draggedName);
+    const toIndex = settings.categories.indexOf(targetName);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const categories = [...settings.categories];
+    const [moved] = categories.splice(fromIndex, 1);
+    categories.splice(toIndex, 0, moved);
+    settings.categories = categories;
     await setSettings(settings);
 }
 

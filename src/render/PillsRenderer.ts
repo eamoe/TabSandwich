@@ -18,19 +18,30 @@ export function filterTabs(tabs: SavedTab[], settings: Settings): SavedTab[] {
     return tabs.filter((t) => getTabCategory(t) === currentFilter);
 }
 
-function getUniqueCategoriesInUse(tabs: SavedTab[]): string[] {
-    const cats = new Set(tabs.map(getTabCategory));
-    cats.delete(UNCATEGORIZED);
-    const sorted = [...cats].sort();
-    if (tabs.some((t) => getTabCategory(t) === UNCATEGORIZED)) sorted.push(UNCATEGORIZED);
-    return sorted;
+/**
+ * Categories currently in use, ordered to match Settings' configured category order (S05) —
+ * reordering categories in Settings is otherwise invisible anywhere outside the Settings view
+ * and the selection dropdowns, so pills follow it too. A category somehow in use but no longer
+ * in Settings.categories (stale data) still gets a pill — appended alphabetically — rather than
+ * silently vanishing. Uncategorized always sits last, never subject to manual ordering.
+ */
+function getUniqueCategoriesInUse(tabs: SavedTab[], configuredOrder: string[]): string[] {
+    const inUse = new Set(tabs.map(getTabCategory));
+    inUse.delete(UNCATEGORIZED);
+
+    const ordered = configuredOrder.filter((c) => inUse.has(c));
+    const strays = [...inUse].filter((c) => !configuredOrder.includes(c)).sort();
+    const result = [...ordered, ...strays];
+
+    if (tabs.some((t) => getTabCategory(t) === UNCATEGORIZED)) result.push(UNCATEGORIZED);
+    return result;
 }
 
 export function renderPills(tabs: SavedTab[], settings: Settings, onChange: () => void | Promise<void>): void {
     const container = getElement<HTMLElement>("pills-container");
     container.innerHTML = "";
 
-    const categories = getUniqueCategoriesInUse(tabs);
+    const categories = getUniqueCategoriesInUse(tabs, settings.categories);
     const outdatedCount = tabs.filter((t) => isTabOutdated(t, settings)).length;
 
     // A filter that no longer has anything to show (category gone, or nothing's outdated

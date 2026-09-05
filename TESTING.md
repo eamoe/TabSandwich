@@ -452,4 +452,57 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-142 — Export/Import require no additional permission (P1, release gate)**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is still exactly `["activeTab", "storage"]` — export/import use only the File/Blob/anchor-download web APIs, no `downloads` permission.
+- Expected: No `downloads` permission is present — export/import use only the File/Blob/anchor-download web APIs. (The exact permission list is asserted once, in TC-103, so this doesn't need to duplicate it and risk drifting out of sync as other permissions are added.)
+
+---
+
+## 14. Category Rename & Reorder
+
+**TC-150 — Rename a category (P1)**
+- Preconditions: a category (`aria-label="Rename ..."` icon in Settings → Categories) assigned to at least one tab.
+- Steps: Click the rename icon → type a new name → press **Enter** (or click away).
+- Expected: The category's name updates everywhere: the Settings list, every category select (edit row, manual-entry form), and every tab previously tagged with the old name now shows the new one. Its assigned color is unchanged.
+
+**TC-151 — Renaming to an existing category name is rejected (P2)**
+- Preconditions: two categories, e.g. "Work" and "Reading".
+- Steps: Rename "Work" to "Reading".
+- Expected: Not renamed. A message appears on that category's own card ("That name is already used by another category."), auto-clears after ~3s; "Work" keeps its original name.
+
+**TC-152 — Renaming to an empty value is rejected (P3)**
+- Steps: Click rename, clear the input entirely, click away.
+- Expected: Reverts to the original name with a "Name can't be empty." message; nothing is written to storage.
+
+**TC-153 — Renaming to "Uncategorized" is rejected (P2)**
+- Steps: Click rename on any category, type "Uncategorized", press Enter.
+- Expected: Not renamed — the reserved sentinel can't be reused as a real category's name (same message as TC-151).
+
+**TC-154 — Escape cancels a rename without saving (P2)**
+- Steps: Click rename, change the text, press **Escape**.
+- Expected: Reverts to the original name immediately; no message shown, nothing written to storage.
+
+**TC-155 — Rename respects the 15-character cap (P3)**
+- Steps: Click rename, try to type more than 15 characters.
+- Expected: Input stops accepting characters at 15, same limit as the add-category field.
+
+**TC-156 — Reorder categories with the up/down controls (P1)**
+- Preconditions: 3+ configured categories.
+- Steps: In Settings, click the down-arrow on the first category.
+- Expected: It swaps places with the category directly below it. The new order shows immediately in the Settings list and in every category select dropdown (edit row, manual-entry form).
+
+**TC-157 — Reorder controls disable at the ends of the list (P2)**
+- Steps: Inspect the first and last category's move buttons.
+- Expected: The first category's up-arrow and the last category's down-arrow are both disabled.
+
+**TC-158 — Reordering categories reorders their filter pills (P2)**
+- Preconditions: 2+ categories, each with at least one tab.
+- Steps: Reorder categories in Settings, then check the filter pill order on the main view.
+- Expected: Category pills appear in the same order as Settings' category list. **All** and **Outdated** (when shown) always come first, in that fixed order, and **Uncategorized**'s pill (when shown) always comes last — reordering never moves those three.
+
+**TC-159 — Drag-and-drop also reorders categories (P2)**
+- Preconditions: 3+ configured categories.
+- Steps: Drag a category card to a different position in the list (not just an adjacent swap).
+- Expected: It moves to sit exactly where dropped; order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
+
+**TC-160 — A category mid-rename is not draggable (P3)**
+- Steps: Click a category's rename icon (input now showing) → attempt to drag that card.
+- Expected: No drag occurs. Pressing Escape or committing the rename restores normal drag behavior.

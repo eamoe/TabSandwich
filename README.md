@@ -12,7 +12,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Add a link manually** — for anything that isn't your active tab, via a secondary "+ Add link manually" form.
 - **Duplicate detection** — saving an already-saved URL highlights the existing entry instead of creating a copy.
 - **Search** — fuzzy-matches on title, domain, and path as you type, with matched characters highlighted; combines with an active category or Outdated filter.
-- **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/remove) from Settings.
+- **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/rename/remove/reorder) from Settings.
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings), tinting both its saved tabs and its filter pill so you can scan the list by color at a glance.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.
 - **Undo delete** — deleting a tab shows an 8-second Undo option before it's gone for good.

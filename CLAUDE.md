@@ -27,7 +27,7 @@ src/
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
   domain/
     TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection
-    CategoryRepository.ts category CRUD, color palette, "Uncategorized" sentinel
+    CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),

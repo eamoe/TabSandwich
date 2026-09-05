@@ -290,12 +290,14 @@ main {
 .days-row input[type="number"]:disabled { background: #f7f7fa; color: #bbb; border-color: #ececf5; }
 
 .category-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.category-list li.dragging { opacity: 0.4; cursor: grabbing; }
+.category-list li.drag-over { box-shadow: 0 0 0 2px #6C63C5 inset; }
 .category-item {
   position: relative;
   display: flex; flex-direction: column; gap: 4px; padding: 6px 8px;
   background: #F7F7FA; border-radius: 8px; font-size: 12.5px; color: #333;
 }
-.category-item-row { display: flex; align-items: center; gap: 6px; }
+.category-item-row { display: flex; align-items: center; gap: 5px; }
 .category-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Absolutely positioned so it floats over the list instead of taking flex space — same
    layout-jump problem as the old below-button save status, just here it shoved every
@@ -307,16 +309,16 @@ main {
 }
 .category-item-message:empty { display: none; }
 
-.color-picker { display: flex; gap: 4px; flex-shrink: 0; }
+.color-picker { display: flex; gap: 3px; flex-shrink: 0; }
 .color-swatch {
-  width: 14px; height: 14px; border-radius: 4px; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
+  width: 12px; height: 12px; border-radius: 3px; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
 }
 .color-swatch.selected { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #2A2447; }
 
 .remove-cat {
   display: flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; flex-shrink: 0;
-  background: none; border: none; color: #b7aede; cursor: pointer; font-size: 15px; line-height: 1;
+  width: 18px; height: 18px; flex-shrink: 0;
+  background: none; border: none; color: #b7aede; cursor: pointer; font-size: 14px; line-height: 1;
   padding: 0; border-radius: 4px;
 }
 .remove-cat:hover, .remove-cat:focus-visible { color: #D47663; background: #FBF1EF; }
@@ -324,6 +326,27 @@ main {
 .remove-cat--muted { color: #ddd; }
 .remove-cat--muted:hover, .remove-cat--muted:focus-visible { color: #ddd; background: none; }
 .remove-cat.remove-cat--flash-error { color: #E5484D; background: #FBEAEA; }
+
+.cat-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0;
+  background: none; border: none; color: #b7aede; cursor: pointer;
+  padding: 0; border-radius: 4px;
+}
+.cat-icon-btn:not(:disabled):hover, .cat-icon-btn:not(:disabled):focus-visible { color: #6C63C5; background: #F0EDFC; }
+.cat-icon-btn:disabled { color: #ddd; cursor: default; }
+
+/* Stacked, not side-by-side — a reorder "handle" at the row's leading edge that costs
+   minimal width, since this row already carries the color picker's 9 swatches. */
+.move-cat-group { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+.move-cat.cat-icon-btn { width: 16px; height: 11px; }
+.move-cat svg { width: 9px; height: 9px; }
+
+.cat-rename-input {
+  flex: 1; min-width: 0; padding: 2px 6px; border: 1.5px solid #d8d2f0; border-radius: 6px;
+  font-size: 12.5px; font-family: inherit; color: #333; background: #fff;
+}
+.cat-rename-input--error { border-color: #E5484D; }
 
 .shortcut-controls { display: flex; align-items: center; gap: 14px; }
 .shortcut-badge {
@@ -342,7 +365,9 @@ main {
   border: none; border-radius: 8px; background: #6C63C5; color: #fff; font-weight: 700; font-size: 12px; padding: 6px 12px; cursor: pointer;
 }
 
-.char-counter { font-size: 10px; color: #9a92b8; text-align: right; margin-top: 2px; }
+.cat-input-group { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+.cat-input-group input { flex: 1; min-width: 0; }
+.char-counter { font-size: 10px; color: #9a92b8; white-space: nowrap; }
 
 .backup-actions { display: flex; gap: 8px; }
 .backup-confirm {
