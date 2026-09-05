@@ -30,6 +30,8 @@ src/
     CategoryRepository.ts category CRUD, color palette, "Uncategorized" sentinel
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
+    backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
+                            merge (additive, dedupes by URL) vs. replace (full overwrite)
   render/
     ListRenderer.ts        tab list rows (display + edit modes, drag handlers, search highlight)
     PillsRenderer.ts       category filter pills + "Outdated" pill
@@ -37,6 +39,7 @@ src/
     SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display)
     SearchRenderer.ts      search input wiring (query state, clear, result announcements)
     ToastRenderer.ts       single dismissible undo toast, reusable beyond delete
+    BackupRenderer.ts      export/import UI (file download, file picker, merge/replace confirm)
     viewController.ts      central refreshView() orchestrator — exists to avoid
                             circular imports between the render modules above
   util/

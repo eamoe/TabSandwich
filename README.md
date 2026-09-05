@@ -16,6 +16,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings), tinting both its saved tabs and its filter pill so you can scan the list by color at a glance.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.
 - **Undo delete** — deleting a tab shows an 8-second Undo option before it's gone for good.
+- **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a visible badge and their own quick filter.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).

@@ -3,7 +3,7 @@ import { SavedTab, Settings } from "../types";
 const TABS_KEY = "tabSandwich.tabs";
 const SETTINGS_KEY = "tabSandwich.settings";
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
     outdatedEnabled: true,
     outdatedDays: 7,
     categories: ["Work", "Personal", "Reading", "Entertainment"],

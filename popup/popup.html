@@ -122,6 +122,26 @@
       <div id="new-category-counter" class="char-counter" aria-hidden="true">0/15</div>
       <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
     </div>
+
+    <div class="settings-section">
+      <h2 class="settings-label">Backup</h2>
+      <p class="settings-sublabel">Export your saved tabs to a file, or import a previous backup.</p>
+      <div class="backup-actions" id="backup-actions">
+        <button type="button" id="export-btn" class="btn-accent">Export</button>
+        <button type="button" id="import-btn" class="btn-accent">Import</button>
+        <label for="import-file-input" class="visually-hidden">Choose a backup file to import</label>
+        <input type="file" id="import-file-input" accept="application/json" class="visually-hidden">
+      </div>
+      <div class="backup-confirm" id="backup-confirm" hidden>
+        <p id="backup-confirm-message"></p>
+        <div class="backup-confirm-actions">
+          <button type="button" id="backup-merge-btn" class="btn-accent">Merge</button>
+          <button type="button" id="backup-replace-btn" class="btn-danger">Replace all</button>
+          <button type="button" id="backup-cancel-btn" class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+      <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
+    </div>
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite">

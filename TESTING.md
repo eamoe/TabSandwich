@@ -384,3 +384,67 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Preconditions: 5+ saved tabs.
 - Steps: Type a query that narrows the list to a subset → clear the query (list returns to full) → open Settings → click **Back**.
 - Expected: Every row renders at its normal height with normal spacing — no squished, overlapping, or zero-height rows. (Regression case: TC-122 closes off the only path that could previously cause this — typing into a search box left reachable while the list behind it was hidden corrupted row-insert animations.)
+
+---
+
+## 13. Export & Import
+
+**TC-130 — Export downloads a valid backup file (P1)**
+- Preconditions: several saved tabs across 2+ categories.
+- Steps: Open Settings → click **Export** (`#export-btn`).
+- Expected: A `.json` file downloads (named `tab-sandwich-backup-YYYY-MM-DD.json`, dated today). Opening it shows `version`, `exportedAt`, a `tabs` array matching what's saved, and a `settings` object.
+
+**TC-131 — Import: selecting a valid backup shows a merge/replace confirmation (P1)**
+- Preconditions: a backup file from TC-130.
+- Steps: Click **Import** (`#import-btn`) → choose the file.
+- Expected: The Export/Import buttons are replaced by a confirmation (`#backup-confirm`) stating how many tabs the file contains, with **Merge**, **Replace all**, and **Cancel** options.
+
+**TC-132 — Cancel makes no changes (P2)**
+- Steps: From the confirmation in TC-131, click **Cancel**.
+- Expected: Returns to the plain Export/Import buttons; no tabs or settings changed.
+
+**TC-133 — Merge adds only genuinely new tabs (P1)**
+- Preconditions: a backup file containing some tabs already saved (same URL) and some not.
+- Steps: Import the file → click **Merge**.
+- Expected: Only the tabs whose URL isn't already saved get added (no duplicates created); existing tabs and their positions are untouched. A toast reports how many tabs were imported, with **Undo**.
+
+**TC-134 — Merge preserves existing settings and adds only missing categories (P1)**
+- Preconditions: an imported tab references a category not currently configured.
+- Steps: Merge the file.
+- Expected: The new category appears in Settings with an assigned color; existing categories, colors, and the outdated toggle/threshold are unchanged.
+
+**TC-135 — Merge restores a category even when zero tabs are re-added (P1)**
+- Preconditions: export a backup, then locally remove only a category that currently has no tabs on it (no tab deletion) — e.g. export, then delete an empty "Reading" category in Settings without touching any tab.
+- Steps: Import that same backup → **Merge**.
+- Expected: "Reading" reappears in Settings with its original color, and the toast reads "Imported 1 category" (not "1 tab") with **Undo**. (Regression case: the merge handler originally gated its storage write on `addedCount === 0` — the tab count alone — so when merging added zero tabs but did restore a category, the write was skipped and the category silently failed to come back. Fixed by tracking added-tabs and added-categories as two separate counts and writing whenever either is nonzero.)
+
+**TC-136 — Merge is undoable (P1)**
+- Steps: Merge a file → click **Undo** in the toast before it times out.
+- Expected: The list and settings return to exactly their pre-import state (newly imported tabs and any newly added category are gone).
+
+**TC-137 — Merging a file with nothing new changes nothing (P2)**
+- Preconditions: a backup file whose every tab URL is already saved *and* whose every category is already configured (a true no-op import — contrast with TC-135, where the tabs are all duplicates but a category still needs restoring).
+- Steps: Import it → click **Merge**.
+- Expected: A status message explains nothing new was found; no toast/Undo appears (there's nothing to undo).
+
+**TC-138 — Replace overwrites everything (P1)**
+- Preconditions: current tabs/settings differ from the backup file being imported.
+- Steps: Import a file → click **Replace all**.
+- Expected: The saved list and settings (categories, colors, outdated toggle/threshold) become exactly what the file contained (missing settings fields fall back to defaults). A toast confirms the replace, with **Undo**.
+
+**TC-139 — Replace is undoable (P1)**
+- Steps: Replace → click **Undo** in the toast before it times out.
+- Expected: Tabs and settings return to exactly their pre-replace state.
+
+**TC-140 — Malformed or unrelated JSON is rejected (P1)**
+- Preconditions: a `.json` file that isn't a Tab Sandwich backup (e.g. `{"hello": "world"}`, or a tabs array containing one entry with a missing `title`).
+- Steps: Click **Import** → choose that file.
+- Expected: An error message appears (e.g. "That file doesn't look like a Tab Sandwich backup."); no confirmation UI appears; nothing is changed.
+
+**TC-141 — Re-selecting the same file works (P3)**
+- Steps: Import a file → **Cancel** → click **Import** again → choose the same file again.
+- Expected: The confirmation appears again (the file input's selection isn't "stuck" from the first pick).
+
+**TC-142 — Export/Import require no additional permission (P1, release gate)**
+- Steps: Inspect `manifest.json`.
+- Expected: `permissions` is still exactly `["activeTab", "storage"]` — export/import use only the File/Blob/anchor-download web APIs, no `downloads` permission.

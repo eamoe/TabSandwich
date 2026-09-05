@@ -20,6 +20,10 @@ This data is stored **only on your own device**, using Chrome's built-in `chrome
 
 What's stored for a favicon is a URL, not the image itself. To show that icon, the popup loads it directly from the page's own site — the same thing your browser does for any bookmark. This means that when you open the extension, the sites behind your saved tabs may see a request for their favicon; that request carries nothing beyond what loading any image normally does, and Tab Sandwich doesn't attach any tracking to it.
 
+## Export & import
+
+Settings includes an optional Export/Import feature. Export writes everything listed above (plus your category and outdated-tab settings) to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
+
 ## What Tab Sandwich does not do
 
 - It does not send any data to a server. Tab Sandwich has no server or backend of any kind.

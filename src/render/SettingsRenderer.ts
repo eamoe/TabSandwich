@@ -9,6 +9,7 @@ import {
     setCategoryColor,
     CATEGORY_COLOR_PALETTE,
 } from "../domain/CategoryRepository";
+import { initBackup } from "./BackupRenderer";
 
 type Refresh = () => void | Promise<void>;
 
@@ -237,5 +238,6 @@ export async function initSettings(refresh: Refresh): Promise<void> {
     bindAddCategoryForm(refresh);
     bindOutdatedControls(refresh);
     bindShortcutDisplay();
+    initBackup(refresh);
     await syncOutdatedControls();
 }

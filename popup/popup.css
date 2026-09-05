@@ -344,6 +344,29 @@ main {
 
 .char-counter { font-size: 10px; color: #9a92b8; text-align: right; margin-top: 2px; }
 
+.backup-actions { display: flex; gap: 8px; }
+.backup-confirm {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #F7F7FA; border-radius: 10px; padding: 10px 12px;
+}
+.backup-confirm p { font-size: 12px; color: #333; margin: 0; }
+.backup-confirm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.backup-status { font-size: 11px; color: #6C63C5; font-weight: 600; margin: 0; }
+.backup-status:empty { display: none; }
+.backup-status--error { color: #E5484D; }
+
+.btn-danger {
+  border: none; border-radius: 8px; background: #E5484D; color: #fff;
+  font-weight: 700; font-size: 12px; padding: 6px 12px; cursor: pointer;
+}
+.btn-danger:hover, .btn-danger:focus-visible { background: #C93E43; }
+
+.btn-ghost {
+  border: none; border-radius: 8px; background: none; color: #6C63C5;
+  font-weight: 700; font-size: 12px; padding: 6px 12px; cursor: pointer;
+}
+.btn-ghost:hover, .btn-ghost:focus-visible { background: #F0EDFC; }
+
 /* ── Toast ── */
 /* position: fixed + z-index puts this above whichever view (main or settings) is showing,
    regardless of ancestry — a delete's undo window shouldn't require staying on the main
@@ -353,14 +376,15 @@ main {
 .toast {
   position: fixed; left: 50%; bottom: 14px; z-index: 10;
   display: flex; align-items: center; gap: 14px;
-  background: #2A2447; color: #fff; font-size: 12.5px; font-weight: 600;
-  padding: 10px 16px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  background: #2A2447; color: #fff; font-size: 11px; font-weight: 600;
+  padding: 9px 16px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.28);
   transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
   transition: transform 0.18s ease, opacity 0.18s ease;
+  white-space: nowrap;
 }
 .toast.visible { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
 .toast-undo {
-  background: none; border: none; color: #B9B4CF; font-weight: 700; font-size: 12.5px;
+  background: none; border: none; color: #B9B4CF; font-weight: 700; font-size: 11px;
   cursor: pointer; padding: 2px 4px; border-radius: 6px;
 }
 .toast-undo:hover, .toast-undo:focus-visible { color: #fff; }
