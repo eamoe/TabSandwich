@@ -343,3 +343,24 @@ main {
 }
 
 .char-counter { font-size: 10px; color: #9a92b8; text-align: right; margin-top: 2px; }
+
+/* ── Toast ── */
+/* position: fixed + z-index puts this above whichever view (main or settings) is showing,
+   regardless of ancestry — a delete's undo window shouldn't require staying on the main
+   screen to use. Visibility is a class, not [hidden]/display:none, so it can transition and
+   so its aria-live region reliably announces (see ToastRenderer for why); pointer-events and
+   inert together are what actually keep it unreachable while hidden. */
+.toast {
+  position: fixed; left: 50%; bottom: 14px; z-index: 10;
+  display: flex; align-items: center; gap: 14px;
+  background: #2A2447; color: #fff; font-size: 12.5px; font-weight: 600;
+  padding: 10px 16px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.toast.visible { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.toast-undo {
+  background: none; border: none; color: #B9B4CF; font-weight: 700; font-size: 12.5px;
+  cursor: pointer; padding: 2px 4px; border-radius: 6px;
+}
+.toast-undo:hover, .toast-undo:focus-visible { color: #fff; }

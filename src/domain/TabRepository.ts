@@ -43,9 +43,33 @@ export async function editTab(
     await setTabs(updated);
 }
 
-export async function deleteTab(id: string): Promise<void> {
+export interface DeleteTabResult {
+    tab: SavedTab;
+    /** Position in the full stored array (not whatever's currently rendered) — what restoreTab needs to put it back exactly where it was. */
+    index: number;
+}
+
+/** Deletes immediately (no undo-window delay in storage) and hands back what was removed, so a caller can offer undo without the deletion itself waiting on a timer. */
+export async function deleteTab(id: string): Promise<DeleteTabResult | null> {
     const tabs = await getTabs();
-    await setTabs(tabs.filter((t) => t.id !== id));
+    const index = tabs.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+
+    const tab = tabs[index];
+    await setTabs([...tabs.slice(0, index), ...tabs.slice(index + 1)]);
+    return { tab, index };
+}
+
+/**
+ * Reinserts a previously-deleted tab at its original index — undo's counterpart to deleteTab.
+ * Unlike addTab, this never runs duplicate detection: the caller is restoring an exact prior
+ * state, not adding new input a user just typed. The index is clamped to the current array's
+ * bounds since tabs may have been added or removed elsewhere during the undo window.
+ */
+export async function restoreTab(tab: SavedTab, index: number): Promise<void> {
+    const tabs = await getTabs();
+    const clampedIndex = Math.max(0, Math.min(index, tabs.length));
+    await setTabs([...tabs.slice(0, clampedIndex), tab, ...tabs.slice(clampedIndex)]);
 }
 
 /**

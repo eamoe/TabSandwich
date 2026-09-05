@@ -26,7 +26,7 @@ src/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
   domain/
-    TabRepository.ts      add/edit/delete/reorder saved tabs, duplicate detection
+    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection
     CategoryRepository.ts category CRUD, color palette, "Uncategorized" sentinel
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
@@ -36,6 +36,7 @@ src/
     HeroRenderer.ts         hero stats, save actions, manual-entry disclosure
     SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display)
     SearchRenderer.ts      search input wiring (query state, clear, result announcements)
+    ToastRenderer.ts       single dismissible undo toast, reusable beyond delete
     viewController.ts      central refreshView() orchestrator — exists to avoid
                             circular imports between the render modules above
   util/

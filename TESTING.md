@@ -160,7 +160,34 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-043 — Delete a tab (P1)**
 - Steps: Click the delete icon on a row.
-- Expected: Removed immediately from the list and from storage (still gone after reopening the popup).
+- Expected: Removed immediately from the list and from storage (still gone after reopening the popup). A toast ("Deleted", `#toast`) appears with an **Undo** button (`#toast-undo`).
+
+**TC-044 — Undo restores the tab to its exact original position (P1)**
+- Preconditions: 3+ saved tabs in manual order.
+- Steps: Delete the middle tab → click **Undo** in the toast before it disappears.
+- Expected: The tab reappears at the same position it was deleted from (not at the top or bottom of the list), scrolled into view and briefly highlighted, same as a fresh save.
+
+**TC-045 — Undo toast auto-dismisses and the deletion becomes permanent (P2)**
+- Steps: Delete a tab → wait ~8 seconds without clicking Undo.
+- Expected: Toast disappears on its own; the tab stays deleted (reopening the popup confirms it's gone from storage).
+
+**TC-046 — Closing the popup during the undo window finalizes the deletion (P1)**
+- Steps: Delete a tab → immediately close the popup (before the toast times out or is clicked) → reopen it.
+- Expected: The tab is gone, with no error. (The delete write is immediate and doesn't wait on the undo window — only the *offer* to undo is time-limited.)
+
+**TC-047 — A second delete replaces the toast; the first deletion stays permanent (P2)**
+- Preconditions: 2+ saved tabs.
+- Steps: Delete tab A → before its toast times out, delete tab B.
+- Expected: The toast now offers to undo tab B only. Clicking it restores B; A remains deleted.
+
+**TC-048 — Undo toast is unreachable while hidden (P2)**
+- Steps: With no toast showing, Tab through the popup.
+- Expected: Focus never lands on the (invisible) Undo button.
+
+**TC-049 — Undo from within Settings doesn't corrupt the list (P1)**
+- Preconditions: 5+ saved tabs.
+- Steps: Delete a tab → open Settings (gear icon) before the toast times out → click **Undo** → click **Back**.
+- Expected: The list renders normally — every row at its usual height with normal spacing, the restored tab in its original position. (Regression case: the toast is deliberately usable from Settings — restoring from there was corrupting the hidden list the same way TC-123 was, since both trigger a row-insert animation against display:none content. Fixed at the animation helpers themselves, not by closing this specific path.)
 
 ---
 

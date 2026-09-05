@@ -213,7 +213,25 @@ const ZERO_COLLAPSIBLE_VALUES: CollapsibleValues = { height: "0px", paddingTop: 
  * frame — this shrinks it to nothing first (height, padding, and border together, or it'd
  * just get stuck at its padding/border floor) so the rows below slide up instead of jumping.
  */
+/**
+ * False when the element (or an ancestor) is display:none — e.g. the main list while Settings
+ * is open. getBoundingClientRect() degenerates to all zeros there, and CSS transitions never
+ * fire transitionend on a box that doesn't exist, so the animation helpers below would set a
+ * row's height to an incorrect value and never get the callback that resets it — exactly the
+ * corruption this guard exists to prevent. Confirmed twice now via two unrelated trigger paths
+ * (typing into a search box left reachable in Settings; undo staying usable from Settings) —
+ * this fixes it at the one place both paths actually cause harm, rather than closing off each
+ * new path individually as it's found.
+ */
+function isRendered(el: HTMLElement): boolean {
+    return el.offsetParent !== null;
+}
+
 function collapseAndRemove(li: HTMLLIElement): void {
+    if (!isRendered(li)) {
+        li.remove();
+        return;
+    }
     // Marked so a tab that reappears (e.g. a filter pill double-clicked) while this row is
     // still animating out gets a fresh row instead of one that's about to remove itself.
     li.classList.add("row-removing");
@@ -230,6 +248,7 @@ function collapseAndRemove(li: HTMLLIElement): void {
 /** Mirror of collapseAndRemove for a row that just became visible (a tab entering the current
  *  filter, or a freshly saved tab) — grows in from nothing instead of just appearing. */
 function animateRowInsert(li: HTMLLIElement): void {
+    if (!isRendered(li)) return; // nothing to animate from where no one can see it
     const end = currentCollapsibleValues(li);
     setCollapsibleValues(li, ZERO_COLLAPSIBLE_VALUES);
     li.style.overflow = "hidden";

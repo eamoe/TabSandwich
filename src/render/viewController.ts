@@ -1,12 +1,13 @@
 import { getTabs, getSettings } from "../storage/chromeStorage";
 import { getSelectableCategories } from "../domain/CategoryRepository";
-import { editTab, deleteTab, reorderTabs } from "../domain/TabRepository";
+import { editTab, deleteTab, restoreTab, reorderTabs } from "../domain/TabRepository";
 import { searchTabs, MatchRange } from "../domain/search";
 import { renderPills, filterTabs } from "./PillsRenderer";
-import { renderList } from "./ListRenderer";
+import { renderList, scrollToAndHighlight } from "./ListRenderer";
 import { renderHeroStats } from "./HeroRenderer";
 import { refreshCategorySection } from "./SettingsRenderer";
 import { getSearchQuery, setSearchRowVisible, announceResultCount, clearResultAnnouncement } from "./SearchRenderer";
+import { showUndoToast } from "./ToastRenderer";
 
 // Typing re-triggers a full refreshView() on every keystroke (see SearchRenderer), and each
 // call does several independent storage reads before it renders anything — fast enough that
@@ -64,8 +65,14 @@ export async function refreshView(): Promise<void> {
                 await refreshView();
             },
             onDelete: async (id) => {
-                await deleteTab(id);
+                const result = await deleteTab(id);
                 await refreshView();
+                if (!result) return; // already gone (e.g. a second click before the row's own refresh landed)
+                showUndoToast("Deleted", async () => {
+                    await restoreTab(result.tab, result.index);
+                    await refreshView();
+                    scrollToAndHighlight(result.tab.id);
+                });
             },
             onReorder: async (draggedId, targetId) => {
                 await reorderTabs(draggedId, targetId);
