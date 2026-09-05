@@ -4,11 +4,25 @@ import { getTabCategory, getCategoryColorHex, UNCATEGORIZED } from "../domain/Ca
 import { normalizeUrl } from "../util/url";
 import { daysSince, isOutdated } from "../util/time";
 import { tintHex } from "../util/color";
+import { MatchRange } from "../domain/search";
 
 export interface ListCallbacks {
     onEdit: (tabId: string, updates: { title: string; url: string; category: string }) => void | Promise<void>;
     onDelete: (tabId: string) => void | Promise<void>;
     onReorder: (draggedId: string, targetId: string) => void | Promise<void>;
+}
+
+/**
+ * Extra, optional context for how this render pass should present rows — separate from
+ * ListCallbacks because these vary per render (search state changes every keystroke) while
+ * the callbacks are stable for the popup's lifetime.
+ */
+export interface ListDisplayOptions {
+    /** Ranges into a tab's title to wrap in <mark>, keyed by tab id. Missing/empty = no highlight. */
+    highlightRanges?: Map<string, MatchRange[]>;
+    /** True while a search query is active — see renderList for why reorder and animation are affected. */
+    searchActive?: boolean;
+    emptyMessage?: string;
 }
 
 const EDIT_ICON = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
@@ -75,6 +89,30 @@ function applyCategoryTint(li: HTMLLIElement, tab: SavedTab, settings: Settings)
     srLabel.className = "visually-hidden";
     srLabel.textContent = `Category: ${category}`;
     li.appendChild(srLabel);
+}
+
+/**
+ * Renders a title with the ranges from a search match wrapped in <mark>, or the plain text
+ * when there's nothing to highlight — built as real nodes rather than innerHTML, since a
+ * saved title is untrusted text a page supplied, not markup this extension wrote.
+ */
+function renderTitleContent(titleBtn: HTMLButtonElement, title: string, ranges: MatchRange[]): void {
+    titleBtn.textContent = "";
+    if (ranges.length === 0) {
+        titleBtn.textContent = title;
+        return;
+    }
+
+    let cursor = 0;
+    for (const range of ranges) {
+        if (range.start > cursor) titleBtn.appendChild(document.createTextNode(title.slice(cursor, range.start)));
+        const mark = document.createElement("mark");
+        mark.className = "search-match";
+        mark.textContent = title.slice(range.start, range.end);
+        titleBtn.appendChild(mark);
+        cursor = range.end;
+    }
+    if (cursor < title.length) titleBtn.appendChild(document.createTextNode(title.slice(cursor)));
 }
 
 /** Drag-to-reorder has no keyboard equivalent in this version (FR-019 exemption) — display rows only. */
@@ -225,11 +263,17 @@ function renderDisplayRow(
     tab: SavedTab,
     categories: string[],
     settings: Settings,
-    callbacks: ListCallbacks
+    callbacks: ListCallbacks,
+    titleRanges: MatchRange[] = [],
+    dragDisabled = false
 ): void {
     li.innerHTML = "";
     li.classList.remove("editing");
-    bindDragHandlers(li, tab, callbacks);
+    // Rows are in score order while searching, not the user's manual order — dragging one
+    // would silently reorder the underlying list to match wherever it landed on screen,
+    // which has nothing to do with where the user actually wants it once the query clears.
+    if (dragDisabled) li.draggable = false;
+    else bindDragHandlers(li, tab, callbacks);
     applyCategoryTint(li, tab, settings);
 
     li.appendChild(createFavicon(tab));
@@ -237,7 +281,7 @@ function renderDisplayRow(
     const titleBtn = document.createElement("button");
     titleBtn.type = "button";
     titleBtn.className = "tab-title";
-    titleBtn.textContent = tab.title;
+    renderTitleContent(titleBtn, tab.title, titleRanges);
     titleBtn.title = tab.title;
     titleBtn.addEventListener("click", () => chrome.tabs.create({ url: tab.url }));
     li.appendChild(titleBtn);
@@ -260,7 +304,7 @@ function renderDisplayRow(
     editBtn.setAttribute("aria-label", `Edit ${tab.title}`);
     editBtn.innerHTML = EDIT_ICON;
     editBtn.addEventListener("click", () =>
-        animateRowHeightChange(li, () => renderEditRow(li, tab, categories, settings, callbacks))
+        animateRowHeightChange(li, () => renderEditRow(li, tab, categories, settings, callbacks, dragDisabled))
     );
     actions.appendChild(editBtn);
 
@@ -280,7 +324,8 @@ function renderEditRow(
     tab: SavedTab,
     categories: string[],
     settings: Settings,
-    callbacks: ListCallbacks
+    callbacks: ListCallbacks,
+    dragDisabled = false
 ): void {
     li.innerHTML = "";
     li.draggable = false;
@@ -323,7 +368,9 @@ function renderEditRow(
         // edited values directly, rather than waiting on the round trip through storage and
         // a full refresh — which also lands (eventually, invisibly) with identical content.
         const updatedTab: SavedTab = { ...tab, title, url: normalized, category };
-        animateRowHeightChange(li, () => renderDisplayRow(li, updatedTab, categories, settings, callbacks));
+        animateRowHeightChange(li, () =>
+            renderDisplayRow(li, updatedTab, categories, settings, callbacks, [], dragDisabled)
+        );
         callbacks.onEdit(tab.id, { title, url: normalized, category });
     });
     actionsRow.appendChild(saveBtn);
@@ -333,7 +380,7 @@ function renderEditRow(
     cancelBtn.className = "edit-cancel";
     cancelBtn.textContent = "Cancel";
     cancelBtn.addEventListener("click", () =>
-        animateRowHeightChange(li, () => renderDisplayRow(li, tab, categories, settings, callbacks))
+        animateRowHeightChange(li, () => renderDisplayRow(li, tab, categories, settings, callbacks, [], dragDisabled))
     );
     actionsRow.appendChild(cancelBtn);
 
@@ -351,15 +398,28 @@ function renderEditRow(
  * is repositioned in place and left alone — except a row mid-edit, which is skipped so an
  * unrelated refresh elsewhere (e.g. deleting a different tab) can't clobber an open edit.
  */
-export function renderList(tabs: SavedTab[], categories: string[], settings: Settings, callbacks: ListCallbacks): void {
+export function renderList(
+    tabs: SavedTab[],
+    categories: string[],
+    settings: Settings,
+    callbacks: ListCallbacks,
+    options: ListDisplayOptions = {}
+): void {
+    const { highlightRanges, searchActive = false, emptyMessage = "No saved tabs yet." } = options;
     const list = getElement<HTMLUListElement>("tab-list");
+    list.classList.toggle("search-active", searchActive);
     list.querySelector("li.empty")?.remove();
 
+    // While searching, rows re-rank on every keystroke — the grow/shrink transitions exist
+    // for filtering and deletion, where a handful of rows change at human typing speed, not
+    // for a set that can reorder or fully replace itself on every character typed.
+    const removeRow = searchActive ? (li: HTMLLIElement) => li.remove() : collapseAndRemove;
+
     if (tabs.length === 0) {
-        for (const li of Array.from(list.children) as HTMLLIElement[]) collapseAndRemove(li);
+        for (const li of Array.from(list.children) as HTMLLIElement[]) removeRow(li);
         const li = document.createElement("li");
         li.className = "empty";
-        li.textContent = "No saved tabs yet.";
+        li.textContent = emptyMessage;
         list.appendChild(li);
         return;
     }
@@ -371,7 +431,7 @@ export function renderList(tabs: SavedTab[], categories: string[], settings: Set
 
     const nextIds = new Set(tabs.map((t) => t.id));
     for (const [id, li] of existingById) {
-        if (!nextIds.has(id)) collapseAndRemove(li);
+        if (!nextIds.has(id)) removeRow(li);
     }
 
     let previousSibling: HTMLLIElement | null = null;
@@ -384,11 +444,12 @@ export function renderList(tabs: SavedTab[], categories: string[], settings: Set
         const insertAfter: ChildNode | null = previousSibling ? previousSibling.nextSibling : list.firstChild;
         if (insertAfter !== li) list.insertBefore(li, insertAfter);
 
+        const titleRanges = highlightRanges?.get(tab.id) ?? [];
         if (isNew) {
-            renderDisplayRow(li, tab, categories, settings, callbacks);
-            animateRowInsert(li);
+            renderDisplayRow(li, tab, categories, settings, callbacks, titleRanges, searchActive);
+            if (!searchActive) animateRowInsert(li);
         } else if (!li.classList.contains("editing")) {
-            renderDisplayRow(li, tab, categories, settings, callbacks);
+            renderDisplayRow(li, tab, categories, settings, callbacks, titleRanges, searchActive);
         }
         previousSibling = li;
     }

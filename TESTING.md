@@ -285,3 +285,60 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `npm run build`.
 - Expected: `popup/js/` does not appear as new/modified tracked content (it's gitignored and untracked).
+
+---
+
+## 12. Search
+
+**TC-110 — Basic substring match (P1)**
+- Preconditions: a saved tab titled "GitHub" (`github.com`) among several others.
+- Steps: Type `git` into search (`#search-input`).
+- Expected: Only tabs matching on title/domain/path remain; matched characters in the title are visually highlighted.
+
+**TC-111 — Non-contiguous (fuzzy) match (P1)**
+- Preconditions: a saved tab titled "GitHub".
+- Steps: Type `gthb`.
+- Expected: The GitHub tab still matches, with each matched letter highlighted individually.
+
+**TC-112 — Search matches on URL, not just title (P2)**
+- Preconditions: a tab whose title doesn't contain the domain (e.g. title "My Notes", url `https://example.com/notes`).
+- Steps: Search `example`.
+- Expected: The tab appears (matched on hostname), even though its title shows no highlight.
+
+**TC-113 — Multi-word query requires every term to match (P2)**
+- Preconditions: a tab titled "Python Tutorial" and a tab titled "Python Reference".
+- Steps: Search `python tutorial`.
+- Expected: Only "Python Tutorial" remains.
+
+**TC-114 — No results state (P1)**
+- Steps: Search for a string that matches nothing, e.g. `zzzzz`.
+- Expected: List shows "No matching tabs." (distinct from the "No saved tabs yet." empty-library message); `#search-status` announces "No matching tabs".
+
+**TC-115 — Search composes with an active category/Outdated pill (P1)**
+- Preconditions: tabs across 2+ categories.
+- Steps: Click a category pill → then type a query that matches tabs both inside and outside that category.
+- Expected: Only matches within the selected pill's tabs appear. Pills themselves are unaffected by the query (all pills with any tabs in the full library stay visible).
+
+**TC-116 — Clearing search restores prior state (P1)**
+- Steps: Apply a category pill → search a query → click the clear button (`#search-clear`) or press **Escape**.
+- Expected: Search input empties, full (category-filtered) list returns in its original manual order, focus stays in the search input.
+
+**TC-117 — Escape on an empty search field closes the popup (P3)**
+- Steps: With the search field empty and focused, press **Escape**.
+- Expected: Popup closes (native browser behavior — the extension does not intercept it).
+
+**TC-118 — Enter opens the top result (P2)**
+- Steps: Type a query that matches at least one tab → press **Enter**.
+- Expected: The top-ranked result opens in a new tab.
+
+**TC-119 — Drag-to-reorder is disabled while searching (P2)**
+- Steps: With a query active, attempt to drag a row.
+- Expected: No drag occurs; cursor does not indicate draggability. Clearing the query restores drag-to-reorder.
+
+**TC-120 — Search box hidden on an empty library (P3)**
+- Steps: Delete all tabs.
+- Expected: The search row is hidden along with the pills row.
+
+**TC-121 — Rapid typing doesn't show stale results (P2)**
+- Steps: Type a multi-character query very quickly (fast enough that renders could overlap).
+- Expected: Final displayed results match the final typed query — no flash of an intermediate query's results after typing stops.
