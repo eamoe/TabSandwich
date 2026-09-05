@@ -62,6 +62,14 @@
     </div>
   </header>
 
+  <div class="search-row" id="search-row">
+    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <label for="search-input" class="visually-hidden">Search saved tabs</label>
+    <input type="text" id="search-input" class="search-input" placeholder="Search saved tabs" autocomplete="off">
+    <button type="button" id="search-clear" class="search-clear" aria-label="Clear search" hidden>&times;</button>
+  </div>
+  <p id="search-status" class="visually-hidden" role="status" aria-live="polite"></p>
+
   <nav class="pills-row" id="pills-container" aria-label="Filter saved tabs"></nav>
 
   <main id="main-view">
@@ -107,14 +115,41 @@
     <div class="settings-section">
       <h2 class="settings-label">Categories</h2>
       <form id="add-category-form" class="add-category-form">
-        <label for="new-category-input" class="visually-hidden">New category</label>
-        <input type="text" id="new-category-input" placeholder="New category" maxlength="15">
+        <div class="cat-input-group">
+          <label for="new-category-input" class="visually-hidden">New category</label>
+          <input type="text" id="new-category-input" placeholder="New category" maxlength="15">
+          <span id="new-category-counter" class="char-counter" aria-hidden="true">0/15</span>
+        </div>
         <button type="submit">Add</button>
       </form>
-      <div id="new-category-counter" class="char-counter" aria-hidden="true">0/15</div>
       <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
     </div>
+
+    <div class="settings-section">
+      <h2 class="settings-label">Backup</h2>
+      <p class="settings-sublabel">Export your saved tabs to a file, or import a previous backup.</p>
+      <div class="backup-actions" id="backup-actions">
+        <button type="button" id="export-btn" class="btn-accent">Export</button>
+        <button type="button" id="import-btn" class="btn-accent">Import</button>
+        <label for="import-file-input" class="visually-hidden">Choose a backup file to import</label>
+        <input type="file" id="import-file-input" accept="application/json" class="visually-hidden">
+      </div>
+      <div class="backup-confirm" id="backup-confirm" hidden>
+        <p id="backup-confirm-message"></p>
+        <div class="backup-confirm-actions">
+          <button type="button" id="backup-merge-btn" class="btn-accent">Merge</button>
+          <button type="button" id="backup-replace-btn" class="btn-danger">Replace all</button>
+          <button type="button" id="backup-cancel-btn" class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+      <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
+    </div>
   </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span id="toast-message"></span>
+    <button type="button" id="toast-undo" class="toast-undo">Undo</button>
+  </div>
 
   <script type="module" src="js/popup.js"></script>
 </body>

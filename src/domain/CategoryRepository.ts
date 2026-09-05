@@ -1,5 +1,6 @@
 import { SavedTab } from "../types";
-import { getSettings, setSettings } from "../storage/chromeStorage";
+import { getSettings, setSettings, getTabs, setTabs } from "../storage/chromeStorage";
+import { withStorageLock } from "../storage/writeQueue";
 
 /** Reserved sentinel — never stored in Settings.categories, structurally impossible to rename or remove (FR-007). */
 export const UNCATEGORIZED = "Uncategorized";
@@ -58,18 +59,102 @@ const MAX_CATEGORY_NAME_LENGTH = 15;
 export async function addCategory(name: string): Promise<void> {
     const trimmed = name.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
     if (!trimmed || trimmed === UNCATEGORIZED) return;
-    const settings = await getSettings();
-    if (settings.categories.includes(trimmed)) return;
-    settings.categories = [trimmed, ...settings.categories];
-    settings.categoryColors = { ...settings.categoryColors, [trimmed]: nextDefaultColorKey(settings.categoryColors) };
-    await setSettings(settings);
+    return withStorageLock(async () => {
+        const settings = await getSettings();
+        if (settings.categories.includes(trimmed)) return;
+        settings.categories = [trimmed, ...settings.categories];
+        settings.categoryColors = {
+            ...settings.categoryColors,
+            [trimmed]: nextDefaultColorKey(settings.categoryColors),
+        };
+        await setSettings(settings);
+    });
 }
 
 export async function setCategoryColor(name: string, colorKey: string): Promise<void> {
     if (!(colorKey in CATEGORY_COLOR_PALETTE)) return;
-    const settings = await getSettings();
-    settings.categoryColors = { ...settings.categoryColors, [name]: colorKey };
-    await setSettings(settings);
+    return withStorageLock(async () => {
+        const settings = await getSettings();
+        settings.categoryColors = { ...settings.categoryColors, [name]: colorKey };
+        await setSettings(settings);
+    });
+}
+
+export interface RenameCategoryResult {
+    renamed: boolean;
+    reason?: string;
+}
+
+/**
+ * Renames a category everywhere it's referenced: the categories list, its color mapping, and
+ * every tab currently tagged with the old name. Tabs store a category by name, not by a
+ * stable id (see SavedTab.category), so a rename that only touched Settings would silently
+ * orphan every tab that used the old name — they'd fall back to displaying as Uncategorized.
+ */
+export async function renameCategory(oldName: string, newName: string): Promise<RenameCategoryResult> {
+    const trimmed = newName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
+    if (!trimmed) return { renamed: false, reason: "Name can't be empty." };
+    if (trimmed === oldName) return { renamed: true }; // unchanged — nothing to do, not an error
+
+    return withStorageLock(async () => {
+        const settings = await getSettings();
+        if (!settings.categories.includes(oldName)) {
+            return { renamed: false, reason: "Category no longer exists." };
+        }
+        if (trimmed === UNCATEGORIZED || settings.categories.includes(trimmed)) {
+            return { renamed: false, reason: "That name is already used by another category." };
+        }
+
+        settings.categories = settings.categories.map((c) => (c === oldName ? trimmed : c));
+        const { [oldName]: colorKey, ...remainingColors } = settings.categoryColors;
+        settings.categoryColors = colorKey ? { ...remainingColors, [trimmed]: colorKey } : remainingColors;
+        await setSettings(settings);
+
+        // Re-reads tabs from storage rather than trusting the caller's snapshot: that snapshot
+        // was taken whenever Settings last rendered, which may predate a tab add/edit/delete
+        // that happened elsewhere during this same popup session.
+        const currentTabs = await getTabs();
+        if (currentTabs.some((t) => t.category === oldName)) {
+            await setTabs(currentTabs.map((t) => (t.category === oldName ? { ...t, category: trimmed } : t)));
+        }
+
+        return { renamed: true };
+    });
+}
+
+export type MoveDirection = "up" | "down";
+
+/** Swaps a category with its immediate neighbor — sufficient for up/down controls; no-ops at either end of the list. */
+export async function moveCategory(name: string, direction: MoveDirection): Promise<void> {
+    return withStorageLock(async () => {
+        const settings = await getSettings();
+        const index = settings.categories.indexOf(name);
+        if (index === -1) return;
+        const swapWith = direction === "up" ? index - 1 : index + 1;
+        if (swapWith < 0 || swapWith >= settings.categories.length) return;
+
+        const categories = [...settings.categories];
+        [categories[index], categories[swapWith]] = [categories[swapWith], categories[index]];
+        settings.categories = categories;
+        await setSettings(settings);
+    });
+}
+
+/** Moves draggedName to sit where targetName currently is — drag-and-drop's counterpart to moveCategory's adjacent-only swap. */
+export async function reorderCategories(draggedName: string, targetName: string): Promise<void> {
+    if (draggedName === targetName) return;
+    return withStorageLock(async () => {
+        const settings = await getSettings();
+        const fromIndex = settings.categories.indexOf(draggedName);
+        const toIndex = settings.categories.indexOf(targetName);
+        if (fromIndex === -1 || toIndex === -1) return;
+
+        const categories = [...settings.categories];
+        const [moved] = categories.splice(fromIndex, 1);
+        categories.splice(toIndex, 0, moved);
+        settings.categories = categories;
+        await setSettings(settings);
+    });
 }
 
 export interface RemoveCategoryResult {
@@ -77,18 +162,26 @@ export interface RemoveCategoryResult {
     reason?: string;
 }
 
-/** Blocks removal while a category is in use or is the protected default (FR-007). */
-export async function removeCategory(name: string, tabs: SavedTab[]): Promise<RemoveCategoryResult> {
+/**
+ * Blocks removal while a category is in use or is the protected default (FR-007). Re-reads
+ * tabs from storage rather than trusting a caller-supplied snapshot, same reasoning as
+ * renameCategory: the "in use" check needs to see whatever's actually stored right now, not
+ * whatever Settings happened to have on hand when it last rendered.
+ */
+export async function removeCategory(name: string): Promise<RemoveCategoryResult> {
     if (name === UNCATEGORIZED) {
         return { removed: false, reason: '"Uncategorized" can\'t be removed.' };
     }
-    if (tabs.some((t) => getTabCategory(t) === name)) {
-        return { removed: false, reason: "In use — reassign its tabs first." };
-    }
-    const settings = await getSettings();
-    settings.categories = settings.categories.filter((c) => c !== name);
-    const { [name]: _removed, ...remainingColors } = settings.categoryColors;
-    settings.categoryColors = remainingColors;
-    await setSettings(settings);
-    return { removed: true };
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        if (tabs.some((t) => getTabCategory(t) === name)) {
+            return { removed: false, reason: "In use — reassign its tabs first." };
+        }
+        const settings = await getSettings();
+        settings.categories = settings.categories.filter((c) => c !== name);
+        const { [name]: _removed, ...remainingColors } = settings.categoryColors;
+        settings.categoryColors = remainingColors;
+        await setSettings(settings);
+        return { removed: true };
+    });
 }

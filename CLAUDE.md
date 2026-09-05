@@ -23,28 +23,41 @@ specifiers to add them, since native ESM resolution requires them.
 src/
   types.ts              SavedTab, Settings interfaces
   storage/
-    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS
+    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
+    writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
+                            chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add/edit/delete/reorder saved tabs, duplicate detection
-    CategoryRepository.ts category CRUD, color palette, "Uncategorized" sentinel
+    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection,
+                           ids are crypto.randomUUID() (never derived from Date.now())
+    CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
+                            so an omnibox or service-worker search can reuse it unchanged
+    backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
+                            merge (additive, dedupes by URL) vs. replace (full overwrite)
   render/
-    ListRenderer.ts        tab list rows (display + edit modes, drag handlers)
+    ListRenderer.ts        tab list rows (display + edit modes, drag handlers, search highlight)
     PillsRenderer.ts       category filter pills + "Outdated" pill
     HeroRenderer.ts         hero stats, save actions, manual-entry disclosure
     SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display)
+    SearchRenderer.ts      search input wiring (query state, clear, result announcements)
+    ToastRenderer.ts       single dismissible undo toast, reusable beyond delete; also a no-action error variant for a failed write
+    BackupRenderer.ts      export/import UI (file download, file picker, merge/replace confirm)
     viewController.ts      central refreshView() orchestrator — exists to avoid
                             circular imports between the render modules above
   util/
+    errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
     color.ts               tintHex (pastel row-tint generation from palette colors)
+    favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
+                            icons come from Chrome's local favicon cache, never the page's own site
   dom/domHelper.ts          getElement<T>(id) helper
   popup.ts                  DOMContentLoaded entry point — migrate → refreshView → wire hero/settings
 
 popup/popup.html / popup.css   markup + styles (hand-written, no CSS framework)
 popup/js/                      tsc build output — gitignored, never commit this
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage only
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
 fix-extensions.js              post-build import-path fixer (see above)
 ```
 
@@ -72,8 +85,8 @@ future automation in mind — element IDs are noted for that purpose).
   exception is `src/storage/migration.ts`, which reads legacy
   `localStorage` data on first run *in order to migrate it away* — never
   add new code that reads or writes `localStorage` for anything else.
-- **Manifest permissions are minimal on purpose** (`activeTab`, `storage`
-  only). If a new feature needs a new permission, that's a deliberate,
+- **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
+  `favicon`). If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
 - **No UI framework/state library.** Vanilla DOM APIs are the default;
   only reach for something heavier if a specific feature genuinely can't
@@ -94,6 +107,20 @@ future automation in mind — element IDs are noted for that purpose).
   themselves — when asked for a commit, provide the message text, don't
   run the command. Tagging and pushing a release tag (`git tag -a vX.Y.Z`,
   `git push origin vX.Y.Z`) is fine to run directly once asked to do so.
+- **Docs are part of the change, not a follow-up.** A change isn't done
+  until every doc it affects agrees with the code: `README.md` (features,
+  dev workflow), this file's `src/` breakdown, `TESTING.md` (new manual
+  cases for new behavior; existing cases whose expected UI text changed),
+  `PRIVACY.md` (any change to what's stored, computed, or requested over
+  the network — its URL is the live Store-listing policy, so drift here
+  is a compliance problem, not just a stale comment), `PUBLISHING.md`
+  (its listing copy and permission justifications quote the current
+  permission set and feature list — easy to forget since it's only
+  touched at release time, not on every spec), and the manifest's
+  `permissions` list. Check this before considering a spec finished, the
+  same way a clean `tsc` build is checked — not as a separate pass at
+  release time. This keeps a Store submission a packaging step rather
+  than a scramble to reverse-engineer what actually shipped.
 
 ## Spec-driven development
 
@@ -110,9 +137,12 @@ once.
 
 ## Publishing
 
-`PUBLISHING.md` (local-only) has the full Chrome Web Store submission
+`PUBLISHING.md` (committed) has the full Chrome Web Store submission
 playbook — listing copy, permission justifications, data-usage
-disclosures, and the update flow for subsequent versions. `PRIVACY.md`
+disclosures, and the update flow for subsequent versions. Its listing
+copy quotes the current permission set and feature list directly, so it
+drifts the same way `PRIVACY.md` does: a spec that changes either needs
+to update this file too, not just at release time. `PRIVACY.md`
 (committed — its URL is the declared privacy policy in the Store listing,
 so it must stay live on `main`) is the actual privacy policy shown to
 users and reviewers.

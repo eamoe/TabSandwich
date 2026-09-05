@@ -1,6 +1,6 @@
 # Privacy Policy — Tab Sandwich
 
-**Last updated:** 2026-07-08
+**Last updated:** 2026-09-05
 
 Tab Sandwich is a Chrome extension for saving and organizing browser tabs. This policy explains what data the extension handles and what it does with it.
 
@@ -10,11 +10,18 @@ When you save a tab, Tab Sandwich stores:
 
 - The page's title
 - The page's URL
-- The page's favicon (an image URL supplied by the page/browser)
 - A category you assign (optional)
 - The date and time you saved it
 
-This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. It is never transmitted anywhere.
+This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
+
+## Favicons
+
+No favicon data is stored at all. To show a saved tab's icon, the popup asks Chrome's built-in favicon cache for whatever it already has locally for that page's URL — the `favicon` permission is what allows this. The sites behind your saved tabs never see a request for their favicon: nothing is fetched over the network for this. A page Chrome has no cached icon for just shows a generic placeholder instead.
+
+## Export & import
+
+Settings includes an optional Export/Import feature. Export writes everything listed above (plus your category and outdated-tab settings) to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
 
 ## What Tab Sandwich does not do
 
@@ -26,8 +33,9 @@ This data is stored **only on your own device**, using Chrome's built-in `chrome
 
 ## Permissions
 
-- **`activeTab`** — used only at the moment you click the extension's icon or use its keyboard shortcut, to read the title, URL, and favicon of the tab you're currently viewing so it can be saved. Tab Sandwich cannot see any other tab, and cannot see this information at any other time.
+- **`activeTab`** — used only at the moment you click the extension's icon or use its keyboard shortcut, to read the title and URL of the tab you're currently viewing so it can be saved. Tab Sandwich cannot see any other tab, and cannot see this information at any other time.
 - **`storage`** — used to save your saved tabs and settings locally via `chrome.storage.local`, so they persist between browser sessions.
+- **`favicon`** — lets the popup read icons out of Chrome's own local favicon cache to show next to each saved tab, instead of fetching them from the page's own site. See "Favicons" above.
 
 ## Data deletion
 

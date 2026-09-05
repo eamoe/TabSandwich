@@ -4,6 +4,7 @@ import { getStorageUsage } from "../storage/chromeStorage";
 import { addTab, AddTabResult } from "../domain/TabRepository";
 import { getSelectableCategories, UNCATEGORIZED } from "../domain/CategoryRepository";
 import { normalizeUrl, isSupportedTabUrl } from "../util/url";
+import { writeErrorMessage } from "../util/errors";
 import { scrollToAndHighlight } from "./ListRenderer";
 
 type Refresh = () => void | Promise<void>;
@@ -40,6 +41,10 @@ function setStatus(message: string, kind: "success" | "duplicate" | "error"): vo
     }, 2500);
 }
 
+// Past this point, "how much room is left" stops being trivia and becomes something worth
+// acting on before the next write fails — see S06.
+const CAPACITY_WARNING_PCT = 80;
+
 /**
  * Real usage against the real quota (FR-013) — no invented ceiling — reported directly as a
  * percentage of bytes used rather than translated into "~N more tabs at this rate." That
@@ -48,13 +53,16 @@ function setStatus(message: string, kind: "success" | "duplicate" | "error"): vo
  * (more room turned into a bigger "N", even though you'd just used more storage, not less) —
  * confusing for something that reads like a literal, decrement-by-one countdown. A percentage
  * has no such trap: it only ever tracks bytes actually used, in either direction. Below 1% it's
- * shown as "<1%" rather than rounding to a flat, broken-looking "0%".
+ * shown as "<1%" rather than rounding to a flat, broken-looking "0%". Past the warning threshold
+ * both the text and the fill turn amber, since that's the point where it's worth knowing before
+ * the next write fails.
  */
 export async function renderHeroStats(tabs: SavedTab[]): Promise<void> {
     getElement<HTMLElement>("header-stats").textContent = `${tabs.length} saved`;
 
     const { bytesInUse, quotaBytes } = await getStorageUsage();
     const pct = quotaBytes > 0 ? Math.min((bytesInUse / quotaBytes) * 100, 100) : 0;
+    const nearLimit = pct >= CAPACITY_WARNING_PCT;
 
     const storageUsageEl = getElement<HTMLElement>("storage-usage");
     if (tabs.length === 0 || bytesInUse === 0) {
@@ -63,7 +71,9 @@ export async function renderHeroStats(tabs: SavedTab[]): Promise<void> {
         const pctLabel = pct < 1 ? "<1%" : `${Math.round(pct)}%`;
         storageUsageEl.textContent = `${pctLabel} of storage used`;
     }
+    storageUsageEl.classList.toggle("storage-usage--warning", nearLimit);
 
+    getElement<HTMLElement>("progress-fill").classList.toggle("progress-fill--warning", nearLimit);
     getElement<HTMLElement>("progress-fill").style.width = `${pct}%`;
     getElement<HTMLElement>("progress-bar").setAttribute("aria-valuenow", String(Math.round(pct)));
 }
@@ -86,8 +96,10 @@ function bindSaveButton(refresh: Refresh): void {
                 return;
             }
             const title = tab.title?.trim() || tab.url;
-            const result = await addTab({ title, url: tab.url, faviconUrl: tab.favIconUrl });
+            const result = await addTab({ title, url: tab.url });
             await handleSaveResult(result, refresh);
+        } catch (err) {
+            setStatus(writeErrorMessage(err), "error");
         } finally {
             saveBtn.disabled = false;
         }
@@ -160,12 +172,22 @@ function bindManualEntryForm(refresh: Refresh): void {
 
         const title = titleInput.value.trim() || new URL(normalized).hostname;
         const category = categorySelect.value || undefined;
-        const result = await addTab({ title, url: normalized, category });
-        await handleSaveResult(result, refresh);
-
-        form.reset();
-        setOpen(false);
+        try {
+            const result = await addTab({ title, url: normalized, category });
+            await handleSaveResult(result, refresh);
+            form.reset();
+            setOpen(false);
+        } catch (err) {
+            // Left open with what was typed still in it — nothing was saved, so there's nothing to reset.
+            setStatus(writeErrorMessage(err), "error");
+        }
     });
+
+    // Every other "closed" state goes through setOpen(false) above, which is what actually
+    // applies `inert` — without this, the static HTML's collapsed-by-CSS-only starting state
+    // never gets `inert` set at all, so its fields stay reachable by Tab (and by a screen
+    // reader) on a fresh popup open, until the toggle happens to be clicked once.
+    setOpen(false);
 }
 
 export function initHero(refresh: Refresh): void {

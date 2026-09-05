@@ -11,9 +11,13 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Save the current tab** — one click, no setup.
 - **Add a link manually** — for anything that isn't your active tab, via a secondary "+ Add link manually" form.
 - **Duplicate detection** — saving an already-saved URL highlights the existing entry instead of creating a copy.
-- **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/remove) from Settings.
+- **Search** — fuzzy-matches on title, domain, and path as you type, with matched characters highlighted; combines with an active category or Outdated filter.
+- **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/rename/remove/reorder) from Settings.
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings), tinting both its saved tabs and its filter pill so you can scan the list by color at a glance.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.
+- **Undo delete** — deleting a tab shows an 8-second Undo option before it's gone for good.
+- **Storage write protection** — a save, edit, delete, or category change that fails to write (e.g. storage full) shows a specific error instead of silently vanishing, and the storage indicator turns amber before you actually hit the limit.
+- **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a visible badge and their own quick filter.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).

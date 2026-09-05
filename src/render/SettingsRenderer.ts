@@ -1,18 +1,73 @@
 import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
 import { getTabs, getSettings, setSettings } from "../storage/chromeStorage";
+import { withStorageLock } from "../storage/writeQueue";
 import {
     addCategory,
     removeCategory,
+    renameCategory,
+    moveCategory,
+    reorderCategories,
+    MoveDirection,
     getTabCategory,
     getCategoryColorHex,
     setCategoryColor,
     CATEGORY_COLOR_PALETTE,
 } from "../domain/CategoryRepository";
+import { initBackup } from "./BackupRenderer";
+import { showErrorToast } from "./ToastRenderer";
+import { writeErrorMessage } from "../util/errors";
 
 type Refresh = () => void | Promise<void>;
 
-function createColorPicker(categoryName: string, categoryColors: Record<string, string>, refresh: Refresh): HTMLElement {
+const RENAME_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const UP_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`;
+const DOWN_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+const MAX_CATEGORY_NAME_LENGTH = 15;
+
+// Module-level, same pattern as ListRenderer's tab drag: only one category drag can be in
+// progress at a time across the whole list.
+let dragCat: string | null = null;
+
+/** Drag-and-drop reorder, alongside the up/down buttons — buttons cover the keyboard path (drag has none, same documented gap as the tab list), drag covers the fast mouse path. */
+function bindCategoryDragHandlers(li: HTMLLIElement, cat: string, message: HTMLElement, refresh: Refresh): void {
+    li.addEventListener("dragstart", (e) => {
+        dragCat = cat;
+        li.classList.add("dragging");
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    });
+
+    li.addEventListener("dragend", () => {
+        dragCat = null;
+        li.classList.remove("dragging");
+        document.querySelectorAll(".category-list li.drag-over").forEach((el) => el.classList.remove("drag-over"));
+    });
+
+    li.addEventListener("dragover", (e) => {
+        if (!dragCat || dragCat === cat) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        li.classList.add("drag-over");
+    });
+
+    li.addEventListener("dragleave", () => li.classList.remove("drag-over"));
+
+    li.addEventListener("drop", (e) => {
+        e.preventDefault();
+        li.classList.remove("drag-over");
+        if (!dragCat || dragCat === cat) return;
+        reorderCategories(dragCat, cat)
+            .catch((err) => flashMessage(message, writeErrorMessage(err)))
+            .finally(refresh);
+    });
+}
+
+function createColorPicker(
+    categoryName: string,
+    categoryColors: Record<string, string>,
+    message: HTMLElement,
+    refresh: Refresh
+): HTMLElement {
     const currentHex = getCategoryColorHex(categoryName, categoryColors);
     const picker = document.createElement("div");
     picker.className = "color-picker";
@@ -27,7 +82,11 @@ function createColorPicker(categoryName: string, categoryColors: Record<string, 
         swatch.setAttribute("aria-label", `${key}`);
         swatch.setAttribute("aria-pressed", String(hex === currentHex));
         swatch.addEventListener("click", async () => {
-            await setCategoryColor(categoryName, key);
+            try {
+                await setCategoryColor(categoryName, key);
+            } catch (err) {
+                flashMessage(message, writeErrorMessage(err));
+            }
             await refresh();
         });
         picker.appendChild(swatch);
@@ -35,68 +94,192 @@ function createColorPicker(categoryName: string, categoryColors: Record<string, 
     return picker;
 }
 
-function renderCategoryList(settings: Settings, tabs: SavedTab[], refresh: Refresh): void {
-    const list = getElement<HTMLUListElement>("category-list");
-    list.innerHTML = "";
+/**
+ * Shows `text` on this category's own status line for a few seconds — never a shared/global
+ * message, so it's unambiguous which card it refers to once there's more than one. `target`/
+ * `flashClass` additionally highlight the specific control at fault (the rename input, the
+ * remove button); actions with no single control to blame (a color swatch, a move button, a
+ * drag) just flash the message line on its own.
+ */
+function flashMessage(message: HTMLElement, text: string, target?: HTMLElement, flashClass?: string): void {
+    message.textContent = text;
+    if (target && flashClass) target.classList.add(flashClass);
+    window.setTimeout(() => {
+        message.textContent = "";
+        if (target && flashClass) target.classList.remove(flashClass);
+    }, 3000);
+}
 
-    for (const cat of settings.categories) {
-        const li = document.createElement("li");
-        li.className = "category-item";
+/**
+ * Swaps the name span for a text input in place. Enter blurs (committing via the blur
+ * handler below, so there's one single commit path); Escape reverts without saving. Blur
+ * itself always attempts a commit — renaming to the unchanged value is a no-op in
+ * renameCategory, so clicking away after not actually changing anything just quietly closes
+ * the editor instead of needing a separate "did anything change" check here.
+ */
+function startRenaming(
+    li: HTMLLIElement,
+    name: HTMLElement,
+    cat: string,
+    message: HTMLElement,
+    refresh: Refresh
+): void {
+    let cancelled = false;
+    // Dragging a row that's mid-rename would fight with selecting/editing its text — same
+    // reasoning as the tab list disabling drag on a row in edit mode.
+    li.draggable = false;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "cat-rename-input";
+    input.maxLength = MAX_CATEGORY_NAME_LENGTH;
+    input.value = cat;
+    input.setAttribute("aria-label", `Rename ${cat}`);
+    name.replaceWith(input);
+    input.focus();
+    input.select();
 
-        const row = document.createElement("div");
-        row.className = "category-item-row";
+    const revert = () => {
+        li.draggable = true;
+        if (input.isConnected) input.replaceWith(name);
+    };
 
-        const dot = document.createElement("span");
-        dot.className = "cat-dot";
-        dot.style.backgroundColor = getCategoryColorHex(cat, settings.categoryColors);
-        dot.setAttribute("aria-hidden", "true");
-        row.appendChild(dot);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            input.blur();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            cancelled = true;
+            revert();
+        }
+    });
 
-        const inUse = tabs.some((t) => getTabCategory(t) === cat);
-        const name = document.createElement("span");
-        name.className = "category-name";
-        name.textContent = cat;
-        row.appendChild(name);
-
-        row.appendChild(createColorPicker(cat, settings.categoryColors, refresh));
-
-        // Per-category message, shown as a second line on this specific card — a single
-        // shared status line was ambiguous about which category it referred to once there
-        // was more than one. Auto-clears after a few seconds, and every fresh render starts
-        // clean, so reopening Settings (which re-renders via refreshCategorySection) never
-        // shows a stale message left over from before.
-        const message = document.createElement("p");
-        message.className = "category-item-message";
-        message.setAttribute("role", "status");
-        message.setAttribute("aria-live", "polite");
-
-        // Visually muted when in use (not the real "why can't I remove this" signal — that's
-        // unreliable via a disabled button's title tooltip, which browsers often suppress).
-        // Stays a real, clickable button so clicking it still reveals the reason via the message.
-        const removeBtn = document.createElement("button");
-        removeBtn.type = "button";
-        removeBtn.className = "remove-cat" + (inUse ? " remove-cat--muted" : "");
-        removeBtn.setAttribute("aria-label", `Remove ${cat}`);
-        removeBtn.textContent = "×";
-        removeBtn.addEventListener("click", async () => {
-            const result = await removeCategory(cat, tabs);
-            if (!result.removed) {
-                message.textContent = result.reason ?? "Couldn't remove this category.";
-                removeBtn.classList.add("remove-cat--flash-error");
-                window.setTimeout(() => {
-                    message.textContent = "";
-                    removeBtn.classList.remove("remove-cat--flash-error");
-                }, 3000);
+    input.addEventListener("blur", async () => {
+        if (cancelled) return;
+        try {
+            const result = await renameCategory(cat, input.value);
+            if (!result.renamed) {
+                flashMessage(message, result.reason ?? "Couldn't rename this category.", input, "cat-rename-input--error");
+                revert();
                 return;
             }
             await refresh();
-        });
-        row.appendChild(removeBtn);
+        } catch (err) {
+            flashMessage(message, writeErrorMessage(err), input, "cat-rename-input--error");
+            revert();
+        }
+    });
+}
 
-        li.appendChild(row);
-        li.appendChild(message);
-        list.appendChild(li);
-    }
+function createCategoryItem(
+    cat: string,
+    index: number,
+    settings: Settings,
+    tabs: SavedTab[],
+    refresh: Refresh
+): HTMLLIElement {
+    const li = document.createElement("li");
+    li.className = "category-item";
+    li.draggable = true;
+
+    // Per-category message, shown as a second line on this specific card. Auto-clears after
+    // a few seconds, and every fresh render starts clean, so reopening Settings (which
+    // re-renders via refreshCategorySection) never shows a stale message left over from before.
+    // Built before the controls below so each one can flash a write failure onto it directly.
+    const message = document.createElement("p");
+    message.className = "category-item-message";
+    message.setAttribute("role", "status");
+    message.setAttribute("aria-live", "polite");
+
+    bindCategoryDragHandlers(li, cat, message, refresh);
+
+    const row = document.createElement("div");
+    row.className = "category-item-row";
+
+    // A stacked up/down pair reads as a reorder "handle" at the row's leading edge — and
+    // costs far less width than a side-by-side pair, which matters since this row is already
+    // carrying the color picker's 9 swatches.
+    const moveGroup = document.createElement("div");
+    moveGroup.className = "move-cat-group";
+    const move = (direction: MoveDirection, label: string, icon: string, disabled: boolean) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cat-icon-btn move-cat";
+        btn.setAttribute("aria-label", label);
+        btn.innerHTML = icon;
+        btn.disabled = disabled;
+        btn.addEventListener("click", async () => {
+            try {
+                await moveCategory(cat, direction);
+            } catch (err) {
+                flashMessage(message, writeErrorMessage(err));
+            }
+            await refresh();
+        });
+        return btn;
+    };
+    moveGroup.appendChild(move("up", `Move ${cat} up`, UP_ICON, index === 0));
+    moveGroup.appendChild(move("down", `Move ${cat} down`, DOWN_ICON, index === settings.categories.length - 1));
+    row.appendChild(moveGroup);
+
+    const dot = document.createElement("span");
+    dot.className = "cat-dot";
+    dot.style.backgroundColor = getCategoryColorHex(cat, settings.categoryColors);
+    dot.setAttribute("aria-hidden", "true");
+    row.appendChild(dot);
+
+    const inUse = tabs.some((t) => getTabCategory(t) === cat);
+    const name = document.createElement("span");
+    name.className = "category-name";
+    name.textContent = cat;
+    row.appendChild(name);
+
+    row.appendChild(createColorPicker(cat, settings.categoryColors, message, refresh));
+
+    // Paired with remove at the row's trailing edge — the two per-category actions that
+    // aren't "pick a value" (rename, remove) sit together, same as edit+delete pair in the
+    // main tab list.
+    const renameBtn = document.createElement("button");
+    renameBtn.type = "button";
+    renameBtn.className = "cat-icon-btn";
+    renameBtn.setAttribute("aria-label", `Rename ${cat}`);
+    renameBtn.innerHTML = RENAME_ICON;
+    renameBtn.addEventListener("click", () => startRenaming(li, name, cat, message, refresh));
+    row.appendChild(renameBtn);
+
+    // Visually muted when in use (not the real "why can't I remove this" signal — that's
+    // unreliable via a disabled button's title tooltip, which browsers often suppress).
+    // Stays a real, clickable button so clicking it still reveals the reason via the message.
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "remove-cat" + (inUse ? " remove-cat--muted" : "");
+    removeBtn.setAttribute("aria-label", `Remove ${cat}`);
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", async () => {
+        try {
+            const result = await removeCategory(cat);
+            if (!result.removed) {
+                flashMessage(message, result.reason ?? "Couldn't remove this category.", removeBtn, "remove-cat--flash-error");
+                return;
+            }
+            await refresh();
+        } catch (err) {
+            flashMessage(message, writeErrorMessage(err), removeBtn, "remove-cat--flash-error");
+        }
+    });
+    row.appendChild(removeBtn);
+
+    li.appendChild(row);
+    li.appendChild(message);
+    return li;
+}
+
+function renderCategoryList(settings: Settings, tabs: SavedTab[], refresh: Refresh): void {
+    const list = getElement<HTMLUListElement>("category-list");
+    list.innerHTML = "";
+    settings.categories.forEach((cat, index) => {
+        list.appendChild(createCategoryItem(cat, index, settings, tabs, refresh));
+    });
 }
 
 /**
@@ -126,9 +309,14 @@ function bindAddCategoryForm(refresh: Refresh): void {
         e.preventDefault();
         const name = input.value.trim();
         if (!name) return;
-        await addCategory(name);
-        input.value = "";
-        updateCounter();
+        try {
+            await addCategory(name);
+            // Left in place on failure — nothing was saved, so there's nothing to clear.
+            input.value = "";
+            updateCounter();
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
         await refresh();
     });
 }
@@ -148,19 +336,33 @@ function bindOutdatedControls(refresh: Refresh): void {
     const daysInput = getElement<HTMLInputElement>("outdated-days");
 
     toggle.addEventListener("change", async () => {
-        const settings = await getSettings();
-        settings.outdatedEnabled = toggle.checked;
-        await setSettings(settings);
-        daysInput.disabled = !toggle.checked;
+        try {
+            await withStorageLock(async () => {
+                const settings = await getSettings();
+                settings.outdatedEnabled = toggle.checked;
+                await setSettings(settings);
+            });
+            daysInput.disabled = !toggle.checked;
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await syncOutdatedControls(); // revert the toggle/input to whatever's actually stored
+        }
         await refresh();
     });
 
     daysInput.addEventListener("change", async () => {
         const days = Math.max(1, Math.min(365, parseInt(daysInput.value, 10) || 7));
         daysInput.value = String(days);
-        const settings = await getSettings();
-        settings.outdatedDays = days;
-        await setSettings(settings);
+        try {
+            await withStorageLock(async () => {
+                const settings = await getSettings();
+                settings.outdatedDays = days;
+                await setSettings(settings);
+            });
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await syncOutdatedControls();
+        }
         await refresh();
     });
 }
@@ -207,6 +409,13 @@ function bindViewToggle(refresh: Refresh): void {
         // there, and it looked identical to its main-screen state with nothing to tell the
         // two apart. Back is the only way in and out from here.
         gearBtn.hidden = true;
+        // Drives the search row's visibility via CSS rather than setting its own [hidden]
+        // here — that attribute stays owned solely by whether anything's saved yet (see
+        // SearchRenderer), so this can't fight it over the same property. Making the input
+        // itself unreachable, not just visually tucked away, matters: a query typed while the
+        // list behind it is hidden corrupts row-insert animations (getBoundingClientRect
+        // returns zero for anything under display:none) — this closes off that path entirely.
+        document.body.classList.add("settings-open");
         backBtn.focus();
         // Re-render fresh on every open — belt-and-suspenders alongside the message's own
         // timeout, so a stale per-category message never survives a trip back to the main view.
@@ -220,6 +429,7 @@ function bindViewToggle(refresh: Refresh): void {
         actionRow.hidden = false;
         manualEntry.hidden = false;
         gearBtn.hidden = false;
+        document.body.classList.remove("settings-open");
         gearBtn.focus();
     });
 }
@@ -229,5 +439,6 @@ export async function initSettings(refresh: Refresh): Promise<void> {
     bindAddCategoryForm(refresh);
     bindOutdatedControls(refresh);
     bindShortcutDisplay();
+    initBackup(refresh);
     await syncOutdatedControls();
 }

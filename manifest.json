@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Tab Sandwich",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "description": "Save tabs in one click, organize with color-coded categories, and spot outdated ones. 100% local — nothing leaves your browser.",
     "icons": {
         "16": "images/icon-16.png",
@@ -20,7 +20,18 @@
     },
     "permissions": [
         "activeTab",
-        "storage"
+        "storage",
+        "favicon"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "_favicon/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
     ],
     "commands": {
         "_execute_action": {

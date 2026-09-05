@@ -42,10 +42,10 @@ Save tabs in one click, organize with color-coded categories, and spot outdated 
 Tab Sandwich is a fast, focused way to save and organize the tabs you want to come back to.
 
 SAVE INSTANTLY
-Click the toolbar icon (or press Alt+S) and hit Save Tab — the current page's title, URL, and favicon are saved immediately. Need to save a link that isn't your active tab? Use "+ Add link manually."
+Click the toolbar icon (or press Alt+S) and hit Save Tab — the current page's title and URL are saved immediately. Need to save a link that isn't your active tab? Use "+ Add link manually."
 
 ORGANIZE WITH CATEGORIES
-Assign a color-coded category to any saved tab. Filter your list with a click, manage your categories (add, remove, recolor) from Settings, and scan your list at a glance by color.
+Assign a color-coded category to any saved tab. Filter your list with a click, manage your categories (add, rename, remove, reorder, recolor) from Settings, and scan your list at a glance by color.
 
 NEVER LOSE TRACK OF STALE TABS
 Tabs you saved a while ago and haven't revisited get a visible age badge, with a dedicated quick filter to round them all up and decide what to keep.
@@ -57,7 +57,7 @@ KEYBOARD FRIENDLY
 Every core action — saving, filtering, editing, deleting, settings — works without a mouse. Open the popup itself with a customizable keyboard shortcut.
 
 YOUR DATA STAYS YOURS
-Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the two permissions it actually uses: access to your current tab (only when you click the extension) and local storage.
+Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site).
 ```
 
 ### Screenshots
@@ -81,8 +81,9 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
    ```
 
 2. **Permission justifications:**
-   - `activeTab`: "Used only when the user clicks the extension icon or its keyboard shortcut, to read the title/URL/favicon of the currently active tab so it can be saved. No access to any other tab."
+   - `activeTab`: "Used only when the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab so it can be saved. No access to any other tab."
    - `storage`: "Used to persist the user's saved tabs and settings locally via chrome.storage.local. No data is transmitted off-device."
+   - `favicon`: "Used to show each saved tab's icon by reading it from Chrome's own local favicon cache, instead of fetching it from the page's own site. No favicon data is stored, and no request is ever made to the saved page's site for this."
 
 3. **Data usage:**
    - Data types collected: check **"Web history"** (we store saved URLs/titles).
