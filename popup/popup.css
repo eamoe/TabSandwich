@@ -68,9 +68,12 @@ summary:focus-visible {
 .gear-btn:hover, .gear-btn:focus-visible { background: rgba(255,255,255,0.3); }
 
 .progress-bar { height: 8px; background: rgba(255,255,255,0.25); border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
-.progress-fill { height: 100%; width: 0%; background: #fff; border-radius: 5px; transition: width 0.3s ease; }
+.progress-fill { height: 100%; width: 0%; background: #fff; border-radius: 5px; transition: width 0.3s ease, background-color 0.2s ease; }
+/* Amber only past the 80% threshold (see HeroRenderer) — the fill is otherwise white and mute, matching the quiet default. */
+.progress-fill--warning { background: #E8B93A; }
 
 .stats-row { display: flex; justify-content: space-between; font-size: 11.5px; color: #E5E2D5; }
+.storage-usage--warning { color: #E8B93A; font-weight: 700; }
 
 .action-row { margin-top: 14px; }
 .save-btn {
@@ -412,4 +415,8 @@ main {
   background: none; border: none; color: #B9B4CF; font-weight: 700; font-size: 11px;
   cursor: pointer; padding: 2px 4px; border-radius: 6px;
 }
+
+/* A failed write, not an undoable action — same shell, red-accented, no Undo button. */
+.toast--error { background: #E5484D; box-shadow: 0 6px 18px rgba(229, 72, 77, 0.35); }
+.toast--error .toast-undo { display: none; }
 .toast-undo:hover, .toast-undo:focus-visible { color: #fff; }

@@ -1,13 +1,14 @@
 import { getTabs, getSettings } from "../storage/chromeStorage";
 import { getSelectableCategories } from "../domain/CategoryRepository";
-import { editTab, deleteTab, restoreTab, reorderTabs } from "../domain/TabRepository";
+import { editTab, deleteTab, restoreTab, reorderTabs, DeleteTabResult } from "../domain/TabRepository";
 import { searchTabs, MatchRange } from "../domain/search";
 import { renderPills, filterTabs } from "./PillsRenderer";
 import { renderList, scrollToAndHighlight } from "./ListRenderer";
 import { renderHeroStats } from "./HeroRenderer";
 import { refreshCategorySection } from "./SettingsRenderer";
 import { getSearchQuery, setSearchRowVisible, announceResultCount, clearResultAnnouncement } from "./SearchRenderer";
-import { showUndoToast } from "./ToastRenderer";
+import { showUndoToast, showErrorToast } from "./ToastRenderer";
+import { writeErrorMessage } from "../util/errors";
 
 // Typing re-triggers a full refreshView() on every keystroke (see SearchRenderer), and each
 // call does several independent storage reads before it renders anything — fast enough that
@@ -61,21 +62,41 @@ export async function refreshView(): Promise<void> {
         settings,
         {
             onEdit: async (id, updates) => {
-                await editTab(id, updates);
+                // The row already shows the edited values optimistically (see ListRenderer's edit-save
+                // handler) — if the write fails, this refresh re-reads storage and reverts the row to
+                // what's actually saved, so the error toast and the visible state agree.
+                try {
+                    await editTab(id, updates);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
                 await refreshView();
             },
             onDelete: async (id) => {
-                const result = await deleteTab(id);
+                let result: DeleteTabResult | null = null;
+                try {
+                    result = await deleteTab(id);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
                 await refreshView();
-                if (!result) return; // already gone (e.g. a second click before the row's own refresh landed)
+                if (!result) return; // already gone, or the delete's write failed above
                 showUndoToast("Deleted", async () => {
-                    await restoreTab(result.tab, result.index);
+                    try {
+                        await restoreTab(result.tab, result.index);
+                    } catch (err) {
+                        showErrorToast(writeErrorMessage(err));
+                    }
                     await refreshView();
                     scrollToAndHighlight(result.tab.id);
                 });
             },
             onReorder: async (draggedId, targetId) => {
-                await reorderTabs(draggedId, targetId);
+                try {
+                    await reorderTabs(draggedId, targetId);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
                 await refreshView();
             },
         },

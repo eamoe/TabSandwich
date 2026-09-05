@@ -260,11 +260,16 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-080 — Capacity estimate reflects real usage (P2)**
 - Preconditions: several tabs saved.
 - Steps: Read the hero's storage line.
-- Expected: Shows "N% of storage used" against the real `chrome.storage.local` quota (below 1%, shows "<1%" rather than rounding to "0%").
+- Expected: Shows "N% of storage used" against the real `chrome.storage.local` quota (below 1%, shows "<1%" rather than rounding to "0%"). At normal usage this is white/neutral, not amber (see TC-082).
 
 **TC-081 — No capacity text on empty list (P3)**
 - Steps: Clear all tabs.
 - Expected: Storage-usage text is blank (not "0% of storage used" or similar).
+
+**TC-082 — Capacity indicator turns amber past 80% (P2)**
+- Preconditions: `chrome.storage.local` usage pushed past 80% of quota — e.g. from the popup's DevTools console, `chrome.storage.local.set({ "tabSandwich.tabs": Array.from({length: N}, (_, i) => ({ id: String(i), title: "x".repeat(2000), url: "https://example.com/"+i, savedAt: Date.now() })) })` with `N` large enough to cross the threshold against the real quota reported by TC-103's `chrome.storage.local.QUOTA_BYTES`.
+- Steps: Reopen the popup.
+- Expected: The storage-usage text (e.g. "83% of storage used") and the progress fill both switch to amber. Below the threshold, both stay in their normal white/neutral color regardless of the exact percentage shown. Reset with `chrome.storage.local.clear()` afterward.
 
 ---
 
@@ -506,3 +511,63 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-160 — A category mid-rename is not draggable (P3)**
 - Steps: Click a category's rename icon (input now showing) → attempt to drag that card.
 - Expected: No drag occurs. Pressing Escape or committing the rename restores normal drag behavior.
+
+---
+
+## 15. Storage Write Hardening
+
+All cases here simulate a rejected `chrome.storage.local.set()` from the popup's own DevTools console (right-click the popup → Inspect → Console), since there's no in-app way to make a real write fail on demand:
+```js
+const __origSet = chrome.storage.local.set;
+chrome.storage.local.set = () => Promise.reject(new Error("QUOTA_BYTES quota exceeded"));
+```
+Restore it afterward with `chrome.storage.local.set = __origSet;` before continuing to other cases — leaving it patched breaks everything else in the popup.
+
+**TC-170 — A failed save shows a specific error, not a silent no-op (P1)**
+- Preconditions: write patched to reject (see above).
+- Steps: Click **Save Tab**.
+- Expected: The Save button itself shows an error message (reusing its existing error-flash state) — "Storage is full. Export your tabs, remove some, then try again." — not "Saved!". Reopen the popup with the patch removed: the tab was not actually saved.
+
+**TC-171 — A failed manual-entry save leaves the form open with its input intact (P2)**
+- Preconditions: write patched to reject.
+- Steps: Open **+ Add link manually**, fill in a URL, submit.
+- Expected: An error message appears; the form stays open with what was typed still in it (nothing is reset, since nothing was saved).
+
+**TC-172 — A failed edit shows an error and reverts the row (P1)**
+- Preconditions: write patched to reject; at least one saved tab.
+- Steps: Edit a tab's title, click **Save**.
+- Expected: The row briefly shows the edited title (the optimistic update), then an error toast appears and the row reverts to its original, actually-stored title.
+
+**TC-173 — A failed delete shows an error and leaves the row in place (P1)**
+- Preconditions: write patched to reject; at least one saved tab.
+- Steps: Delete a tab.
+- Expected: An error toast appears; the row is never removed (no undo toast either — nothing was deleted to undo).
+
+**TC-174 — A failed tab reorder shows an error and leaves the order unchanged (P2)**
+- Preconditions: write patched to reject; 2+ saved tabs.
+- Steps: Drag one tab to a new position.
+- Expected: An error toast appears; reopening the popup (patch removed) shows the original order.
+
+**TC-175 — A failed category action shows an error on that category's own card (P2)**
+- Preconditions: write patched to reject; 1+ configured category.
+- Steps: Try renaming a category, changing its color, and moving it up/down — one at a time.
+- Expected: Each attempt flashes an error message on that category's own status line (same spot used for validation errors like "That name is already used"); nothing changes in the category list once the patch is removed and the popup is reopened.
+
+**TC-176 — A failed category add shows an error (P3)**
+- Preconditions: write patched to reject.
+- Steps: Add a new category.
+- Expected: An error toast appears; the typed name stays in the input (nothing is cleared, since nothing was saved).
+
+**TC-177 — A failed outdated-settings change shows an error and reverts the control (P3)**
+- Preconditions: write patched to reject.
+- Steps: Toggle **Outdated tracking** off, or change the days field.
+- Expected: An error toast appears and the control snaps back to its actual stored value (not left showing the un-saved change).
+
+**TC-178 — A failed import shows an error without discarding what was there before (P2)**
+- Preconditions: write patched to reject; a valid backup file ready to import.
+- Steps: Import the file, choose **Merge** (or **Replace**).
+- Expected: The backup status line shows an error, not a success message; reopening the popup (patch removed) shows the tabs/settings from before the import attempt, untouched.
+
+**TC-179 — No `unlimitedStorage` permission (P1, release gate)**
+- Steps: Inspect `manifest.json`.
+- Expected: `permissions` is unchanged by this spec — no `unlimitedStorage` added. (See S06: at this app's data-model size the real 10 MB quota isn't a realistic ceiling, and the permission wouldn't change what the capacity indicator reports anyway, since `chrome.storage.local.QUOTA_BYTES` is a fixed constant regardless of whether it's granted.)

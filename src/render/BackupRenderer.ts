@@ -1,6 +1,7 @@
 import { getTabs, getSettings, setTabs, setSettings } from "../storage/chromeStorage";
 import { getElement } from "../dom/domHelper";
-import { showUndoToast } from "./ToastRenderer";
+import { showUndoToast, showErrorToast } from "./ToastRenderer";
+import { writeErrorMessage } from "../util/errors";
 import { buildBackupFile, backupFileName, parseBackupFile, mergeImport, replaceImport, ParsedImport } from "../domain/backup";
 
 type Refresh = () => void | Promise<void>;
@@ -81,16 +82,26 @@ function showImportConfirm(parsed: ParsedImport, refresh: Refresh): void {
             setStatus("Nothing new — everything in this file is already saved.");
             return;
         }
-        await setTabs(result.tabs);
-        await setSettings(result.settings);
+        try {
+            await setTabs(result.tabs);
+            await setSettings(result.settings);
+        } catch (err) {
+            setStatus(writeErrorMessage(err), true);
+            await refresh();
+            return;
+        }
         await refresh();
 
         const parts: string[] = [];
         if (result.addedCount > 0) parts.push(plural(result.addedCount, "tab"));
         if (result.addedCategoryCount > 0) parts.push(pluralCategory(result.addedCategoryCount));
         showUndoToast(`Imported ${parts.join(" and ")}`, async () => {
-            await setTabs(prevTabs);
-            await setSettings(prevSettings);
+            try {
+                await setTabs(prevTabs);
+                await setSettings(prevSettings);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
             await refresh();
         });
     };
@@ -99,12 +110,22 @@ function showImportConfirm(parsed: ParsedImport, refresh: Refresh): void {
         const [prevTabs, prevSettings] = await Promise.all([getTabs(), getSettings()]);
         const result = replaceImport(parsed);
         close();
-        await setTabs(result.tabs);
-        await setSettings(result.settings);
+        try {
+            await setTabs(result.tabs);
+            await setSettings(result.settings);
+        } catch (err) {
+            setStatus(writeErrorMessage(err), true);
+            await refresh();
+            return;
+        }
         await refresh();
         showUndoToast("Replaced all tabs and settings", async () => {
-            await setTabs(prevTabs);
-            await setSettings(prevSettings);
+            try {
+                await setTabs(prevTabs);
+                await setSettings(prevSettings);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
             await refresh();
         });
     };

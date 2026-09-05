@@ -23,7 +23,7 @@ specifiers to add them, since native ESM resolution requires them.
 src/
   types.ts              SavedTab, Settings interfaces
   storage/
-    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS
+    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
   domain/
     TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection
@@ -38,11 +38,12 @@ src/
     HeroRenderer.ts         hero stats, save actions, manual-entry disclosure
     SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display)
     SearchRenderer.ts      search input wiring (query state, clear, result announcements)
-    ToastRenderer.ts       single dismissible undo toast, reusable beyond delete
+    ToastRenderer.ts       single dismissible undo toast, reusable beyond delete; also a no-action error variant for a failed write
     BackupRenderer.ts      export/import UI (file download, file picker, merge/replace confirm)
     viewController.ts      central refreshView() orchestrator — exists to avoid
                             circular imports between the render modules above
   util/
+    errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
     color.ts               tintHex (pastel row-tint generation from palette colors)

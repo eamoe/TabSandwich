@@ -14,6 +14,8 @@ import {
     CATEGORY_COLOR_PALETTE,
 } from "../domain/CategoryRepository";
 import { initBackup } from "./BackupRenderer";
+import { showErrorToast } from "./ToastRenderer";
+import { writeErrorMessage } from "../util/errors";
 
 type Refresh = () => void | Promise<void>;
 
@@ -27,7 +29,7 @@ const MAX_CATEGORY_NAME_LENGTH = 15;
 let dragCat: string | null = null;
 
 /** Drag-and-drop reorder, alongside the up/down buttons — buttons cover the keyboard path (drag has none, same documented gap as the tab list), drag covers the fast mouse path. */
-function bindCategoryDragHandlers(li: HTMLLIElement, cat: string, refresh: Refresh): void {
+function bindCategoryDragHandlers(li: HTMLLIElement, cat: string, message: HTMLElement, refresh: Refresh): void {
     li.addEventListener("dragstart", (e) => {
         dragCat = cat;
         li.classList.add("dragging");
@@ -53,11 +55,18 @@ function bindCategoryDragHandlers(li: HTMLLIElement, cat: string, refresh: Refre
         e.preventDefault();
         li.classList.remove("drag-over");
         if (!dragCat || dragCat === cat) return;
-        reorderCategories(dragCat, cat).then(refresh);
+        reorderCategories(dragCat, cat)
+            .catch((err) => flashMessage(message, writeErrorMessage(err)))
+            .finally(refresh);
     });
 }
 
-function createColorPicker(categoryName: string, categoryColors: Record<string, string>, refresh: Refresh): HTMLElement {
+function createColorPicker(
+    categoryName: string,
+    categoryColors: Record<string, string>,
+    message: HTMLElement,
+    refresh: Refresh
+): HTMLElement {
     const currentHex = getCategoryColorHex(categoryName, categoryColors);
     const picker = document.createElement("div");
     picker.className = "color-picker";
@@ -72,7 +81,11 @@ function createColorPicker(categoryName: string, categoryColors: Record<string, 
         swatch.setAttribute("aria-label", `${key}`);
         swatch.setAttribute("aria-pressed", String(hex === currentHex));
         swatch.addEventListener("click", async () => {
-            await setCategoryColor(categoryName, key);
+            try {
+                await setCategoryColor(categoryName, key);
+            } catch (err) {
+                flashMessage(message, writeErrorMessage(err));
+            }
             await refresh();
         });
         picker.appendChild(swatch);
@@ -80,13 +93,19 @@ function createColorPicker(categoryName: string, categoryColors: Record<string, 
     return picker;
 }
 
-/** Shows `text` on this category's own status line for a few seconds — never a shared/global message, so it's unambiguous which card it refers to once there's more than one. */
-function flashMessage(message: HTMLElement, flashTarget: HTMLElement, flashClass: string, text: string): void {
+/**
+ * Shows `text` on this category's own status line for a few seconds — never a shared/global
+ * message, so it's unambiguous which card it refers to once there's more than one. `target`/
+ * `flashClass` additionally highlight the specific control at fault (the rename input, the
+ * remove button); actions with no single control to blame (a color swatch, a move button, a
+ * drag) just flash the message line on its own.
+ */
+function flashMessage(message: HTMLElement, text: string, target?: HTMLElement, flashClass?: string): void {
     message.textContent = text;
-    flashTarget.classList.add(flashClass);
+    if (target && flashClass) target.classList.add(flashClass);
     window.setTimeout(() => {
         message.textContent = "";
-        flashTarget.classList.remove(flashClass);
+        if (target && flashClass) target.classList.remove(flashClass);
     }, 3000);
 }
 
@@ -137,13 +156,18 @@ function startRenaming(
 
     input.addEventListener("blur", async () => {
         if (cancelled) return;
-        const result = await renameCategory(cat, input.value, tabs);
-        if (!result.renamed) {
-            flashMessage(message, input, "cat-rename-input--error", result.reason ?? "Couldn't rename this category.");
+        try {
+            const result = await renameCategory(cat, input.value, tabs);
+            if (!result.renamed) {
+                flashMessage(message, result.reason ?? "Couldn't rename this category.", input, "cat-rename-input--error");
+                revert();
+                return;
+            }
+            await refresh();
+        } catch (err) {
+            flashMessage(message, writeErrorMessage(err), input, "cat-rename-input--error");
             revert();
-            return;
         }
-        await refresh();
     });
 }
 
@@ -157,7 +181,17 @@ function createCategoryItem(
     const li = document.createElement("li");
     li.className = "category-item";
     li.draggable = true;
-    bindCategoryDragHandlers(li, cat, refresh);
+
+    // Per-category message, shown as a second line on this specific card. Auto-clears after
+    // a few seconds, and every fresh render starts clean, so reopening Settings (which
+    // re-renders via refreshCategorySection) never shows a stale message left over from before.
+    // Built before the controls below so each one can flash a write failure onto it directly.
+    const message = document.createElement("p");
+    message.className = "category-item-message";
+    message.setAttribute("role", "status");
+    message.setAttribute("aria-live", "polite");
+
+    bindCategoryDragHandlers(li, cat, message, refresh);
 
     const row = document.createElement("div");
     row.className = "category-item-row";
@@ -175,7 +209,11 @@ function createCategoryItem(
         btn.innerHTML = icon;
         btn.disabled = disabled;
         btn.addEventListener("click", async () => {
-            await moveCategory(cat, direction);
+            try {
+                await moveCategory(cat, direction);
+            } catch (err) {
+                flashMessage(message, writeErrorMessage(err));
+            }
             await refresh();
         });
         return btn;
@@ -196,15 +234,7 @@ function createCategoryItem(
     name.textContent = cat;
     row.appendChild(name);
 
-    row.appendChild(createColorPicker(cat, settings.categoryColors, refresh));
-
-    // Per-category message, shown as a second line on this specific card. Auto-clears after
-    // a few seconds, and every fresh render starts clean, so reopening Settings (which
-    // re-renders via refreshCategorySection) never shows a stale message left over from before.
-    const message = document.createElement("p");
-    message.className = "category-item-message";
-    message.setAttribute("role", "status");
-    message.setAttribute("aria-live", "polite");
+    row.appendChild(createColorPicker(cat, settings.categoryColors, message, refresh));
 
     // Paired with remove at the row's trailing edge — the two per-category actions that
     // aren't "pick a value" (rename, remove) sit together, same as edit+delete pair in the
@@ -226,12 +256,16 @@ function createCategoryItem(
     removeBtn.setAttribute("aria-label", `Remove ${cat}`);
     removeBtn.textContent = "×";
     removeBtn.addEventListener("click", async () => {
-        const result = await removeCategory(cat, tabs);
-        if (!result.removed) {
-            flashMessage(message, removeBtn, "remove-cat--flash-error", result.reason ?? "Couldn't remove this category.");
-            return;
+        try {
+            const result = await removeCategory(cat, tabs);
+            if (!result.removed) {
+                flashMessage(message, result.reason ?? "Couldn't remove this category.", removeBtn, "remove-cat--flash-error");
+                return;
+            }
+            await refresh();
+        } catch (err) {
+            flashMessage(message, writeErrorMessage(err), removeBtn, "remove-cat--flash-error");
         }
-        await refresh();
     });
     row.appendChild(removeBtn);
 
@@ -275,9 +309,14 @@ function bindAddCategoryForm(refresh: Refresh): void {
         e.preventDefault();
         const name = input.value.trim();
         if (!name) return;
-        await addCategory(name);
-        input.value = "";
-        updateCounter();
+        try {
+            await addCategory(name);
+            // Left in place on failure — nothing was saved, so there's nothing to clear.
+            input.value = "";
+            updateCounter();
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
         await refresh();
     });
 }
@@ -299,8 +338,13 @@ function bindOutdatedControls(refresh: Refresh): void {
     toggle.addEventListener("change", async () => {
         const settings = await getSettings();
         settings.outdatedEnabled = toggle.checked;
-        await setSettings(settings);
-        daysInput.disabled = !toggle.checked;
+        try {
+            await setSettings(settings);
+            daysInput.disabled = !toggle.checked;
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await syncOutdatedControls(); // revert the toggle/input to whatever's actually stored
+        }
         await refresh();
     });
 
@@ -309,7 +353,12 @@ function bindOutdatedControls(refresh: Refresh): void {
         daysInput.value = String(days);
         const settings = await getSettings();
         settings.outdatedDays = days;
-        await setSettings(settings);
+        try {
+            await setSettings(settings);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await syncOutdatedControls();
+        }
         await refresh();
     });
 }

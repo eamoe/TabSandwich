@@ -1,6 +1,7 @@
 import { getElement } from "../dom/domHelper";
 
 const TOAST_DURATION_MS = 8000;
+const ERROR_TOAST_DURATION_MS = 6000;
 
 let hideTimeout: number | undefined;
 let pendingUndo: (() => void | Promise<void>) | undefined;
@@ -25,6 +26,7 @@ function hide(): void {
     hideTimeout = undefined;
     pendingUndo = undefined;
     setVisible(false);
+    getElement<HTMLElement>("toast").classList.remove("toast--error");
 }
 
 /**
@@ -37,11 +39,28 @@ function hide(): void {
 export function showUndoToast(message: string, onUndo: () => void | Promise<void>): void {
     if (hideTimeout) window.clearTimeout(hideTimeout);
 
+    getElement<HTMLElement>("toast").classList.remove("toast--error");
     getElement<HTMLElement>("toast-message").textContent = message;
     pendingUndo = onUndo;
     setVisible(true);
 
     hideTimeout = window.setTimeout(hide, TOAST_DURATION_MS);
+}
+
+/**
+ * A failed write has nothing to undo, so this reuses the same toast shell as showUndoToast
+ * but without an action — the Undo button is hidden via .toast--error rather than left
+ * present-but-inert, which would invite a click that silently does nothing.
+ */
+export function showErrorToast(message: string): void {
+    if (hideTimeout) window.clearTimeout(hideTimeout);
+
+    pendingUndo = undefined;
+    getElement<HTMLElement>("toast").classList.add("toast--error");
+    getElement<HTMLElement>("toast-message").textContent = message;
+    setVisible(true);
+
+    hideTimeout = window.setTimeout(hide, ERROR_TOAST_DURATION_MS);
 }
 
 export function initToast(): void {
