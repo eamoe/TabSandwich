@@ -571,3 +571,22 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-179 — No `unlimitedStorage` permission (P1, release gate)**
 - Steps: Inspect `manifest.json`.
 - Expected: `permissions` is unchanged by this spec — no `unlimitedStorage` added. (See S06: at this app's data-model size the real 10 MB quota isn't a realistic ceiling, and the permission wouldn't change what the capacity indicator reports anyway, since `chrome.storage.local.QUOTA_BYTES` is a fixed constant regardless of whether it's granted.)
+
+## 16. Stable Ids & Serialized Writes
+
+**TC-180 — Saved tab ids are UUIDs, not derived from time (P3)**
+- Steps: Save a tab. In the popup's DevTools console: `(await chrome.storage.local.get("tabSandwich.tabs"))["tabSandwich.tabs"]`.
+- Expected: each tab's `id` is a UUID (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`), not a plain numeric timestamp string.
+
+**TC-181 — Imported tabs get UUID ids too (P3)**
+- Steps: Import a backup file (Merge or Replace), then inspect stored tabs as in TC-180.
+- Expected: every imported tab's `id` is also a UUID, not the old `<timestamp>-<index>` scheme.
+
+**TC-182 — Overlapping writes never lose an update (P1)**
+- Preconditions: 2+ saved tabs, at least one in different categories. From the popup's DevTools console, slow every write down to widen the race window:
+  ```js
+  const __origSet = chrome.storage.local.set.bind(chrome.storage.local);
+  chrome.storage.local.set = (obj) => new Promise((r) => setTimeout(() => r(__origSet(obj)), 400));
+  ```
+- Steps: While the delay is patched in, trigger two different mutations back to back, well within that 400ms window — e.g. edit one tab's title (click Save) and immediately delete a different tab; or rename a category and immediately toggle **Outdated tracking**.
+- Expected: Wait for both actions to finish (~800ms), then reopen the popup with the patch removed (`chrome.storage.local.set = __origSet;`) — both changes are present. Neither mutation's write silently reverted the other's (the historical failure mode: two overlapping read-modify-write cycles, the second one's read taken before the first one's write landed).

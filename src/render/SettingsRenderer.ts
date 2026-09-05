@@ -1,6 +1,7 @@
 import { SavedTab, Settings } from "../types";
 import { getElement } from "../dom/domHelper";
 import { getTabs, getSettings, setSettings } from "../storage/chromeStorage";
+import { withStorageLock } from "../storage/writeQueue";
 import {
     addCategory,
     removeCategory,
@@ -120,7 +121,6 @@ function startRenaming(
     li: HTMLLIElement,
     name: HTMLElement,
     cat: string,
-    tabs: SavedTab[],
     message: HTMLElement,
     refresh: Refresh
 ): void {
@@ -157,7 +157,7 @@ function startRenaming(
     input.addEventListener("blur", async () => {
         if (cancelled) return;
         try {
-            const result = await renameCategory(cat, input.value, tabs);
+            const result = await renameCategory(cat, input.value);
             if (!result.renamed) {
                 flashMessage(message, result.reason ?? "Couldn't rename this category.", input, "cat-rename-input--error");
                 revert();
@@ -244,7 +244,7 @@ function createCategoryItem(
     renameBtn.className = "cat-icon-btn";
     renameBtn.setAttribute("aria-label", `Rename ${cat}`);
     renameBtn.innerHTML = RENAME_ICON;
-    renameBtn.addEventListener("click", () => startRenaming(li, name, cat, tabs, message, refresh));
+    renameBtn.addEventListener("click", () => startRenaming(li, name, cat, message, refresh));
     row.appendChild(renameBtn);
 
     // Visually muted when in use (not the real "why can't I remove this" signal — that's
@@ -257,7 +257,7 @@ function createCategoryItem(
     removeBtn.textContent = "×";
     removeBtn.addEventListener("click", async () => {
         try {
-            const result = await removeCategory(cat, tabs);
+            const result = await removeCategory(cat);
             if (!result.removed) {
                 flashMessage(message, result.reason ?? "Couldn't remove this category.", removeBtn, "remove-cat--flash-error");
                 return;
@@ -336,10 +336,12 @@ function bindOutdatedControls(refresh: Refresh): void {
     const daysInput = getElement<HTMLInputElement>("outdated-days");
 
     toggle.addEventListener("change", async () => {
-        const settings = await getSettings();
-        settings.outdatedEnabled = toggle.checked;
         try {
-            await setSettings(settings);
+            await withStorageLock(async () => {
+                const settings = await getSettings();
+                settings.outdatedEnabled = toggle.checked;
+                await setSettings(settings);
+            });
             daysInput.disabled = !toggle.checked;
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
@@ -351,10 +353,12 @@ function bindOutdatedControls(refresh: Refresh): void {
     daysInput.addEventListener("change", async () => {
         const days = Math.max(1, Math.min(365, parseInt(daysInput.value, 10) || 7));
         daysInput.value = String(days);
-        const settings = await getSettings();
-        settings.outdatedDays = days;
         try {
-            await setSettings(settings);
+            await withStorageLock(async () => {
+                const settings = await getSettings();
+                settings.outdatedDays = days;
+                await setSettings(settings);
+            });
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
             await syncOutdatedControls();

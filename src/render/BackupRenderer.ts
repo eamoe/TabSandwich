@@ -1,4 +1,5 @@
 import { getTabs, getSettings, setTabs, setSettings } from "../storage/chromeStorage";
+import { withStorageLock } from "../storage/writeQueue";
 import { getElement } from "../dom/domHelper";
 import { showUndoToast, showErrorToast } from "./ToastRenderer";
 import { writeErrorMessage } from "../util/errors";
@@ -72,62 +73,75 @@ function showImportConfirm(parsed: ParsedImport, refresh: Refresh): void {
     // Reassigned (not addEventListener'd) each time a file is confirmed, so re-importing
     // within the same popup session never stacks a second handler onto these buttons.
     mergeBtn.onclick = async () => {
-        const [prevTabs, prevSettings] = await Promise.all([getTabs(), getSettings()]);
-        const result = mergeImport(prevTabs, prevSettings, parsed);
         close();
-        // Checked on both counts, not just addedCount: a merge can restore a category with
-        // zero new tabs to show for it (every tab that used it locally is already gone), and
-        // skipping the write here would silently drop that restored category on the floor.
-        if (result.addedCount === 0 && result.addedCategoryCount === 0) {
-            setStatus("Nothing new — everything in this file is already saved.");
-            return;
-        }
         try {
-            await setTabs(result.tabs);
-            await setSettings(result.settings);
+            // The read (what's currently saved), the merge decision built from it, and the
+            // write all need to happen as one uninterrupted unit — otherwise a tab add/delete
+            // landing in between would read stale, and this write would silently erase it.
+            const outcome = await withStorageLock(async () => {
+                const [prevTabs, prevSettings] = await Promise.all([getTabs(), getSettings()]);
+                const result = mergeImport(prevTabs, prevSettings, parsed);
+                // Checked on both counts, not just addedCount: a merge can restore a category
+                // with zero new tabs to show for it (every tab that used it locally is already
+                // gone), and skipping the write here would silently drop that category.
+                if (result.addedCount === 0 && result.addedCategoryCount === 0) return null;
+                await setTabs(result.tabs);
+                await setSettings(result.settings);
+                return { result, prevTabs, prevSettings };
+            });
+            if (!outcome) {
+                setStatus("Nothing new — everything in this file is already saved.");
+                return;
+            }
+            await refresh();
+
+            const { result, prevTabs, prevSettings } = outcome;
+            const parts: string[] = [];
+            if (result.addedCount > 0) parts.push(plural(result.addedCount, "tab"));
+            if (result.addedCategoryCount > 0) parts.push(pluralCategory(result.addedCategoryCount));
+            showUndoToast(`Imported ${parts.join(" and ")}`, async () => {
+                try {
+                    await withStorageLock(async () => {
+                        await setTabs(prevTabs);
+                        await setSettings(prevSettings);
+                    });
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await refresh();
+            });
         } catch (err) {
             setStatus(writeErrorMessage(err), true);
             await refresh();
-            return;
         }
-        await refresh();
-
-        const parts: string[] = [];
-        if (result.addedCount > 0) parts.push(plural(result.addedCount, "tab"));
-        if (result.addedCategoryCount > 0) parts.push(pluralCategory(result.addedCategoryCount));
-        showUndoToast(`Imported ${parts.join(" and ")}`, async () => {
-            try {
-                await setTabs(prevTabs);
-                await setSettings(prevSettings);
-            } catch (err) {
-                showErrorToast(writeErrorMessage(err));
-            }
-            await refresh();
-        });
     };
 
     replaceBtn.onclick = async () => {
-        const [prevTabs, prevSettings] = await Promise.all([getTabs(), getSettings()]);
-        const result = replaceImport(parsed);
         close();
         try {
-            await setTabs(result.tabs);
-            await setSettings(result.settings);
+            const { result, prevTabs, prevSettings } = await withStorageLock(async () => {
+                const [prevTabs, prevSettings] = await Promise.all([getTabs(), getSettings()]);
+                const result = replaceImport(parsed);
+                await setTabs(result.tabs);
+                await setSettings(result.settings);
+                return { result, prevTabs, prevSettings };
+            });
+            await refresh();
+            showUndoToast("Replaced all tabs and settings", async () => {
+                try {
+                    await withStorageLock(async () => {
+                        await setTabs(prevTabs);
+                        await setSettings(prevSettings);
+                    });
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await refresh();
+            });
         } catch (err) {
             setStatus(writeErrorMessage(err), true);
             await refresh();
-            return;
         }
-        await refresh();
-        showUndoToast("Replaced all tabs and settings", async () => {
-            try {
-                await setTabs(prevTabs);
-                await setSettings(prevSettings);
-            } catch (err) {
-                showErrorToast(writeErrorMessage(err));
-            }
-            await refresh();
-        });
     };
 
     cancelBtn.onclick = () => close();

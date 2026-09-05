@@ -95,8 +95,7 @@ export function parseBackupFile(raw: string): ParsedImport | null {
 
 /** Always regenerated, never trusted from the file — guards against colliding with existing ids and against duplicate ids within the file itself. */
 function assignFreshIds(tabs: ImportedTab[]): SavedTab[] {
-    const base = Date.now();
-    return tabs.map((tab, i) => ({ ...tab, id: `${base}-${i}` }));
+    return tabs.map((tab) => ({ ...tab, id: crypto.randomUUID() }));
 }
 
 /**

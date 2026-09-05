@@ -25,8 +25,11 @@ src/
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
+    writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
+                            chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection
+    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection,
+                           ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
