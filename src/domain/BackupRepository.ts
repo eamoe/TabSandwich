@@ -1,0 +1,51 @@
+import type { SavedTab, Settings } from "../types";
+import { getSettings, getTabs, setSettings, setTabs } from "../storage/chromeStorage";
+import { withStorageLock } from "../storage/writeQueue";
+import { mergeImport, replaceImport, type ApplyImportResult, type ParsedImport } from "./backup";
+
+/** Everything saved, as it was just before an import — what Undo puts back. */
+export interface Snapshot {
+    tabs: SavedTab[];
+    settings: Settings;
+}
+
+export interface ImportOutcome {
+    result: ApplyImportResult;
+    before: Snapshot;
+}
+
+/**
+ * Merges a backup into what's saved. The read, the merge decision built from it and the write
+ * happen as one locked unit, so a save or delete landing in between can't be silently erased.
+ * Returns null when there's nothing new to add (no tabs and no categories): nothing is written.
+ */
+export async function importMerge(parsed: ParsedImport): Promise<ImportOutcome | null> {
+    return withStorageLock(async () => {
+        const before = { tabs: await getTabs(), settings: await getSettings() };
+        const result = mergeImport(before.tabs, before.settings, parsed);
+        // Both counts matter: a merge can restore a category with no tabs to show for it.
+        if (result.addedCount === 0 && result.addedCategoryCount === 0) return null;
+        await setTabs(result.tabs);
+        await setSettings(result.settings);
+        return { result, before };
+    });
+}
+
+/** Replaces everything saved with the backup's contents. */
+export async function importReplace(parsed: ParsedImport): Promise<ImportOutcome> {
+    return withStorageLock(async () => {
+        const before = { tabs: await getTabs(), settings: await getSettings() };
+        const result = replaceImport(parsed);
+        await setTabs(result.tabs);
+        await setSettings(result.settings);
+        return { result, before };
+    });
+}
+
+/** Undo for either import: puts back exactly what was saved before it. */
+export async function restoreSnapshot(snapshot: Snapshot): Promise<void> {
+    return withStorageLock(async () => {
+        await setTabs(snapshot.tabs);
+        await setSettings(snapshot.settings);
+    });
+}

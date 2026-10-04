@@ -47,7 +47,15 @@ export async function storedTabs(popup: Page): Promise<Array<{ title: string; ur
     return popup.evaluate(async () => (await chrome.storage.local.get("tabSandwich.tabs"))["tabSandwich.tabs"] ?? []);
 }
 
-export async function storedSettings(popup: Page): Promise<{ categories: string[] }> {
+export interface StoredSettings {
+    categories: string[];
+    categoryColors: Record<string, string>;
+    outdatedEnabled?: boolean;
+    outdatedDays?: number;
+    theme?: string;
+}
+
+export async function storedSettings(popup: Page): Promise<StoredSettings> {
     return popup.evaluate(async () => (await chrome.storage.local.get("tabSandwich.settings"))["tabSandwich.settings"]);
 }
 
@@ -82,9 +90,10 @@ export async function rowTitles(popup: Page): Promise<string[]> {
     return titles;
 }
 
-export async function openSettings(popup: Page): Promise<void> {
+export async function openSettings(popup: Page, tab?: "General" | "Categories" | "Backup" | "About"): Promise<void> {
     await popup.getByRole("button", { name: "Open settings" }).click();
     await expect(popup.getByRole("main", { name: "Settings" })).toBeVisible();
+    if (tab) await popup.getByRole("tab", { name: tab }).click();
 }
 
 /** The category choices offered when adding a link manually, in order (leaves the panel closed again). */

@@ -29,7 +29,7 @@ export function TabList(props: {
     colorOf: (category: string) => string;
     onOpen: (tab: SavedTab) => void;
     onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
-    onDelete: (tab: SavedTab) => void;
+    onDelete: (tab: SavedTab) => Promise<boolean>;
     onReorder: (draggedId: string, targetId: string) => void;
 }) {
     const listRef = useRef<HTMLUListElement>(null);

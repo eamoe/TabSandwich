@@ -3,86 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Tab Sandwich</title>
-  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-
-  <!-- The main screen is a Preact app (src/ui/main/App.tsx), mounted here by src/popup.ts. -->
+  <!-- The whole popup is a Preact app (src/ui/main/App.tsx), mounted here by src/popup.ts. -->
   <div id="app"></div>
-
-  <!-- Settings is still the pre-v3.0 screen until it's rebuilt; it takes over as the page's main
-       landmark while open. Two <main> elements are valid as long as only one is visible. -->
-  <main id="settings-view" class="settings-view" hidden aria-label="Settings">
-    <h1 class="visually-hidden">Tab Sandwich settings</h1>
-    <div class="settings-header">
-      <button type="button" id="back-btn" class="back-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-        Back
-      </button>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-row">
-        <div>
-          <label for="outdated-toggle" class="settings-label">Outdated tabs</label>
-          <p class="settings-sublabel">Highlight tabs saved longer than the threshold below</p>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="outdated-toggle" class="visually-hidden">
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        </label>
-      </div>
-      <div class="days-row">
-        <label for="outdated-days">Mark as outdated after</label>
-        <input type="number" id="outdated-days" min="1" max="365" value="7">
-        <span>days</span>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-row">
-        <span class="settings-label" id="shortcut-label">Keyboard shortcut</span>
-        <div class="shortcut-controls">
-          <span id="shortcut-display" class="shortcut-badge" aria-labelledby="shortcut-label"></span>
-          <button type="button" id="shortcut-customize-btn" class="btn-accent">Customize</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h2 class="settings-label">Categories</h2>
-      <form id="add-category-form" class="add-category-form">
-        <div class="cat-input-group">
-          <label for="new-category-input" class="visually-hidden">New category</label>
-          <input type="text" id="new-category-input" placeholder="New category" maxlength="15">
-          <span id="new-category-counter" class="char-counter" aria-hidden="true">0/15</span>
-        </div>
-        <button type="submit">Add</button>
-      </form>
-      <ul id="category-list" class="category-list" aria-label="Configured categories"></ul>
-    </div>
-
-    <div class="settings-section">
-      <h2 class="settings-label">Backup</h2>
-      <p class="settings-sublabel">Export your saved tabs to a file, or import a previous backup.</p>
-      <div class="backup-actions" id="backup-actions">
-        <button type="button" id="export-btn" class="btn-accent">Export</button>
-        <button type="button" id="import-btn" class="btn-accent">Import</button>
-        <label for="import-file-input" class="visually-hidden">Choose a backup file to import</label>
-        <input type="file" id="import-file-input" accept="application/json" class="visually-hidden">
-      </div>
-      <div class="backup-confirm" id="backup-confirm" hidden>
-        <p id="backup-confirm-message"></p>
-        <div class="backup-confirm-actions">
-          <button type="button" id="backup-merge-btn" class="btn-accent">Merge</button>
-          <button type="button" id="backup-replace-btn" class="btn-danger">Replace all</button>
-          <button type="button" id="backup-cancel-btn" class="btn-ghost">Cancel</button>
-        </div>
-      </div>
-      <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
-    </div>
-  </main>
-
   <script type="module" src="../src/popup.ts"></script>
 </body>
 </html>

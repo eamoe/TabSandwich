@@ -4,23 +4,18 @@ import { test, expect } from "./fixtures";
 import { openSettings, seedLibrary, tabList } from "./helpers";
 
 /**
- * Accessibility rules not enforced yet on a screen, each with the release that fixes it. Kept
- * as a named, explained list so nothing gets quietly added to it just to make a run pass.
+ * Accessibility rules not enforced yet, each with the release that fixes it. Kept as a named,
+ * explained list so nothing gets quietly added to it just to make a run pass. Empty since the
+ * v3.0 redesign: every screen passes every rule, color contrast included, in both themes.
  */
-const KNOWN_GAPS = {
-    // The main screen is the v3.0 design and passes every rule, color contrast included.
-    main: [] as string[],
-    // Settings is still the pre-v3.0 design, whose colors are too faint in places. It is
-    // rebuilt in v3.0, and this exemption goes with it.
-    settings: ["color-contrast"],
-};
+const KNOWN_GAPS: string[] = [];
 
-async function scan(popup: Page, screen: keyof typeof KNOWN_GAPS = "main") {
+async function scan(popup: Page) {
     // Let entrance animations finish first: a half-faded element would be judged on colors it
     // only has for a fraction of a second.
     await popup.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
     const builder = new AxeBuilder({ page: popup });
-    if (KNOWN_GAPS[screen].length) builder.disableRules(KNOWN_GAPS[screen]);
+    if (KNOWN_GAPS.length) builder.disableRules(KNOWN_GAPS);
     const results = await builder.analyze();
     // A readable summary on failure instead of a wall of JSON.
     return results.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`);
@@ -54,9 +49,29 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
-        test("settings", async ({ popup }) => {
-            await openSettings(popup);
-            expect(await scan(popup, "settings")).toEqual([]);
+        for (const tab of ["General", "Categories", "Backup", "About"] as const) {
+            test(`settings: ${tab}`, async ({ popup }) => {
+                await openSettings(popup, tab);
+                expect(await scan(popup)).toEqual([]);
+            });
+        }
+
+        test("settings: a category's color picker open", async ({ popup }) => {
+            await openSettings(popup, "Categories");
+            await popup.getByRole("button", { name: "Color for Work" }).click();
+            await expect(popup.getByRole("group", { name: "Color for Work" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("settings: import choice showing", async ({ popup }) => {
+            await openSettings(popup, "Backup");
+            await popup.locator("#import-file-input").setInputFiles({
+                name: "backup.json",
+                mimeType: "application/json",
+                buffer: Buffer.from(JSON.stringify({ tabs: [{ title: "A", url: "https://a.example.com" }] })),
+            });
+            await expect(popup.getByRole("button", { name: "Merge" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
         });
 
         test("undo toast showing", async ({ popup }) => {

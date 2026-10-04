@@ -33,7 +33,8 @@ export interface RowProps {
     colorOf: (category: string) => string;
     onOpen: () => void;
     onEdit: (updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
-    onDelete: () => void;
+    /** Resolves false when the delete couldn't be saved, so the row comes back. */
+    onDelete: () => Promise<boolean>;
     dragHandlers: {
         onDragStart: (e: DragEvent) => void;
         onDragEnd: () => void;
@@ -71,9 +72,9 @@ export function TabRow(props: RowProps) {
 
     // The delete is written straight away (closing the popup a moment later must not undo it);
     // the row just slides away while the list waits to refresh (see App's onDelete).
-    const startDelete = () => {
+    const startDelete = async () => {
         setLeaving(true);
-        props.onDelete();
+        if (!(await props.onDelete())) setLeaving(false);
     };
 
     const rowStyle = {
@@ -144,7 +145,7 @@ export function TabRow(props: RowProps) {
                     class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
                     aria-label={strings.deleteTab(tab.title)}
                     title={strings.deleteTooltip}
-                    onClick={startDelete}
+                    onClick={() => void startDelete()}
                 >
                     <Icon name="trash" size={14} />
                 </button>

@@ -20,7 +20,8 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a small moon badge with their age and their own quick filter.
-- **Light and dark** — the popup follows your computer's light or dark mode, even while it's open.
+- **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
+- **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
 - **Keyboard accessible** — every core action (save, filter, edit, delete, settings) works without a mouse.
 

@@ -4,7 +4,7 @@ import { editTab, deleteTab, restoreTab, reorderTabs, type AddTabResult } from "
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { searchTabs } from "../../domain/search";
 import { writeErrorMessage } from "../../util/errors";
-import { currentView, onViewChange, showView } from "../navigation";
+import { applyTheme } from "../theme";
 import { showErrorToast, showUndoToast } from "../toastStore";
 import { Toast } from "../Toast";
 import { strings } from "../strings";
@@ -16,6 +16,7 @@ import { TabList, type Highlight } from "./TabList";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
 import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions } from "./listModel";
 import { useLibrary } from "./useLibrary";
+import { SettingsScreen } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
 import listStyles from "./TabList.module.css";
 import styles from "./App.module.css";
@@ -26,24 +27,38 @@ const ENTRANCE_MS = 900;
 
 export function App() {
     const { library, reload } = useLibrary();
-    const [view, setView] = useState(currentView());
+    const [view, setView] = useState<"main" | "settings">("main");
     const [filter, setFilter] = useState(ALL);
     const [query, setQuery] = useState("");
     const [manualOpen, setManualOpen] = useState(false);
     const [highlight, setHighlight] = useState<Highlight | null>(null);
     const [entered, setEntered] = useState(false);
     const settingsButton = useRef<HTMLButtonElement>(null);
+    const mainScreen = useRef<HTMLDivElement>(null);
+    // The tallest either screen has been while the popup is open. Both screens are at least this
+    // tall, so switching screens or Settings tabs can grow the popup window but never shrink it
+    // back and forth.
+    const [floorHeight, setFloorHeight] = useState(0);
+    const raiseFloor = useCallback((height: number) => setFloorHeight((h) => Math.max(h, height)), []);
     const highlightSeq = useRef(0);
 
-    useEffect(
-        () =>
-            onViewChange((next) => {
-                setView(next);
-                // Back from Settings returns focus to the control that opened it.
-                if (next === "main") setTimeout(() => settingsButton.current?.focus());
-            }),
-        []
-    );
+    // Settings opens at least as tall as the main screen was, so the popup window doesn't
+    // shrink on the way in and grow again on the way back.
+    const openSettings = () => {
+        raiseFloor(mainScreen.current?.offsetHeight ?? 0);
+        setView("settings");
+    };
+    const closeSettings = () => {
+        setView("main");
+        // Back from Settings returns focus to the control that opened it, once it's visible again.
+        setTimeout(() => settingsButton.current?.focus());
+    };
+
+    // Every load re-applies the stored theme, so the popup always matches what's saved: after
+    // importing a backup (or undoing that), and after a theme change that failed to save.
+    useEffect(() => {
+        if (library) applyTheme(library.settings.theme);
+    }, [library]);
 
     // First load done: start the entrance clock, and tell the robot tests every control is live.
     const loaded = library !== null;
@@ -105,7 +120,7 @@ export function App() {
         return outcome;
     };
 
-    const onDelete = async (tab: SavedTab) => {
+    const onDelete = async (tab: SavedTab): Promise<boolean> => {
         let removed: Awaited<ReturnType<typeof deleteTab>> = null;
         try {
             removed = await deleteTab(tab.id);
@@ -115,7 +130,7 @@ export function App() {
         // Already saved; only the refresh waits, so the row can finish sliding away first.
         await new Promise((resolve) => setTimeout(resolve, leaveDurationMs()));
         await reload();
-        if (!removed) return;
+        if (!removed) return false;
         const { tab: deleted, index } = removed;
         showUndoToast(strings.deleted, async () => {
             try {
@@ -126,6 +141,7 @@ export function App() {
             await reload();
             flash(deleted.id);
         });
+        return true;
     };
 
     const onReorder = async (draggedId: string, targetId: string) => {
@@ -143,7 +159,12 @@ export function App() {
         <>
         {/* Hidden, not removed, while Settings is open: coming back keeps your search, filter
             and scroll position, and focus can return to the settings button that opened it. */}
-        <div class={styles.app} hidden={view === "settings"}>
+        <div
+            ref={mainScreen}
+            class={styles.app}
+            style={{ minHeight: floorHeight ? `${floorHeight}px` : undefined }}
+            hidden={view === "settings"}
+        >
             <header class={heroStyles.hero}>
                 <h1 class="visually-hidden">{strings.appName}</h1>
                 <Header
@@ -154,7 +175,7 @@ export function App() {
                     onSubmitSearch={() => visible.tabs[0] && openTab(visible.tabs[0])}
                     manualOpen={manualOpen}
                     onToggleManual={() => setManualOpen((open) => !open)}
-                    onOpenSettings={() => showView("settings")}
+                    onOpenSettings={openSettings}
                     settingsButtonRef={settingsButton}
                 />
                 {manualOpen ? (
@@ -172,7 +193,7 @@ export function App() {
             {hasTabs && <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />}
             <main id="main-view" class={listStyles.wrap}>
                 {library.storagePct >= STORAGE_WARNING_PCT && (
-                    <StorageWarning pct={library.storagePct} onSeeStorage={() => showView("settings")} />
+                    <StorageWarning pct={library.storagePct} onSeeStorage={openSettings} />
                 )}
                 <p class="visually-hidden" role="status" aria-live="polite">
                     {searching ? strings.matches(visible.tabs.length) : ""}
@@ -196,6 +217,9 @@ export function App() {
                 />
             </main>
         </div>
+        {view === "settings" && (
+            <SettingsScreen library={library} reload={reload} onBack={closeSettings} minHeight={floorHeight} onHeight={raiseFloor} />
+        )}
         <Toast />
         </>
     );

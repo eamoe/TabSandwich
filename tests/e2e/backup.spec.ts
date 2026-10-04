@@ -13,7 +13,7 @@ const backupFile = (tabs: Array<{ title: string; url: string; category?: string 
 test.describe("Export and import", () => {
     test.beforeEach(async ({ popup }) => {
         await seedLibrary(popup, [{ title: "Kept", url: "https://kept.example.com/", category: "Work" }]);
-        await openSettings(popup);
+        await openSettings(popup, "Backup");
     });
 
     test("TC-130: export downloads a backup with everything saved", async ({ popup }) => {

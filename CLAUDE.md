@@ -12,10 +12,9 @@ keyboard shortcut to open. Everything is stored locally via
 
 ## Architecture
 
-TypeScript, built with Vite, no state library. The v3.0 redesign moves the
-screens to Preact (a ~4 KB component library) one screen at a time, each
-rebuilt once in its new look: new screens are `.tsx` components in `src/ui/`,
-screens not rebuilt yet are still the vanilla DOM renderers in `src/render/`.
+TypeScript, built with Vite, no state library. Since v3.0 the screens are
+Preact (a ~4 KB component library): every screen is a `.tsx` component in
+`src/ui/`, styled with CSS modules and the shared tokens.
 `popup/popup.html` points straight
 at `src/popup.ts`; `pnpm build` type-checks with `tsc` (Vite itself
 doesn't), then Vite bundles the popup into `dist/` and copies in
@@ -40,13 +39,9 @@ src/
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
-                            merge (additive, dedupes by URL) vs. replace (full overwrite)
-  render/                  the pre-v3.0 Settings screen (vanilla DOM), until v3.0 rebuilds it
-    SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display); opens and
-                            closes through ui/navigation.ts
-    BackupRenderer.ts      export/import UI (file download, file picker, merge/replace confirm)
-    viewController.ts      refreshView() — what Settings calls after a change: tells the main screen
-                            to reload (ui/libraryEvents.ts) and re-renders Settings' category list
+                            merge (additive, dedupes by URL) vs. replace (full overwrite) — pure
+    BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
+    SettingsRepository.ts  theme and outdated-tab settings writes; clamps the day count to 1–365
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -63,13 +58,12 @@ src/
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
     CategoryPicker.tsx      native <select> with the chosen category's color dot
-    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a store so Settings can use it too
-    navigation.ts           which screen shows (main / Settings), shared with the vanilla Settings screen
-    libraryEvents.ts        "saved data changed, reload" signal from Settings to the main screen
+    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
     main/                   the main screen
-      App.tsx               root: loads the library, owns filter/search/highlight, wires the parts;
-                             hidden (not unmounted) while Settings is open, so it keeps your place
-      useLibrary.ts         loads tabs + settings + storage use; only the newest load may paint
+      App.tsx               root of the whole popup: loads the library, owns filter/search/highlight
+                             and which screen shows; the main screen is hidden (not unmounted) while
+                             Settings is open, so it keeps your place; re-applies the stored theme
+      useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo, search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button
@@ -77,12 +71,18 @@ src/
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion
       listModel.ts          pure list rules (filter options and order, filtering, site names) — logic-tested
+    settings/               the Settings screen: four tabs (arrow keys move between them)
+      SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
+                             screen so the popup window doesn't resize
+      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut, storage meter
+      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; color strip and messages
+                             float over the row so nothing ever shifts
+      BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
+      AboutTab.tsx          version, local-only promise, privacy policy and source links
   vite-env.d.ts             types for non-code imports, e.g. *.module.css
-  dom/domHelper.ts          getElement<T>(id) helper
-  popup.ts                  entry point — migrate → upgrade → apply theme → wire Settings → render App
+  popup.ts                  entry point — migrate → upgrade → apply theme → render App
 
-popup/popup.html               the Preact mount point plus the pre-v3.0 Settings markup
-popup/popup.css                styles for that Settings screen only (goes away when it's rebuilt)
+popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
 dist/                          build output (the loadable extension) — gitignored, never commit this
 vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
@@ -120,8 +120,8 @@ tests in the same change: logic in `tests/unit/`, user-visible journeys in
 `tests/e2e/` (select elements by role and accessible name, the way a user
 finds them — not by CSS class — so tests survive restyling). The
 accessibility scan in `tests/e2e/accessibility.spec.ts` skips only the rules
-in its `KNOWN_GAPS` list (currently color contrast on the pre-v3.0 Settings
-screen only, until v3.0 rebuilds it); never
+in its `KNOWN_GAPS` list (empty since v3.0 — every screen passes every rule,
+color contrast included, in light and dark); never
 add to that list to get a run passing.
 
 What automation doesn't cover still needs a person: drag-and-drop feel,

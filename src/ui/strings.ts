@@ -58,4 +58,81 @@ export const strings = {
 
     deleted: "Deleted",
     undo: "Undo",
+    upgradeFailed: "Couldn't update your saved data for this version. Nothing was changed.",
+
+    // Settings
+    settingsTitle: "Settings",
+    back: "Back",
+    settingsSections: "Settings sections",
+    tabGeneral: "General",
+    tabCategories: "Categories",
+    tabBackup: "Backup",
+    tabAbout: "About",
+
+    appearance: "Appearance",
+    themeGroup: "Theme",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeSystem: "System",
+    themeHint: "System follows your computer's light or dark setting, even while the popup is open.",
+    outdatedTabs: "Outdated tabs",
+    outdatedHint: "Highlight tabs saved longer than the threshold below",
+    markOutdatedAfter: "Mark as outdated after",
+    days: "days",
+    keyboardShortcut: "Keyboard shortcut",
+    shortcutNotSet: "Not set",
+    customize: "Customize",
+    storage: "Storage",
+    storageUsed: "Storage used",
+    storageSummary: (count: number, pct: number) =>
+        `${count} saved · ${pct < 1 ? "less than 1%" : `${Math.round(pct)}%`} of the space Chrome gives extensions`,
+    storageAdvice: "Export a backup, then remove tabs you no longer need.",
+
+    newCategory: "New category",
+    configuredCategories: "Configured categories",
+    colorFor: (name: string) => `Color for ${name}`,
+    renameCategory: (name: string) => `Rename ${name}`,
+    moveUp: (name: string) => `Move ${name} up`,
+    moveDown: (name: string) => `Move ${name} down`,
+    removeCategory: (name: string) => `Remove ${name}`,
+    tabCount: (count: number) => `${count} tab${count === 1 ? "" : "s"}`,
+    couldntRename: "Couldn't rename this category.",
+    couldntRemove: "Couldn't remove this category.",
+    colorNames: {
+        purple: "Purple",
+        coral: "Coral",
+        teal: "Teal",
+        pink: "Pink",
+        amber: "Amber",
+        blue: "Blue",
+        green: "Green",
+        slate: "Slate",
+        sand: "Sand",
+    } as Record<string, string>,
+
+    backupTitle: "Backup",
+    backupHint: "Export your saved tabs to a file, or import a previous backup.",
+    exportBackup: "Export",
+    importBackup: "Import",
+    chooseBackupFile: "Choose a backup file to import",
+    fileContains: (tabs: number) =>
+        `This file contains ${tabs} tab${tabs === 1 ? "" : "s"}. Merge adds anything new; Replace overwrites everything currently saved.`,
+    merge: "Merge",
+    replaceAll: "Replace all",
+    exported: (tabs: number) => `Exported ${tabs} tab${tabs === 1 ? "" : "s"}.`,
+    nothingNew: "Nothing new — everything in this file is already saved.",
+    imported: (tabs: number, categories: number) =>
+        `Imported ${[
+            tabs > 0 ? `${tabs} tab${tabs === 1 ? "" : "s"}` : "",
+            categories > 0 ? `${categories} categor${categories === 1 ? "y" : "ies"}` : "",
+        ]
+            .filter(Boolean)
+            .join(" and ")}`,
+    replacedAll: "Replaced all tabs and settings",
+    notABackup: "That file doesn't look like a Tab Sandwich backup.",
+
+    version: (v: string) => `Version ${v}`,
+    localPromise: "Everything stays in this browser. No account, no server, no analytics. Your tabs leave the browser only when you export them.",
+    privacyPolicy: "Privacy policy",
+    sourceCode: "Source code",
 } as const;
