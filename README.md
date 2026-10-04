@@ -35,20 +35,26 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 ### From source (for development)
 
+Needs Node.js 22 or newer and [pnpm](https://pnpm.io/installation). The pnpm version is pinned in `package.json`, and pnpm switches to it automatically.
+
 ```console
 git clone https://github.com/eamoe/TabSandwich.git
 cd TabSandwich
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
-Then load the repository root as an unpacked extension via `chrome://extensions` → **Load unpacked**, same as above. After any code change, run `npm run build` again and click the reload icon on the extension's card.
+Then load the `dist/` folder (not the repository root) as an unpacked extension via `chrome://extensions` → **Load unpacked**, same as above. After any code change, run `pnpm build` again (or keep `pnpm watch` running) and click the reload icon on the extension's card.
 
 ## Development
 
-- `npm run build` — compile once.
-- `npm run watch` — compile on every save.
-- Compiled output (`popup/js/`) is not committed to version control; a GitHub Actions workflow builds and packages a release zip for each tagged release (see `.github/workflows/release.yml`).
+- `pnpm build` — type-check and build the extension into `dist/`.
+- `pnpm watch` — rebuild `dist/` on every save.
+- `pnpm test` — logic tests (a second or so, no browser needed).
+- `pnpm test:e2e` — robot tests: a real Chromium loads the built `dist/`, clicks through the popup, and runs an accessibility scan. Needs `pnpm exec playwright install chromium` once, and a fresh `pnpm build`.
+- `pnpm lint` / `pnpm typecheck` — code checks.
+- `pnpm check` — all of the above, in the same order CI runs them.
+- GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` (`.github/workflows/release.yml`); `dist/` itself is never committed.
 
 ## License
 

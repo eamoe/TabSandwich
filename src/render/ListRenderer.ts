@@ -7,8 +7,11 @@ import { tintHex } from "../util/color";
 import { localFaviconUrl } from "../util/favicon";
 import { MatchRange } from "../domain/search";
 
+/** How an edit's save went — the edit row needs this before it can decide whether to close. */
+export type EditOutcome = { status: "saved" } | { status: "failed" } | { status: "duplicate"; existingTitle: string };
+
 export interface ListCallbacks {
-    onEdit: (tabId: string, updates: { title: string; url: string; category: string }) => void | Promise<void>;
+    onEdit: (tabId: string, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
     onDelete: (tabId: string) => void | Promise<void>;
     onReorder: (draggedId: string, targetId: string) => void | Promise<void>;
 }
@@ -359,6 +362,12 @@ function renderEditRow(
     urlInput.setAttribute("aria-label", "URL");
     li.appendChild(urlInput);
 
+    // Says why Save didn't close the row; empty (and hidden by CSS) until there's a reason.
+    const urlError = document.createElement("p");
+    urlError.className = "edit-error";
+    urlError.setAttribute("role", "alert");
+    li.appendChild(urlError);
+
     const catSelect = createCategorySelect(tab, categories, "Category");
     catSelect.className = "edit-input";
     li.appendChild(catSelect);
@@ -370,24 +379,35 @@ function renderEditRow(
     saveBtn.type = "button";
     saveBtn.className = "edit-save";
     saveBtn.textContent = "Save";
-    saveBtn.addEventListener("click", () => {
+    saveBtn.addEventListener("click", async () => {
+        urlInput.classList.remove("input-error");
+        urlError.textContent = "";
         const normalized = normalizeUrl(urlInput.value);
         if (!normalized) {
             urlInput.classList.add("input-error");
+            urlError.textContent = "Enter a valid URL.";
             urlInput.focus();
             return;
         }
         const title = titleInput.value.trim() || normalized;
         const category = catSelect.value;
 
-        // Exits edit mode immediately with the same smooth collapse Cancel uses, using the
-        // edited values directly, rather than waiting on the round trip through storage and
-        // a full refresh — which also lands (eventually, invisibly) with identical content.
-        const updatedTab: SavedTab = { ...tab, title, url: normalized, category };
-        animateRowHeightChange(li, () =>
-            renderDisplayRow(li, updatedTab, categories, settings, callbacks, [], dragDisabled)
-        );
-        callbacks.onEdit(tab.id, { title, url: normalized, category });
+        // Waits for the write before closing — unlike before, the save can now be refused (the
+        // new URL is already saved as another tab), and closing first would throw away what was
+        // typed. The round trip is a single local storage write, too quick to notice.
+        saveBtn.disabled = true;
+        const outcome = await callbacks.onEdit(tab.id, { title, url: normalized, category });
+        saveBtn.disabled = false;
+        if (outcome.status === "duplicate") {
+            urlInput.classList.add("input-error");
+            urlError.textContent = `Already saved as “${outcome.existingTitle}”.`;
+            urlInput.focus();
+            return;
+        }
+
+        // A failed write closes back to what's actually stored (the error toast says why).
+        const shownTab: SavedTab = outcome.status === "saved" ? { ...tab, title, url: normalized, category } : tab;
+        animateRowHeightChange(li, () => renderDisplayRow(li, shownTab, categories, settings, callbacks, [], dragDisabled));
     });
     actionsRow.appendChild(saveBtn);
 
@@ -472,10 +492,21 @@ export function renderList(
 }
 
 /** Brings a saved tab into view and flashes it — used regardless of where it sits in a scrolled list (FR-003). */
+// One pending "stop flashing" timer per row, so highlighting the same row again restarts its
+// flash instead of letting the first call's timer cut the second one short.
+const highlightTimers = new WeakMap<HTMLLIElement, number>();
+
 export function scrollToAndHighlight(tabId: string): void {
     const li = document.querySelector<HTMLLIElement>(`li[data-tab-id="${tabId}"]`);
     if (!li) return;
     li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+    window.clearTimeout(highlightTimers.get(li));
+    li.classList.remove("new");
+    void li.offsetWidth; // restart the CSS animation if the row was still mid-flash
     li.classList.add("new");
-    setTimeout(() => li.classList.remove("new"), 2000);
+    highlightTimers.set(
+        li,
+        window.setTimeout(() => li.classList.remove("new"), 2000)
+    );
 }

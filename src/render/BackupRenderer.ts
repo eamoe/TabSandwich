@@ -119,12 +119,12 @@ function showImportConfirm(parsed: ParsedImport, refresh: Refresh): void {
     replaceBtn.onclick = async () => {
         close();
         try {
-            const { result, prevTabs, prevSettings } = await withStorageLock(async () => {
+            const { prevTabs, prevSettings } = await withStorageLock(async () => {
                 const [prevTabs, prevSettings] = await Promise.all([getTabs(), getSettings()]);
                 const result = replaceImport(parsed);
                 await setTabs(result.tabs);
                 await setSettings(result.settings);
-                return { result, prevTabs, prevSettings };
+                return { prevTabs, prevSettings };
             });
             await refresh();
             showUndoToast("Replaced all tabs and settings", async () => {

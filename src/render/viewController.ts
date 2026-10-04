@@ -3,7 +3,7 @@ import { getSelectableCategories } from "../domain/CategoryRepository";
 import { editTab, deleteTab, restoreTab, reorderTabs, DeleteTabResult } from "../domain/TabRepository";
 import { searchTabs, MatchRange } from "../domain/search";
 import { renderPills, filterTabs } from "./PillsRenderer";
-import { renderList, scrollToAndHighlight } from "./ListRenderer";
+import { renderList, scrollToAndHighlight, type EditOutcome } from "./ListRenderer";
 import { renderHeroStats } from "./HeroRenderer";
 import { refreshCategorySection } from "./SettingsRenderer";
 import { getSearchQuery, setSearchRowVisible, announceResultCount, clearResultAnnouncement } from "./SearchRenderer";
@@ -61,16 +61,22 @@ export async function refreshView(): Promise<void> {
         categories,
         settings,
         {
-            onEdit: async (id, updates) => {
-                // The row already shows the edited values optimistically (see ListRenderer's edit-save
-                // handler) — if the write fails, this refresh re-reads storage and reverts the row to
-                // what's actually saved, so the error toast and the visible state agree.
+            onEdit: async (id, updates): Promise<EditOutcome> => {
+                let outcome: EditOutcome;
                 try {
-                    await editTab(id, updates);
+                    const { duplicateOf } = await editTab(id, updates);
+                    // Refused, nothing written: the row stays in edit mode, so there's nothing to refresh.
+                    if (duplicateOf) return { status: "duplicate", existingTitle: duplicateOf.title };
+                    outcome = { status: "saved" };
                 } catch (err) {
                     showErrorToast(writeErrorMessage(err));
+                    outcome = { status: "failed" };
                 }
-                await refreshView();
+                // Not awaited: the edit row closes as soon as this returns, and the refresh's own
+                // storage reads only finish after that — so it re-renders a display row, not one
+                // still in edit mode (which renderList deliberately leaves alone).
+                void refreshView();
+                return outcome;
             },
             onDelete: async (id) => {
                 let result: DeleteTabResult | null = null;

@@ -1,16 +1,39 @@
-# Manual Test Cases
+# Test Cases
 
-This document is the manual regression suite for Tab Sandwich. Run it before any release. Each case is written to be automatable later (e.g. with Puppeteer/Playwright driving a loaded extension) — element ids are noted in parentheses so selectors are easy to derive.
+This is the full list of what Tab Sandwich must do — the spec the automated tests implement, plus the cases only a person can judge. Cases marked **[auto]** are checked automatically on every pull request and before every release (`pnpm check` runs the same checks locally); the rest are checked by hand, and the short manual release pass below lists the ones to repeat every release.
 
-## Setup
+## Automated checks
 
 ```console
-npm install
-npm run build
+pnpm install --frozen-lockfile
+pnpm exec playwright install chromium   # once
+pnpm check                     # lint, typecheck, logic tests, build, robot tests
 ```
 
-1. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, select the repo root.
-2. After any code change: `npm run build`, then click the reload icon on the extension's card.
+- **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, categories, backup files, data upgrades, legacy migration, manifest permissions.
+- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search and filters, categories, export and import — then runs an accessibility scan of each screen. Color contrast is excluded from the scan until the v3.0 redesign (see `KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts`).
+- In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
+
+## Manual release pass
+
+Run on the build being released (`dist/`, or the release zip unpacked), about 10 minutes:
+
+1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check the favicon shows (TC-102) and no request goes to the site for it (TC-105).
+2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); confirm drag is off while searching (TC-119).
+3. Watch the animations: rows grow, collapse and flash smoothly; no squished rows after using Settings (TC-049, TC-123).
+4. Full keyboard pass (TC-090 – TC-092, TC-095).
+5. Shortcut display and the **Customize** link (TC-070, TC-071).
+6. Anything new in this release that isn't marked **[auto]** yet.
+
+## Manual setup
+
+```console
+pnpm install
+pnpm build
+```
+
+1. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, select the `dist/` folder.
+2. After any code change: `pnpm build` (or keep `pnpm watch` running), then click the reload icon on the extension's card.
 3. Unless a case says otherwise, start from a clean state: open the popup's DevTools (right-click → Inspect) and run `chrome.storage.local.clear()`, then reopen the popup.
 
 ## Format
@@ -21,29 +44,29 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 1. Saving Tabs
 
-**TC-001 — Save the active tab (P1)**
+**TC-001 — Save the active tab (P1)** **[auto]**
 - Preconditions: popup open on a normal `http(s)` page; list empty.
 - Steps: Click **Save Tab** (`#save-btn`).
-- Expected: Entry appears at the top of the list (`#tab-list`) with the page's title, URL, and favicon. A "Saved!" acknowledgment appears under the button (`#save-status`) and fades after ~2.5s.
+- Expected: Entry appears at the top of the list (`#tab-list`) with the page's title, URL, and favicon. The button itself briefly reads "Saved!" (also announced to screen readers via `#save-status`) and returns to "Save Tab" after ~2.5s.
 
-**TC-002 — Save via manual entry, URL only (P1)**
+**TC-002 — Save via manual entry, URL only (P1)** **[auto]**
 - Preconditions: popup open; list empty.
 - Steps: Click **+ Add link manually** (`#manual-entry-toggle`) → enter `example.com` in URL (`#manual-url`) → click **Add** (`.manual-entry-submit`).
 - Expected: Entry appears with title = `example.com` (hostname fallback), URL normalized to `https://example.com/`. Manual-entry section closes automatically.
 
-**TC-003 — Save via manual entry, all fields (P2)**
+**TC-003 — Save via manual entry, all fields (P2)** **[auto]**
 - Steps: Open manual entry → URL `https://example.org`, Title `My Site`, Category = any existing category → **Add**.
 - Expected: Entry appears with title `My Site` and the selected category.
 
-**TC-004 — Cancel manual entry (P2)**
+**TC-004 — Cancel manual entry (P2)** **[auto]**
 - Steps: Open manual entry → type something in URL → click **Cancel** (`#manual-entry-cancel`).
 - Expected: Section closes, no entry created, fields cleared (verify by reopening — URL field is empty).
 
-**TC-005 — Reject unsupported active-tab page (P1)**
+**TC-005 — Reject unsupported active-tab page (P1)** **[auto]**
 - Steps: Open the popup on an internal page (e.g. `chrome://extensions`) → click **Save Tab**.
-- Expected: "This page can't be saved." acknowledgment; no entry created.
+- Expected: The button briefly reads "Only web pages can be saved"; no entry created.
 
-**TC-006 — Reject invalid manual URL — gibberish text (P1)**
+**TC-006 — Reject invalid manual URL — gibberish text (P1)** **[auto]**
 - Steps: Open manual entry → enter `weuirytuiwerytweury` (no scheme, no dot) → **Add**.
 - Expected: Rejected ("Enter a valid URL."); no entry created; section stays open with the text still in the field.
 
@@ -59,7 +82,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 2. Duplicate Detection
 
-**TC-010 — Duplicate via Save Tab (P1)**
+**TC-010 — Duplicate via Save Tab (P1)** **[auto]**
 - Preconditions: one tab already saved.
 - Steps: Revisit that same URL as the active tab → click **Save Tab**.
 - Expected: No second entry created. "Already saved" acknowledgment appears at the button. The existing entry is highlighted/flashed in the list.
@@ -69,7 +92,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Save a duplicate of an off-screen entry.
 - Expected: The acknowledgment at the Save button is visible without scrolling. The list auto-scrolls to reveal and highlight the existing entry.
 
-**TC-012 — Duplicate via manual entry (P2)**
+**TC-012 — Duplicate via manual entry (P2)** **[auto]**
 - Steps: Manually add a URL that's already saved.
 - Expected: Same "Already saved" behavior as TC-010.
 
@@ -77,20 +100,20 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 3. Data Migration (legacy upgrade)
 
-**TC-020 — Migrate existing localStorage data on first run (P1)**
+**TC-020 — Migrate existing localStorage data on first run (P1)** **[auto]**
 - Preconditions: `chrome.storage.local` cleared (simulate pre-migration).
 - Steps: In the popup's console: `localStorage.setItem('links', JSON.stringify([{url:'https://example.com', description:'Example', checked:false}]))` → close and reopen the popup.
 - Expected: "Example" appears automatically in the list, no user action needed.
 
-**TC-021 — Migration doesn't repeat or duplicate (P1)**
+**TC-021 — Migration doesn't repeat or duplicate (P1)** **[auto]**
 - Steps: After TC-020, close and reopen the popup again.
 - Expected: Still exactly one entry for that URL.
 
-**TC-022 — Fresh install with no legacy data (P2)**
+**TC-022 — Fresh install with no legacy data (P2)** **[auto]**
 - Steps: Clear both `chrome.storage.local` and `localStorage.removeItem('links')` → reopen popup.
 - Expected: Normal empty state, no console errors.
 
-**TC-023 — Corrupt legacy data doesn't crash migration (P3)**
+**TC-023 — Corrupt legacy data doesn't crash migration (P3)** **[auto]**
 - Steps: `localStorage.setItem('links', 'not valid json')`, clear `chrome.storage.local`, reopen popup.
 - Expected: No crash; treated as nothing to migrate (empty list).
 
@@ -103,12 +126,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Click the row's edit icon (`aria-label="Edit ..."`) → change category select → **Save**.
 - Expected: Row's background tint and category (visible in Edit mode, and via the screen-reader-only label) update to match.
 
-**TC-031 — Filter by category (P1)**
+**TC-031 — Filter by category (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
 - Steps: Click a category pill in `#pills-container`.
 - Expected: List narrows to only that category. Click **All** → full list restored.
 
-**TC-032 — Add a new category (P1)**
+**TC-032 — Add a new category (P1)** **[auto]**
 - Steps: Settings → Categories → type a name (≤15 chars) → **Add**.
 - Expected: New category appears at the top of the list, immediately selectable in Edit mode and the manual-entry form.
 
@@ -116,12 +139,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Try to type a 20-character name into the new-category input.
 - Expected: Input stops accepting characters at 15 (`maxlength`); the live counter (`#new-category-counter`) reads "15/15".
 
-**TC-034 — Removing an unused category (P1)**
+**TC-034 — Removing an unused category (P1)** **[auto]**
 - Preconditions: a category with no tabs assigned to it.
 - Steps: Settings → click **×** next to that category.
 - Expected: Category removed from the list, from all category selects, and from filter pills.
 
-**TC-035 — Removing an in-use category is blocked (P1)**
+**TC-035 — Removing an in-use category is blocked (P1)** **[auto]**
 - Preconditions: a category assigned to at least one tab.
 - Steps: Settings → click **×** next to that category.
 - Expected: Not removed. A message appears on that category's own card ("In use — reassign its tabs first."), auto-clears after ~3s. The **×** is visually muted but remains clickable.
@@ -146,23 +169,23 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 5. Editing & Deleting
 
-**TC-040 — Edit title/URL/category (P1)**
+**TC-040 — Edit title/URL/category (P1)** **[auto]**
 - Steps: Click edit icon → change title, URL, and category → **Save**.
 - Expected: Changes persist after closing and reopening the popup.
 
-**TC-041 — Edit rejects invalid URL (P1)**
+**TC-041 — Edit rejects invalid URL (P1)** **[auto]**
 - Steps: Enter edit mode → clear URL, type `notaurl` → **Save**.
 - Expected: Save blocked, field shows an error state, edit mode stays open.
 
-**TC-042 — Cancel edit discards changes (P2)**
+**TC-042 — Cancel edit discards changes (P2)** **[auto]**
 - Steps: Enter edit mode → change fields → **Cancel**.
 - Expected: Original values remain; nothing persisted.
 
-**TC-043 — Delete a tab (P1)**
+**TC-043 — Delete a tab (P1)** **[auto]**
 - Steps: Click the delete icon on a row.
 - Expected: Removed immediately from the list and from storage (still gone after reopening the popup). A toast ("Deleted", `#toast`) appears with an **Undo** button (`#toast-undo`).
 
-**TC-044 — Undo restores the tab to its exact original position (P1)**
+**TC-044 — Undo restores the tab to its exact original position (P1)** **[auto]**
 - Preconditions: 3+ saved tabs in manual order.
 - Steps: Delete the middle tab → click **Undo** in the toast before it disappears.
 - Expected: The tab reappears at the same position it was deleted from (not at the top or bottom of the list), scrolled into view and briefly highlighted, same as a fresh save.
@@ -211,12 +234,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 7. Outdated Tracking
 
-**TC-060 — Outdated badge appears past threshold (P1)**
+**TC-060 — Outdated badge appears past threshold (P1)** **[auto]**
 - Preconditions: Settings → outdated threshold set to 1 day; a tab's `savedAt` backdated via console (`chrome.storage.local.get('tabSandwich.tabs', r => {...})`) to 2+ days ago.
 - Steps: Reopen popup.
 - Expected: That row shows an age badge (e.g. "2d").
 
-**TC-061 — Outdated quick filter (P1)**
+**TC-061 — Outdated quick filter (P1)** **[auto]**
 - Preconditions: at least one outdated tab exists.
 - Steps: Click the "Outdated (N)" pill (appears right after "All").
 - Expected: List narrows to only outdated tabs, regardless of position in the full list.
@@ -249,7 +272,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Press the assigned shortcut with focus on a normal web page.
 - Expected: Popup opens.
 
-**TC-073 — Settings view toggle + focus management (P1)**
+**TC-073 — Settings view toggle + focus management (P1)** **[auto]**
 - Steps: Click the gear icon → note focus location → click **Back**.
 - Expected: Gear click shows Settings and hides the main list/pills/action row; focus lands on **Back**. Back click reverses this and returns focus to the gear icon.
 
@@ -315,13 +338,13 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Preconditions: a saved tab for a page Chrome has never visited (so its local favicon cache has nothing for that URL) — e.g. manually add a link to a domain you've never opened in this browser.
 - Expected: Chrome's own generic fallback icon or the app's placeholder icon is shown — never a broken-image glyph.
 
-**TC-103 — Manifest permissions remain minimal (P1, release gate)**
+**TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
 - Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
-- Steps: `git status` after a fresh `npm run build`.
-- Expected: `popup/js/` does not appear as new/modified tracked content (it's gitignored and untracked).
+- Steps: `git status` after a fresh `pnpm build`.
+- Expected: `dist/` does not appear as new/modified tracked content (it's gitignored and untracked).
 
 **TC-105 — Favicon lookup makes no request to the page's own site (P2)**
 - Preconditions: a saved tab for a page you *have* visited before (so Chrome has a cached favicon for it); DevTools Network tab open on the popup (right-click the popup → Inspect → Network), filtered to that page's domain.
@@ -332,17 +355,17 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 12. Search
 
-**TC-110 — Basic substring match (P1)**
+**TC-110 — Basic substring match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub" (`github.com`) among several others.
 - Steps: Type `git` into search (`#search-input`).
 - Expected: Only tabs matching on title/domain/path remain; matched characters in the title are visually highlighted.
 
-**TC-111 — Non-contiguous (fuzzy) match (P1)**
+**TC-111 — Non-contiguous (fuzzy) match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub".
 - Steps: Type `gthb`.
 - Expected: The GitHub tab still matches, with each matched letter highlighted individually.
 
-**TC-112 — Search matches on URL, not just title (P2)**
+**TC-112 — Search matches on URL, not just title (P2)** **[auto]**
 - Preconditions: a tab whose title doesn't contain the domain (e.g. title "My Notes", url `https://example.com/notes`).
 - Steps: Search `example`.
 - Expected: The tab appears (matched on hostname), even though its title shows no highlight.
@@ -352,16 +375,16 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Search `python tutorial`.
 - Expected: Only "Python Tutorial" remains.
 
-**TC-114 — No results state (P1)**
+**TC-114 — No results state (P1)** **[auto]**
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
 - Expected: List shows "No matching tabs." (distinct from the "No saved tabs yet." empty-library message); `#search-status` announces "No matching tabs".
 
-**TC-115 — Search composes with an active category/Outdated pill (P1)**
+**TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
 - Steps: Click a category pill → then type a query that matches tabs both inside and outside that category.
 - Expected: Only matches within the selected pill's tabs appear. Pills themselves are unaffected by the query (all pills with any tabs in the full library stay visible).
 
-**TC-116 — Clearing search restores prior state (P1)**
+**TC-116 — Clearing search restores prior state (P1)** **[auto]**
 - Steps: Apply a category pill → search a query → click the clear button (`#search-clear`) or press **Escape**.
 - Expected: Search input empties, full (category-filtered) list returns in its original manual order, focus stays in the search input.
 
@@ -399,7 +422,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 13. Export & Import
 
-**TC-130 — Export downloads a valid backup file (P1)**
+**TC-130 — Export downloads a valid backup file (P1)** **[auto]**
 - Preconditions: several saved tabs across 2+ categories.
 - Steps: Open Settings → click **Export** (`#export-btn`).
 - Expected: A `.json` file downloads (named `tab-sandwich-backup-YYYY-MM-DD.json`, dated today). Opening it shows `version`, `exportedAt`, a `tabs` array matching what's saved, and a `settings` object.
@@ -413,7 +436,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: From the confirmation in TC-131, click **Cancel**.
 - Expected: Returns to the plain Export/Import buttons; no tabs or settings changed.
 
-**TC-133 — Merge adds only genuinely new tabs (P1)**
+**TC-133 — Merge adds only genuinely new tabs (P1)** **[auto]**
 - Preconditions: a backup file containing some tabs already saved (same URL) and some not.
 - Steps: Import the file → click **Merge**.
 - Expected: Only the tabs whose URL isn't already saved get added (no duplicates created); existing tabs and their positions are untouched. A toast reports how many tabs were imported, with **Undo**.
@@ -437,16 +460,16 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Import it → click **Merge**.
 - Expected: A status message explains nothing new was found; no toast/Undo appears (there's nothing to undo).
 
-**TC-138 — Replace overwrites everything (P1)**
+**TC-138 — Replace overwrites everything (P1)** **[auto]**
 - Preconditions: current tabs/settings differ from the backup file being imported.
 - Steps: Import a file → click **Replace all**.
 - Expected: The saved list and settings (categories, colors, outdated toggle/threshold) become exactly what the file contained (missing settings fields fall back to defaults). A toast confirms the replace, with **Undo**.
 
-**TC-139 — Replace is undoable (P1)**
+**TC-139 — Replace is undoable (P1)** **[auto]**
 - Steps: Replace → click **Undo** in the toast before it times out.
 - Expected: Tabs and settings return to exactly their pre-replace state.
 
-**TC-140 — Malformed or unrelated JSON is rejected (P1)**
+**TC-140 — Malformed or unrelated JSON is rejected (P1)** **[auto]**
 - Preconditions: a `.json` file that isn't a Tab Sandwich backup (e.g. `{"hello": "world"}`, or a tabs array containing one entry with a missing `title`).
 - Steps: Click **Import** → choose that file.
 - Expected: An error message appears (e.g. "That file doesn't look like a Tab Sandwich backup."); no confirmation UI appears; nothing is changed.
@@ -455,7 +478,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Import a file → **Cancel** → click **Import** again → choose the same file again.
 - Expected: The confirmation appears again (the file input's selection isn't "stuck" from the first pick).
 
-**TC-142 — Export/Import require no additional permission (P1, release gate)**
+**TC-142 — Export/Import require no additional permission (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
 - Expected: No `downloads` permission is present — export/import use only the File/Blob/anchor-download web APIs. (The exact permission list is asserted once, in TC-103, so this doesn't need to duplicate it and risk drifting out of sync as other permissions are added.)
 
@@ -463,21 +486,21 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ## 14. Category Rename & Reorder
 
-**TC-150 — Rename a category (P1)**
+**TC-150 — Rename a category (P1)** **[auto]**
 - Preconditions: a category (`aria-label="Rename ..."` icon in Settings → Categories) assigned to at least one tab.
 - Steps: Click the rename icon → type a new name → press **Enter** (or click away).
 - Expected: The category's name updates everywhere: the Settings list, every category select (edit row, manual-entry form), and every tab previously tagged with the old name now shows the new one. Its assigned color is unchanged.
 
-**TC-151 — Renaming to an existing category name is rejected (P2)**
+**TC-151 — Renaming to an existing category name is rejected (P2)** **[auto]**
 - Preconditions: two categories, e.g. "Work" and "Reading".
 - Steps: Rename "Work" to "Reading".
 - Expected: Not renamed. A message appears on that category's own card ("That name is already used by another category."), auto-clears after ~3s; "Work" keeps its original name.
 
-**TC-152 — Renaming to an empty value is rejected (P3)**
+**TC-152 — Renaming to an empty value is rejected (P3)** **[auto]**
 - Steps: Click rename, clear the input entirely, click away.
 - Expected: Reverts to the original name with a "Name can't be empty." message; nothing is written to storage.
 
-**TC-153 — Renaming to "Uncategorized" is rejected (P2)**
+**TC-153 — Renaming to "Uncategorized" is rejected (P2)** **[auto]**
 - Steps: Click rename on any category, type "Uncategorized", press Enter.
 - Expected: Not renamed — the reserved sentinel can't be reused as a real category's name (same message as TC-151).
 
@@ -489,12 +512,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Click rename, try to type more than 15 characters.
 - Expected: Input stops accepting characters at 15, same limit as the add-category field.
 
-**TC-156 — Reorder categories with the up/down controls (P1)**
+**TC-156 — Reorder categories with the up/down controls (P1)** **[auto]**
 - Preconditions: 3+ configured categories.
 - Steps: In Settings, click the down-arrow on the first category.
 - Expected: It swaps places with the category directly below it. The new order shows immediately in the Settings list and in every category select dropdown (edit row, manual-entry form).
 
-**TC-157 — Reorder controls disable at the ends of the list (P2)**
+**TC-157 — Reorder controls disable at the ends of the list (P2)** **[auto]**
 - Steps: Inspect the first and last category's move buttons.
 - Expected: The first category's up-arrow and the last category's down-arrow are both disabled.
 
@@ -568,21 +591,21 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Import the file, choose **Merge** (or **Replace**).
 - Expected: The backup status line shows an error, not a success message; reopening the popup (patch removed) shows the tabs/settings from before the import attempt, untouched.
 
-**TC-179 — No `unlimitedStorage` permission (P1, release gate)**
+**TC-179 — No `unlimitedStorage` permission (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
 - Expected: `permissions` is unchanged by this spec — no `unlimitedStorage` added. (See S06: at this app's data-model size the real 10 MB quota isn't a realistic ceiling, and the permission wouldn't change what the capacity indicator reports anyway, since `chrome.storage.local.QUOTA_BYTES` is a fixed constant regardless of whether it's granted.)
 
 ## 16. Stable Ids & Serialized Writes
 
-**TC-180 — Saved tab ids are UUIDs, not derived from time (P3)**
+**TC-180 — Saved tab ids are UUIDs, not derived from time (P3)** **[auto]**
 - Steps: Save a tab. In the popup's DevTools console: `(await chrome.storage.local.get("tabSandwich.tabs"))["tabSandwich.tabs"]`.
 - Expected: each tab's `id` is a UUID (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`), not a plain numeric timestamp string.
 
-**TC-181 — Imported tabs get UUID ids too (P3)**
+**TC-181 — Imported tabs get UUID ids too (P3)** **[auto]**
 - Steps: Import a backup file (Merge or Replace), then inspect stored tabs as in TC-180.
 - Expected: every imported tab's `id` is also a UUID, not the old `<timestamp>-<index>` scheme.
 
-**TC-182 — Overlapping writes never lose an update (P1)**
+**TC-182 — Overlapping writes never lose an update (P1)** **[auto]**
 - Preconditions: 2+ saved tabs, at least one in different categories. From the popup's DevTools console, slow every write down to widen the race window:
   ```js
   const __origSet = chrome.storage.local.set.bind(chrome.storage.local);
@@ -590,3 +613,24 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
   ```
 - Steps: While the delay is patched in, trigger two different mutations back to back, well within that 400ms window — e.g. edit one tab's title (click Save) and immediately delete a different tab; or rename a category and immediately toggle **Outdated tracking**.
 - Expected: Wait for both actions to finish (~800ms), then reopen the popup with the patch removed (`chrome.storage.local.set = __origSet;`) — both changes are present. Neither mutation's write silently reverted the other's (the historical failure mode: two overlapping read-modify-write cycles, the second one's read taken before the first one's write landed).
+
+---
+
+## 17. Safety Net (v2.3)
+
+**TC-183 — Editing a URL into one that's already saved is refused (P1)** **[auto]**
+- Preconditions: two saved tabs, A and B.
+- Steps: Edit B → change its URL to A's URL (any variant of it, e.g. without the trailing slash) → **Save**.
+- Expected: The row stays in edit mode with everything typed still in place; the URL field is marked and a message reads "Already saved as “A”."; nothing is written. Changing only a title or category still saves, even on a row that already duplicates another (possible in older data).
+
+**TC-184 — Data upgrades are versioned and can't half-apply (P1)** **[auto]**
+- Steps: Open the popup on data saved by v2.2.0 or earlier, then inspect `(await chrome.storage.local.get(null))` in the popup's DevTools.
+- Expected: `tabSandwich.schemaVersion` is `1`; tabs and settings are unchanged. (A future release that changes the stored format runs each upgrade step on a copy, keeps a backup in `tabSandwich.upgradeBackup`, writes data and version together, and restores the original exactly if anything fails — the logic tests force each failure path.)
+
+**TC-185 — Accessibility scan passes on every screen (P1)** **[auto]**
+- Steps: `pnpm test:e2e` (the accessibility tests scan the list, manual entry, edit mode, Settings, and the undo toast).
+- Expected: No violations other than those listed in `KNOWN_GAPS` (color contrast, until v3.0).
+
+**TC-186 — A failing check blocks the release zip (P1, release gate)**
+- Steps: On GitHub, open the run for the release tag under **Actions**.
+- Expected: The **Release** job only runs after **checks** passes, and fails if the tag doesn't match `manifest.json`'s version. A tag whose checks fail gets no release zip.

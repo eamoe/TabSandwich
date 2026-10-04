@@ -12,12 +12,13 @@ keyboard shortcut to open. Everything is stored locally via
 
 ## Architecture
 
-Vanilla TypeScript compiled with `tsc` — no bundler, no UI framework, no
-state library. The browser loads native ES modules directly
-(`<script type="module">` in `popup/popup.html`), so relative imports in
-`.ts` files need explicit `.js` extensions once compiled; `fix-extensions.js`
-(run as part of `npm run build`) rewrites `tsc`'s extension-less import
-specifiers to add them, since native ESM resolution requires them.
+Vanilla TypeScript, built with Vite — no UI framework (until the v3.0
+redesign adopts Preact), no state library. `popup/popup.html` points straight
+at `src/popup.ts`; `pnpm build` type-checks with `tsc` (Vite itself
+doesn't), then Vite bundles the popup into `dist/` and copies in
+`manifest.json` and `images/`. `dist/` is the complete, loadable extension —
+the folder you load unpacked, the one the robot tests run against, and the
+one the release zip is made from.
 
 ```
 src/
@@ -25,6 +26,8 @@ src/
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
+    upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
+                            backup before writing, original restored if anything fails
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
@@ -56,27 +59,48 @@ src/
   popup.ts                  DOMContentLoaded entry point — migrate → refreshView → wire hero/settings
 
 popup/popup.html / popup.css   markup + styles (hand-written, no CSS framework)
-popup/js/                      tsc build output — gitignored, never commit this
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
-fix-extensions.js              post-build import-path fixer (see above)
+dist/                          build output (the loadable extension) — gitignored, never commit this
+vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
+tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake)
+tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
+                                the popup, and runs an accessibility scan (axe)
+eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
+.github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
+                                release.yml (version tags: checks, then zip the tested dist/)
 ```
 
 ## Build & verify
 
+Package manager is pnpm (version pinned in `package.json`'s `packageManager`;
+`pnpm-lock.yaml` is the lockfile — don't add a `package-lock.json`). Node 22+.
+
 ```
-npm ci
-npm run build      # tsc && node fix-extensions.js — outputs to popup/js/
+pnpm install --frozen-lockfile
+pnpm exec playwright install chromium   # once, for the robot tests
+pnpm build        # tsc type-check, then Vite → dist/
+pnpm watch        # rebuild dist/ on every save
+pnpm check        # everything CI runs: lint, typecheck, logic tests, build, robot tests
 ```
 
-Then load `chrome://extensions` → Developer mode → **Load unpacked** →
-select the repo root, and exercise the feature by hand in the actual popup.
+Individually: `pnpm lint`, `pnpm typecheck`, `pnpm test` (logic,
+~1 s), `pnpm test:e2e` (robot tests against the current `dist/` — build
+first). To try it by hand: `chrome://extensions` → Developer mode →
+**Load unpacked** → select `dist/` (not the repo root).
 
-**There is no automated test suite.** A clean `tsc` build proves types
-check, nothing else — it does not prove drag-and-drop works, a dropdown is
-positioned correctly, or storage writes race-free. Manually click through
-the feature in a real loaded extension before calling anything done. See
-`TESTING.md` for the running list of manual test cases (written with
-future automation in mind — element IDs are noted for that purpose).
+**Automated checks are the release gate.** `.github/workflows/checks.yml`
+runs all of the above on every pull request and before every release; a
+version tag whose checks fail never gets a release zip. New behavior needs
+tests in the same change: logic in `tests/unit/`, user-visible journeys in
+`tests/e2e/` (select elements by role and accessible name, the way a user
+finds them — not by CSS class — so tests survive restyling). The
+accessibility scan in `tests/e2e/accessibility.spec.ts` skips only the rules
+in its `KNOWN_GAPS` list (currently color contrast, owned by v3.0); never
+add to that list to get a run passing.
+
+What automation doesn't cover still needs a person: drag-and-drop feel,
+animation smoothness, and the manual release pass at the top of
+`TESTING.md`. Cases there are marked **[auto]** when a test implements them.
 
 ## Working conventions
 
@@ -85,6 +109,11 @@ future automation in mind — element IDs are noted for that purpose).
   exception is `src/storage/migration.ts`, which reads legacy
   `localStorage` data on first run *in order to migrate it away* — never
   add new code that reads or writes `localStorage` for anything else.
+  ESLint enforces this.
+- **Changing what's stored goes through `src/storage/upgrade.ts`.** Bump
+  `CURRENT_SCHEMA_VERSION` and add a pure `{ from, to, migrate }` step to
+  `MIGRATIONS`, with tests (see `tests/unit/upgrade.test.ts`). Never
+  reshape stored data anywhere else.
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
   `favicon`). If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
@@ -97,9 +126,10 @@ future automation in mind — element IDs are noted for that purpose).
 - **Every interactive control gives immediate visible feedback** — a
   state change, animation, or message. Don't ship a click handler that
   does something invisible.
-- **Build output (`popup/js/`) is never committed.** CI
+- **Build output (`dist/`) is never committed.** CI
   (`.github/workflows/release.yml`) builds and packages a distributable
-  zip on every `vX.Y.Z` tag push — that's the artifact that gets
+  zip on every `vX.Y.Z` tag push (after all checks pass, and only if the
+  tag matches `manifest.json`'s version) — that's the artifact that gets
   distributed, not a locally-built copy, except when explicitly noted
   otherwise (e.g. `PUBLISHING.md` has a documented one-off exception for
   the first Store submission).
@@ -109,8 +139,9 @@ future automation in mind — element IDs are noted for that purpose).
   `git push origin vX.Y.Z`) is fine to run directly once asked to do so.
 - **Docs are part of the change, not a follow-up.** A change isn't done
   until every doc it affects agrees with the code: `README.md` (features,
-  dev workflow), this file's `src/` breakdown, `TESTING.md` (new manual
-  cases for new behavior; existing cases whose expected UI text changed),
+  dev workflow), this file's `src/` breakdown, `TESTING.md` (new cases for
+  new behavior, marked **[auto]** where a test covers them; existing cases
+  whose expected UI text changed), the automated tests themselves,
   `PRIVACY.md` (any change to what's stored, computed, or requested over
   the network — its URL is the live Store-listing policy, so drift here
   is a compliance problem, not just a stale comment), `PUBLISHING.md`
@@ -118,7 +149,7 @@ future automation in mind — element IDs are noted for that purpose).
   permission set and feature list — easy to forget since it's only
   touched at release time, not on every spec), and the manifest's
   `permissions` list. Check this before considering a spec finished, the
-  same way a clean `tsc` build is checked — not as a separate pass at
+  same way a green `pnpm check` is — not as a separate pass at
   release time. This keeps a Store submission a packaging step rather
   than a scramble to reverse-engineer what actually shipped.
 

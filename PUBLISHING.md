@@ -12,13 +12,13 @@ This is the step-by-step guide for submitting Tab Sandwich to the Chrome Web Sto
 Normally you'd use the zip CI already built and attached to the tagged release, so what you submit is exactly what was tagged and verified. For this first submission specifically, `manifest.json`'s description was tweaked after `v2.0.1` was tagged (without a version bump), so that release's zip is one commit behind. Build locally instead, matching what the release workflow packages:
 
 ```
-npm ci
-npm run build
+pnpm install --frozen-lockfile
+pnpm build
 ```
 
-Then zip `manifest.json`, `images/`, and `popup/` (the same set `.github/workflows/release.yml` packages) into a single archive.
+Then zip the *contents* of `dist/` (so `manifest.json` sits at the root of the zip — the same thing `.github/workflows/release.yml` packages): `cd dist && zip -r ../tab-sandwich.zip .`
 
-(For future versions: bump `manifest.json`'s `version`, tag and push a new `vX.Y.Z` tag, wait for the release workflow to attach the new zip, then go to `https://github.com/eamoe/TabSandwich/releases/tag/vX.Y.Z` and download that asset directly — no need to build locally once the tag is current.)
+(For future versions: bump `manifest.json`'s `version`, tag and push a new `vX.Y.Z` tag, wait for the release workflow to run every check and attach the new zip (a tag whose checks fail, or whose version doesn't match `manifest.json`, gets no zip), then go to `https://github.com/eamoe/TabSandwich/releases/tag/vX.Y.Z` and download that asset directly — no need to build locally once the tag is current.)
 
 ## 2. Create the listing (one-time)
 

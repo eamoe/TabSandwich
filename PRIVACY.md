@@ -1,6 +1,6 @@
 # Privacy Policy — Tab Sandwich
 
-**Last updated:** 2026-09-05
+**Last updated:** 2026-10-04
 
 Tab Sandwich is a Chrome extension for saving and organizing browser tabs. This policy explains what data the extension handles and what it does with it.
 
@@ -14,6 +14,8 @@ When you save a tab, Tab Sandwich stores:
 - The date and time you saved it
 
 This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
+
+Alongside it, Tab Sandwich keeps a data-format version number, and — only after an update has changed the format of your stored data — a backup copy of that data exactly as it was just before the update, so nothing is lost if an update goes wrong. The backup is stored in the same local place, contains only the data listed above plus your settings, and is never transmitted anywhere either.
 
 ## Favicons
 
@@ -41,7 +43,7 @@ Settings includes an optional Export/Import feature. Export writes everything li
 
 Since all data lives in your local browser storage, you can delete it at any time by:
 - Deleting individual saved tabs from within the extension, or
-- Uninstalling the extension, which removes all of its stored data along with it.
+- Uninstalling the extension, which removes all of its stored data, including any update backup copy, along with it.
 
 ## Changes to this policy
 
