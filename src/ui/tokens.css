@@ -1,0 +1,147 @@
+/*
+ * Design tokens for the v3.0 look: every color, shadow and size the redesigned screens use,
+ * in light and dark. Values come from the approved v3.0 mockups (linked from the roadmap).
+ * Components read these through var(--…)
+ * and never hard-code a color, so both themes stay complete by construction.
+ *
+ * Three states, not two. No data-theme attribute = "System": the media query decides, which
+ * also means an open popup follows the OS switching theme with no script involved. An explicit
+ * Light or Dark choice stamps data-theme on <html> (see theme.ts) and wins over the OS.
+ *
+ * `color-scheme` (native scrollbars and form controls) is deliberately not set here yet: the
+ * pre-v3.0 screens still paint fixed light colors, and dark native controls on them would be a
+ * visible change. The redesigned app shell sets it once it replaces them.
+ */
+
+:root {
+    --surface: #FFFFFF;
+    --surface-2: #F1EFF7;
+    --hover: #F3F1FA;
+    --line: #E4E1EE;
+    --ink: #1D1A2E;
+    --ink-2: #55516A;
+    --ink-3: #6B6780;
+    --accent: #5A50C2;
+    --accent-hover: #4C43AD;
+    --on-accent: #FFFFFF;
+    --save: #FFC24B;
+    --save-hover: #FFB52E;
+    --on-save: #3A2800;
+    --dup: #C2410C;
+    --on-dup: #FFFFFF;
+    --danger: #B42339;
+    --warn-bg: #FFF3D1;
+    --warn-ink: #6A4900;
+    --ring: rgba(29,26,46,.22);
+    --shadow: 0 1px 2px rgba(29,26,46,.06),0 4px 14px rgba(29,26,46,.06);
+    --toast: #2A2447;
+    --on-toast: #F4F2FB;
+    --toast-link: #FFC24B;
+    --hero-a: #7A71E0;
+    --hero-b: #584FA3;
+    --on-hero: #FFFFFF;
+    --hero-field: rgba(255,255,255,.18);
+    --hero-hover: rgba(255,255,255,.26);
+    --hero-ph: rgba(255,255,255,.82);
+    --card-shadow: 0 2px 4px rgba(42,36,71,.08),0 10px 24px rgba(42,36,71,.14);
+    --chip-mix: 18%;
+    --fav-mix: 24%;
+    --ground: #EAE8F3;
+    --row-mix: 8%;
+    --row-edge: 30%;
+    --row-shadow: 0 1px 0 rgba(42,36,71,.08);
+    --row-lift: 0 4px 12px rgba(42,36,71,.14);
+    --save-edge: #D9981C;
+    --accent-edge: #3F3792;
+
+    --row-h: 46px;
+    --row-gap: 5px;
+    --line-gap: 3px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --surface: #1A1724;
+        --surface-2: #25212F;
+        --hover: #221E2D;
+        --line: #322D40;
+        --ink: #EDEBF5;
+        --ink-2: #B6B2C8;
+        --ink-3: #A29DB6;
+        --accent: #A9A1F8;
+        --accent-hover: #BDB7FA;
+        --on-accent: #15122A;
+        --save: #F5B93E;
+        --save-hover: #FFC85C;
+        --on-save: #271A00;
+        --dup: #FB923C;
+        --on-dup: #2A1300;
+        --danger: #FF8FA0;
+        --warn-bg: #3A2F12;
+        --warn-ink: #F4D37C;
+        --ring: rgba(255,255,255,.28);
+        --shadow: 0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+        --toast: #EDEBF5;
+        --on-toast: #1A1724;
+        --toast-link: #4C43AD;
+        --hero-a: #4D45A6;
+        --hero-b: #2E2872;
+        --on-hero: #FFFFFF;
+        --hero-field: rgba(255,255,255,.12);
+        --hero-hover: rgba(255,255,255,.2);
+        --hero-ph: rgba(255,255,255,.78);
+        --card-shadow: 0 2px 4px rgba(0,0,0,.3),0 10px 24px rgba(0,0,0,.35);
+        --chip-mix: 28%;
+        --fav-mix: 34%;
+        --ground: #110F18;
+        --row-mix: 14%;
+        --row-edge: 38%;
+        --row-shadow: 0 1px 0 rgba(0,0,0,.35);
+        --row-lift: 0 4px 14px rgba(0,0,0,.45);
+        --save-edge: #A9741A;
+        --accent-edge: #7A70DC;
+    }
+}
+
+:root[data-theme="dark"] {
+    --surface: #1A1724;
+    --surface-2: #25212F;
+    --hover: #221E2D;
+    --line: #322D40;
+    --ink: #EDEBF5;
+    --ink-2: #B6B2C8;
+    --ink-3: #A29DB6;
+    --accent: #A9A1F8;
+    --accent-hover: #BDB7FA;
+    --on-accent: #15122A;
+    --save: #F5B93E;
+    --save-hover: #FFC85C;
+    --on-save: #271A00;
+    --dup: #FB923C;
+    --on-dup: #2A1300;
+    --danger: #FF8FA0;
+    --warn-bg: #3A2F12;
+    --warn-ink: #F4D37C;
+    --ring: rgba(255,255,255,.28);
+    --shadow: 0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+    --toast: #EDEBF5;
+    --on-toast: #1A1724;
+    --toast-link: #4C43AD;
+    --hero-a: #4D45A6;
+    --hero-b: #2E2872;
+    --on-hero: #FFFFFF;
+    --hero-field: rgba(255,255,255,.12);
+    --hero-hover: rgba(255,255,255,.2);
+    --hero-ph: rgba(255,255,255,.78);
+    --card-shadow: 0 2px 4px rgba(0,0,0,.3),0 10px 24px rgba(0,0,0,.35);
+    --chip-mix: 28%;
+    --fav-mix: 34%;
+    --ground: #110F18;
+    --row-mix: 14%;
+    --row-edge: 38%;
+    --row-shadow: 0 1px 0 rgba(0,0,0,.35);
+    --row-lift: 0 4px 14px rgba(0,0,0,.45);
+    --save-edge: #A9741A;
+    --accent-edge: #7A70DC;
+}

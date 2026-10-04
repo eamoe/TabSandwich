@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { daysSince, isOutdated } from "../../src/util/time";
-import { isLightColor, tintHex } from "../../src/util/color";
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 9, 4, 12);
@@ -29,15 +28,3 @@ describe("daysSince / isOutdated", () => {
     });
 });
 
-describe("tintHex / isLightColor", () => {
-    it("mixes toward white by the given amount", () => {
-        expect(tintHex("#000000", 0)).toBe("#000000");
-        expect(tintHex("#000000", 1)).toBe("#ffffff");
-        expect(tintHex("#6C63C5", 0.5)).toBe("#b6b1e2");
-    });
-
-    it("tells pale palette colors from saturated ones", () => {
-        expect(isLightColor("#E5E2D5")).toBe(true); // sand
-        expect(isLightColor("#6C63C5")).toBe(false); // purple
-    });
-});

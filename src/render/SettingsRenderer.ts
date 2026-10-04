@@ -15,7 +15,8 @@ import {
     CATEGORY_COLOR_PALETTE,
 } from "../domain/CategoryRepository";
 import { initBackup } from "./BackupRenderer";
-import { showErrorToast } from "./ToastRenderer";
+import { showErrorToast } from "../ui/toastStore";
+import { onViewChange, showView } from "../ui/navigation";
 import { writeErrorMessage } from "../util/errors";
 
 type Refresh = () => void | Promise<void>;
@@ -25,7 +26,7 @@ const UP_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" str
 const DOWN_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
 const MAX_CATEGORY_NAME_LENGTH = 15;
 
-// Module-level, same pattern as ListRenderer's tab drag: only one category drag can be in
+// Module-level: only one category drag can be in
 // progress at a time across the whole list.
 let dragCat: string | null = null;
 
@@ -382,56 +383,25 @@ function bindShortcutDisplay(): void {
 }
 
 /**
- * Show/hide toggle (the show/hide mechanics were pulled forward into Story 3, since that
- * story's category management couldn't be exercised at all without a way to reach Settings).
- * Story 5 adds the focus management here: hiding an element doesn't reliably move focus
- * away from a now-hidden descendant across browsers, so focus is moved explicitly on both
- * sides of the transition — into Settings on open, back to the trigger on close — rather
- * than leaving keyboard/screen-reader users stranded on whichever control they last used.
+ * Opening and closing Settings goes through the shared screen switch (src/ui/navigation.ts),
+ * which the main screen also listens to. Focus moves explicitly both ways — into Settings on
+ * open, back to the settings button on close (the main screen handles that side) — so keyboard
+ * and screen-reader users are never left on a control that just disappeared.
  */
 function bindViewToggle(refresh: Refresh): void {
-    const gearBtn = getElement<HTMLButtonElement>("gear-btn");
     const backBtn = getElement<HTMLButtonElement>("back-btn");
     const settingsView = getElement<HTMLElement>("settings-view");
-    const mainView = getElement<HTMLElement>("main-view");
-    const pillsRow = getElement<HTMLElement>("pills-container");
-    const actionRow = getElement<HTMLElement>("action-row");
-    const manualEntry = getElement<HTMLElement>("manual-entry");
 
-    gearBtn.addEventListener("click", () => {
-        settingsView.hidden = false;
-        mainView.hidden = true;
-        pillsRow.hidden = true;
-        actionRow.hidden = true;
-        manualEntry.hidden = true;
-        // The gear button was otherwise left showing, unchanged, right next to the Settings
-        // header it opened — a "go to Settings" control makes no sense once you're already
-        // there, and it looked identical to its main-screen state with nothing to tell the
-        // two apart. Back is the only way in and out from here.
-        gearBtn.hidden = true;
-        // Drives the search row's visibility via CSS rather than setting its own [hidden]
-        // here — that attribute stays owned solely by whether anything's saved yet (see
-        // SearchRenderer), so this can't fight it over the same property. Making the input
-        // itself unreachable, not just visually tucked away, matters: a query typed while the
-        // list behind it is hidden corrupts row-insert animations (getBoundingClientRect
-        // returns zero for anything under display:none) — this closes off that path entirely.
-        document.body.classList.add("settings-open");
+    onViewChange((view) => {
+        settingsView.hidden = view !== "settings";
+        if (view !== "settings") return;
         backBtn.focus();
-        // Re-render fresh on every open — belt-and-suspenders alongside the message's own
-        // timeout, so a stale per-category message never survives a trip back to the main view.
+        // Re-render fresh on every open, so a stale per-category message never survives a trip
+        // back to the main view.
         refreshCategorySection(refresh);
     });
 
-    backBtn.addEventListener("click", () => {
-        settingsView.hidden = true;
-        mainView.hidden = false;
-        pillsRow.hidden = false;
-        actionRow.hidden = false;
-        manualEntry.hidden = false;
-        gearBtn.hidden = false;
-        document.body.classList.remove("settings-open");
-        gearBtn.focus();
-    });
+    backBtn.addEventListener("click", () => showView("main"));
 }
 
 export async function initSettings(refresh: Refresh): Promise<void> {

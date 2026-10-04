@@ -42,7 +42,7 @@ Save tabs in one click, organize with color-coded categories, and spot outdated 
 Tab Sandwich is a fast, focused way to save and organize the tabs you want to come back to.
 
 SAVE INSTANTLY
-Click the toolbar icon (or press Alt+S) and hit Save Tab — the current page's title and URL are saved immediately. Need to save a link that isn't your active tab? Use "+ Add link manually."
+Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button.
 
 ORGANIZE WITH CATEGORIES
 Assign a color-coded category to any saved tab. Filter your list with a click, manage your categories (add, rename, remove, reorder, recolor) from Settings, and scan your list at a glance by color.
@@ -81,7 +81,7 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
    ```
 
 2. **Permission justifications:**
-   - `activeTab`: "Used only when the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab so it can be saved. No access to any other tab."
+   - `activeTab`: "Used only after the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab: the popup shows them, and saves them if the user clicks Save. No access to any other tab."
    - `storage`: "Used to persist the user's saved tabs and settings locally via chrome.storage.local. No data is transmitted off-device."
    - `favicon`: "Used to show each saved tab's icon by reading it from Chrome's own local favicon cache, instead of fetching it from the page's own site. No favicon data is stored, and no request is ever made to the saved page's site for this."
 

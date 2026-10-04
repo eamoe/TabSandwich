@@ -18,7 +18,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ["src/**/*.ts"],
+        files: ["src/**/*.{ts,tsx}"],
         languageOptions: { globals: { ...globals.browser, chrome: "readonly" } },
         rules: {
             // CLAUDE.md: all persistent data goes through chrome.storage.local (src/storage/chromeStorage.ts).
@@ -41,7 +41,7 @@ export default tseslint.config(
         rules: { "no-restricted-globals": "off" },
     },
     {
-        files: ["tests/**/*.ts", "*.config.ts", "*.config.js"],
+        files: ["tests/**/*.{ts,tsx}", "*.config.ts", "*.config.js"],
         languageOptions: { globals: { ...globals.node } },
     }
 );

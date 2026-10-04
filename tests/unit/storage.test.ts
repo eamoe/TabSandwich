@@ -25,6 +25,11 @@ describe("chromeStorage", () => {
         expect(await getSettings()).toEqual({ ...DEFAULT_SETTINGS, outdatedDays: 30 });
     });
 
+    it("reads settings saved before v3.0, which have no theme, as following the system", async () => {
+        storage.data[SETTINGS_KEY] = { outdatedEnabled: true, outdatedDays: 7, categories: ["Work"], categoryColors: { Work: "blue" } };
+        expect((await getSettings()).theme).toBe("system");
+    });
+
     it("round-trips tabs and settings", async () => {
         const tabs = [makeTab(), makeTab()];
         await setTabs(tabs);

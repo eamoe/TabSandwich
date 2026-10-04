@@ -16,7 +16,11 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // Components are written in JSX for Preact (adopted for the v3.0 redesign). The automatic
+    // runtime imports Preact's jsx() helper per file, so components never import `h` themselves.
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

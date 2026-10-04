@@ -69,10 +69,17 @@ export async function openSiteTab(context: BrowserContext, popup: Page, title: s
 
 export const tabList = (popup: Page): Locator => popup.getByRole("list", { name: "Saved tabs" });
 
-export const row = (popup: Page, title: string): Locator => tabList(popup).locator("li", { hasText: title });
+export const row = (popup: Page, title: string): Locator => tabList(popup).getByRole("listitem").filter({ hasText: title });
 
+/** The titles of the rows on screen, top to bottom — each row's first button is its title, which opens the tab. */
 export async function rowTitles(popup: Page): Promise<string[]> {
-    return tabList(popup).locator("li .tab-title").allTextContents();
+    const rows = tabList(popup).getByRole("listitem");
+    const titles: string[] = [];
+    for (const item of await rows.all()) {
+        const title = item.getByRole("button").first();
+        if (await title.count()) titles.push((await title.textContent()) ?? "");
+    }
+    return titles;
 }
 
 export async function openSettings(popup: Page): Promise<void> {
@@ -82,7 +89,7 @@ export async function openSettings(popup: Page): Promise<void> {
 
 /** The category choices offered when adding a link manually, in order (leaves the panel closed again). */
 export async function manualEntryCategories(popup: Page): Promise<string[]> {
-    const toggle = popup.getByRole("button", { name: "+ Add link manually" });
+    const toggle = popup.getByRole("button", { name: "Add link manually" });
     await toggle.click();
     const select = popup.getByLabel("Category (optional)");
     await expect(select).toBeVisible();

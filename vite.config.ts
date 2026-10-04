@@ -33,6 +33,10 @@ export default defineConfig({
     // picks exactly what the extension needs.
     publicDir: false,
     plugins: [copyExtensionFiles()],
+    // Preact components are plain JSX compiled with Preact's automatic runtime — the same
+    // settings tsconfig.json type-checks with, so the two can't disagree. (`oxc` is Vite 8's
+    // transformer; it replaced the older `esbuild` option.)
+    oxc: { jsx: { runtime: "automatic", importSource: "preact" } },
     build: {
         outDir: OUT_DIR,
         emptyOutDir: true,

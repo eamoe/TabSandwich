@@ -1,7 +1,7 @@
 import { getTabs, getSettings, setTabs, setSettings } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 import { getElement } from "../dom/domHelper";
-import { showUndoToast, showErrorToast } from "./ToastRenderer";
+import { showUndoToast, showErrorToast } from "../ui/toastStore";
 import { writeErrorMessage } from "../util/errors";
 import { buildBackupFile, backupFileName, parseBackupFile, mergeImport, replaceImport, ParsedImport } from "../domain/backup";
 

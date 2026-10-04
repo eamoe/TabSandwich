@@ -7,78 +7,13 @@
 </head>
 <body>
 
-  <header class="hero">
-    <div class="hero-top">
-      <div class="mark" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-          <rect x="2" y="5" width="20" height="4" rx="2"/>
-          <rect x="3" y="11" width="18" height="4" rx="2"/>
-          <rect x="2" y="17" width="20" height="4" rx="2"/>
-        </svg>
-      </div>
-      <div class="hero-heading">
-        <h1 class="brand-name">Tab Sandwich</h1>
-        <p class="tagline">Your tabs, tidy and saved</p>
-      </div>
-      <button type="button" id="gear-btn" class="gear-btn" aria-label="Open settings">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-    </div>
+  <!-- The main screen is a Preact app (src/ui/main/App.tsx), mounted here by src/popup.ts. -->
+  <div id="app"></div>
 
-    <div class="progress-bar" id="progress-bar" role="progressbar" aria-label="Storage used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div class="progress-fill" id="progress-fill"></div>
-    </div>
-    <div class="stats-row">
-      <span class="header-stats" id="header-stats">0 saved</span>
-      <span class="storage-usage" id="storage-usage"></span>
-    </div>
-
-    <div class="action-row" id="action-row">
-      <button type="button" id="save-btn" class="save-btn">Save Tab</button>
-    </div>
-    <p id="save-status" class="visually-hidden" role="status" aria-live="polite"></p>
-
-    <div class="manual-entry" id="manual-entry">
-      <button type="button" id="manual-entry-toggle" class="manual-entry-toggle" aria-expanded="false" aria-controls="manual-entry-collapse">+ Add link manually</button>
-      <div class="manual-entry-collapse" id="manual-entry-collapse">
-        <form id="manual-entry-form" class="manual-entry-form">
-          <label for="manual-url">URL</label>
-          <input type="text" id="manual-url" name="url" placeholder="https://example.com" required>
-
-          <label for="manual-title">Title (optional)</label>
-          <input type="text" id="manual-title" name="title" placeholder="Title">
-
-          <label for="manual-category">Category (optional)</label>
-          <select id="manual-category" name="category">
-            <option value="">Uncategorized</option>
-          </select>
-
-          <div class="manual-entry-actions">
-            <button type="submit" class="manual-entry-submit">Add</button>
-            <button type="button" id="manual-entry-cancel" class="manual-entry-cancel">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </header>
-
-  <div class="search-row" id="search-row" role="search">
-    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <label for="search-input" class="visually-hidden">Search saved tabs</label>
-    <input type="text" id="search-input" class="search-input" placeholder="Search saved tabs" autocomplete="off">
-    <button type="button" id="search-clear" class="search-clear" aria-label="Clear search" hidden>&times;</button>
-  </div>
-  <p id="search-status" class="visually-hidden" role="status" aria-live="polite"></p>
-
-  <nav class="pills-row" id="pills-container" aria-label="Filter saved tabs"></nav>
-
-  <main id="main-view">
-    <ul id="tab-list" class="tab-list" aria-label="Saved tabs"></ul>
-  </main>
-
-  <!-- Settings takes over as the primary content while open, so it is the page's main landmark
-       then. Two <main> elements are valid as long as only one is visible; the other is [hidden]. -->
+  <!-- Settings is still the pre-v3.0 screen until it's rebuilt; it takes over as the page's main
+       landmark while open. Two <main> elements are valid as long as only one is visible. -->
   <main id="settings-view" class="settings-view" hidden aria-label="Settings">
+    <h1 class="visually-hidden">Tab Sandwich settings</h1>
     <div class="settings-header">
       <button type="button" id="back-btn" class="back-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
@@ -147,11 +82,6 @@
       <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
     </div>
   </main>
-
-  <div class="toast" id="toast" role="status" aria-live="polite">
-    <span id="toast-message"></span>
-    <button type="button" id="toast-undo" class="toast-undo">Undo</button>
-  </div>
 
   <script type="module" src="../src/popup.ts"></script>
 </body>

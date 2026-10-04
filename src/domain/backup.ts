@@ -1,4 +1,4 @@
-import { SavedTab, Settings } from "../types";
+import { SavedTab, Settings, ThemeChoice } from "../types";
 import { DEFAULT_SETTINGS } from "../storage/chromeStorage";
 import { normalizeUrl, urlsMatch } from "../util/url";
 import { CATEGORY_COLOR_PALETTE, UNCATEGORIZED } from "./CategoryRepository";
@@ -31,6 +31,10 @@ export interface ParsedImport {
 
 function isPlainObject(x: unknown): x is Record<string, unknown> {
     return typeof x === "object" && x !== null && !Array.isArray(x);
+}
+
+function isThemeChoice(x: unknown): x is ThemeChoice {
+    return x === "system" || x === "light" || x === "dark";
 }
 
 /** Rejects the entry (not just a field) on any type mismatch — a foreign JSON file should fail loudly, not get silently reinterpreted. */
@@ -88,6 +92,7 @@ export function parseBackupFile(raw: string): ParsedImport | null {
             }
             settingsFields.categoryColors = colors;
         }
+        if (isThemeChoice(s.theme)) settingsFields.theme = s.theme;
     }
 
     return { tabs, settingsFields };

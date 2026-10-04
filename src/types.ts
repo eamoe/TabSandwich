@@ -7,6 +7,9 @@ export interface SavedTab {
     savedAt: number;
 }
 
+/** "system" follows the OS light/dark setting; the other two pin the popup to one theme. */
+export type ThemeChoice = "system" | "light" | "dark";
+
 export interface Settings {
     outdatedEnabled: boolean;
     outdatedDays: number;
@@ -14,4 +17,9 @@ export interface Settings {
     categories: string[];
     /** Category name -> palette key (see CategoryRepository.CATEGORY_COLOR_PALETTE). Missing entries fall back to a default. */
     categoryColors: Record<string, string>;
+    /**
+     * Added in v3.0. Settings stored by earlier versions don't have it; getSettings() fills in
+     * the default on read (the same merge every other field relies on), so no data upgrade is needed.
+     */
+    theme: ThemeChoice;
 }
