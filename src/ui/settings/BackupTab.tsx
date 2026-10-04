@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { getSettings, getTabs } from "../../storage/chromeStorage";
 import { backupFileName, buildBackupFile, parseBackupFile, type ParsedImport } from "../../domain/backup";
 import { importMerge, importReplace, restoreSnapshot, type Snapshot } from "../../domain/BackupRepository";
-import { writeErrorMessage } from "../../util/errors";
+import { writeErrorMessage } from "../errors";
 import { showErrorToast, showUndoToast } from "../toastStore";
 import { strings } from "../strings";
 import controls from "../controls.module.css";

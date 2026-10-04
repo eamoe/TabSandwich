@@ -50,10 +50,10 @@ export const test = base.extend<Fixtures>({
         const extDir = mkdtempSync(join(tmpdir(), "tab-sandwich-ext-"));
         cpSync(DIST, extDir, { recursive: true });
         const manifest = JSON.parse(readFileSync(join(extDir, "manifest.json"), "utf8"));
-        writeFileSync(
-            join(extDir, "manifest.json"),
-            JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: [`${TEST_SITE}/*`] }, null, 2)
-        );
+        // Rendering the Store screenshots (tests/store) shows a real web page in the save card, so
+        // that run alone stands in for activeTab on any site.
+        const hosts = process.env.TS_STORE_SCREENSHOTS ? ["<all_urls>"] : [`${TEST_SITE}/*`];
+        writeFileSync(join(extDir, "manifest.json"), JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: hosts }, null, 2));
 
         const userDataDir = mkdtempSync(join(tmpdir(), "tab-sandwich-profile-"));
         const context = await chromium.launchPersistentContext(userDataDir, {

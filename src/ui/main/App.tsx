@@ -3,7 +3,7 @@ import type { SavedTab } from "../../types";
 import { editTab, deleteTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { searchTabs } from "../../domain/search";
-import { writeErrorMessage } from "../../util/errors";
+import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast, showUndoToast } from "../toastStore";
 import { Toast } from "../Toast";

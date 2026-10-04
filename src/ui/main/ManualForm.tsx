@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { addTab, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { normalizeUrl } from "../../util/url";
-import { writeErrorMessage } from "../../util/errors";
+import { writeErrorMessage } from "../errors";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
 import controls from "../controls.module.css";

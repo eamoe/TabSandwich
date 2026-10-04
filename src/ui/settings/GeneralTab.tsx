@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import type { ThemeChoice } from "../../types";
 import { clampOutdatedDays, MAX_OUTDATED_DAYS, MIN_OUTDATED_DAYS, setOutdatedDays, setOutdatedEnabled, setTheme } from "../../domain/SettingsRepository";
-import { writeErrorMessage } from "../../util/errors";
+import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast } from "../toastStore";
 import { strings } from "../strings";

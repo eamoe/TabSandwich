@@ -90,6 +90,10 @@ tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome
                                 component tests (*.test.tsx, simulated DOM via happy-dom)
 tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
                                 the popup, and runs an accessibility scan (axe) in light and dark
+tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
+                                pixel (playwright.visual.config.ts); baselines in __screenshots__/
+tests/store/                   not a test: renders the Chrome Web Store screenshots into store-assets/
+scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
                                 release.yml (version tags: checks, then zip the tested dist/)
@@ -105,7 +109,8 @@ pnpm install --frozen-lockfile
 pnpm exec playwright install chromium   # once, for the robot tests
 pnpm build        # tsc type-check, then Vite → dist/
 pnpm watch        # rebuild dist/ on every save
-pnpm check        # everything CI runs: lint, typecheck, logic tests, build, robot tests
+pnpm check        # lint, typecheck, logic tests, build, robot tests
+pnpm visual       # approved-screenshot comparisons, in Docker (CI runs them too)
 ```
 
 Individually: `pnpm lint`, `pnpm typecheck`, `pnpm test` (logic and
@@ -123,6 +128,16 @@ accessibility scan in `tests/e2e/accessibility.spec.ts` skips only the rules
 in its `KNOWN_GAPS` list (empty since v3.0 — every screen passes every rule,
 color contrast included, in light and dark); never
 add to that list to get a run passing.
+
+**Approved screenshots.** `tests/visual/` compares every screen, in light and
+dark, with its approved picture. Pixels only match on identical rendering, so
+these run only in Playwright's Docker image — `pnpm visual` locally (Docker
+must be running), the same image in CI's `visual` job; the config refuses to
+run anywhere else. The image tag in `scripts/visual-docker.sh` and
+`checks.yml` must match `@playwright/test`'s version. Change the approved
+pictures only for an intended visual change: run `pnpm visual:update`, look
+at every changed picture, and show before/after in the pull request. A
+failing run's report has expected, actual and diff side by side.
 
 What automation doesn't cover still needs a person: drag-and-drop feel,
 animation smoothness, and the manual release pass at the top of

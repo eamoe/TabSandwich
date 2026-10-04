@@ -10,7 +10,7 @@ import {
     reorderCategories,
     setCategoryColor,
 } from "../../domain/CategoryRepository";
-import { writeErrorMessage } from "../../util/errors";
+import { removeRefusalMessage, renameRefusalMessage, writeErrorMessage } from "../errors";
 import { Icon } from "../Icon";
 import { showErrorToast } from "../toastStore";
 import { strings } from "../strings";
@@ -198,7 +198,7 @@ function CategoryRow(props: {
         try {
             const result = await renameCategory(name, draft);
             if (!result.renamed) {
-                flash(result.reason ?? strings.couldntRename);
+                flash(result.reason ? renameRefusalMessage(result.reason) : strings.couldntSave);
                 return;
             }
             await props.reload();
@@ -211,7 +211,7 @@ function CategoryRow(props: {
         try {
             const result = await removeCategory(name);
             if (!result.removed) {
-                flash(result.reason ?? strings.couldntRemove);
+                flash(result.reason ? removeRefusalMessage(result.reason) : strings.couldntSave);
                 return;
             }
             await props.reload();

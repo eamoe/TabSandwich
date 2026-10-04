@@ -80,9 +80,12 @@ export async function setCategoryColor(name: string, colorKey: string): Promise<
     });
 }
 
+/** Why a rename was refused; the screens put it into words (src/ui/errors.ts). */
+export type RenameRefusal = "empty" | "gone" | "taken";
+
 export interface RenameCategoryResult {
     renamed: boolean;
-    reason?: string;
+    reason?: RenameRefusal;
 }
 
 /**
@@ -93,16 +96,16 @@ export interface RenameCategoryResult {
  */
 export async function renameCategory(oldName: string, newName: string): Promise<RenameCategoryResult> {
     const trimmed = newName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
-    if (!trimmed) return { renamed: false, reason: "Name can't be empty." };
+    if (!trimmed) return { renamed: false, reason: "empty" };
     if (trimmed === oldName) return { renamed: true }; // unchanged — nothing to do, not an error
 
     return withStorageLock(async () => {
         const settings = await getSettings();
         if (!settings.categories.includes(oldName)) {
-            return { renamed: false, reason: "Category no longer exists." };
+            return { renamed: false, reason: "gone" };
         }
         if (trimmed === UNCATEGORIZED || settings.categories.includes(trimmed)) {
-            return { renamed: false, reason: "That name is already used by another category." };
+            return { renamed: false, reason: "taken" };
         }
 
         settings.categories = settings.categories.map((c) => (c === oldName ? trimmed : c));
@@ -157,9 +160,12 @@ export async function reorderCategories(draggedName: string, targetName: string)
     });
 }
 
+/** Why a removal was refused; the screens put it into words (src/ui/errors.ts). */
+export type RemoveRefusal = "reserved" | "in-use";
+
 export interface RemoveCategoryResult {
     removed: boolean;
-    reason?: string;
+    reason?: RemoveRefusal;
 }
 
 /**
@@ -170,12 +176,12 @@ export interface RemoveCategoryResult {
  */
 export async function removeCategory(name: string): Promise<RemoveCategoryResult> {
     if (name === UNCATEGORIZED) {
-        return { removed: false, reason: '"Uncategorized" can\'t be removed.' };
+        return { removed: false, reason: "reserved" };
     }
     return withStorageLock(async () => {
         const tabs = await getTabs();
         if (tabs.some((t) => getTabCategory(t) === name)) {
-            return { removed: false, reason: "In use — reassign its tabs first." };
+            return { removed: false, reason: "in-use" };
         }
         const settings = await getSettings();
         settings.categories = settings.categories.filter((c) => c !== name);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { addTab, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isSupportedTabUrl } from "../../util/url";
-import { writeErrorMessage } from "../../util/errors";
+import { writeErrorMessage } from "../errors";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
 import { SiteIcon } from "../SiteIcon";

@@ -21,28 +21,28 @@ export async function getTabs(): Promise<SavedTab[]> {
     return result[TABS_KEY] ?? [];
 }
 
-/** Thrown by setTabs/setSettings when the underlying write rejects — message is user-facing, safe to show as-is. */
+/**
+ * Thrown by setTabs/setSettings when the underlying write rejects. `kind` says why, for the
+ * screens to put into words (src/ui/errors.ts): a full storage is the one cause worth naming;
+ * everything else (corruption, a browser policy) is "other" rather than a guess.
+ */
 export class StorageWriteError extends Error {
-    constructor(message: string, public readonly cause: unknown) {
-        super(message);
+    constructor(public readonly kind: "full" | "other", public readonly cause: unknown) {
+        super(`Storage write failed (${kind})`);
         this.name = "StorageWriteError";
     }
 }
 
-/** Quota exceeded is the one rejection reason worth naming specifically — everything else (corruption, a browser-imposed policy) gets a generic retry message rather than guessing at a cause. */
-function describeWriteFailure(err: unknown): string {
+function writeFailure(err: unknown): StorageWriteError {
     const raw = err instanceof Error ? err.message : String(err);
-    if (/quota/i.test(raw)) {
-        return "Storage is full. Export your tabs, remove some, then try again.";
-    }
-    return "Couldn't save your changes. Try again.";
+    return new StorageWriteError(/quota/i.test(raw) ? "full" : "other", err);
 }
 
 export async function setTabs(tabs: SavedTab[]): Promise<void> {
     try {
         await chrome.storage.local.set({ [TABS_KEY]: tabs });
     } catch (err) {
-        throw new StorageWriteError(describeWriteFailure(err), err);
+        throw writeFailure(err);
     }
 }
 
@@ -55,7 +55,7 @@ export async function setSettings(settings: Settings): Promise<void> {
     try {
         await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
     } catch (err) {
-        throw new StorageWriteError(describeWriteFailure(err), err);
+        throw writeFailure(err);
     }
 }
 

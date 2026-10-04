@@ -12,6 +12,7 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 
 - **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
 - **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search and filters, categories, export and import — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
+- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
 ## Manual release pass
@@ -23,7 +24,8 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops; all of it stops with the system's reduce-motion setting (TC-049, TC-192).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
-6. Anything new in this release that isn't marked **[auto]** yet.
+6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
+7. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -689,4 +691,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: writes patched to fail (see section 15).
 - Steps: Settings → **General** → change the day count, choose **Dark**, flip the outdated switch.
 - Expected: Each shows "Couldn't save your changes. Try again." in a toast, and each control goes back to what's actually stored (the day count, the theme, the switch).
+
+**TC-200 — Every screen matches its approved screenshot (P1, release gate)** **[auto]**
+- Steps: `pnpm visual` (or CI's `visual` job).
+- Expected: All screens match. A failure's report shows what changed; if the change is intended, approve it with `pnpm visual:update` and show before/after in the pull request.
 

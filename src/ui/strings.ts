@@ -96,8 +96,17 @@ export const strings = {
     moveDown: (name: string) => `Move ${name} down`,
     removeCategory: (name: string) => `Remove ${name}`,
     tabCount: (count: number) => `${count} tab${count === 1 ? "" : "s"}`,
-    couldntRename: "Couldn't rename this category.",
-    couldntRemove: "Couldn't remove this category.",
+    renameRefusal: {
+        empty: "Name can't be empty.",
+        gone: "Category no longer exists.",
+        taken: "That name is already used by another category.",
+    },
+    removeRefusal: {
+        reserved: '"Uncategorized" can\'t be removed.',
+        "in-use": "In use — reassign its tabs first.",
+    },
+    storageFull: "Storage is full. Export your tabs, remove some, then try again.",
+    couldntSave: "Couldn't save your changes. Try again.",
     colorNames: {
         purple: "Purple",
         coral: "Coral",

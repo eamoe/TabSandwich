@@ -54,6 +54,8 @@ Then load the `dist/` folder (not the repository root) as an unpacked extension 
 - `pnpm watch` — rebuild `dist/` on every save.
 - `pnpm test` — logic and component tests (a second or so, no browser needed).
 - `pnpm test:e2e` — robot tests: a real Chromium loads the built `dist/`, clicks through the popup, and runs an accessibility scan. Needs `pnpm exec playwright install chromium` once, and a fresh `pnpm build`.
+- `pnpm visual` — compares every screen, light and dark, with its approved screenshot, inside Playwright's Docker image (Docker must be running). `pnpm visual:update` approves new pictures after an intended visual change.
+- `pnpm store:screenshots` — renders the Chrome Web Store screenshots into `store-assets/` (after `pnpm build`).
 - `pnpm lint` / `pnpm typecheck` — code checks.
 - `pnpm check` — all of the above, in the same order CI runs them.
 - GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` (`.github/workflows/release.yml`); `dist/` itself is never committed.

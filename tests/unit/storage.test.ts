@@ -38,16 +38,16 @@ describe("chromeStorage", () => {
         expect((await getSettings()).outdatedEnabled).toBe(false);
     });
 
-    it("turns a quota rejection into a specific, user-facing error", async () => {
+    it("recognizes a quota rejection as storage being full", async () => {
         storage.failNextSetWith = new Error("QUOTA_BYTES quota exceeded");
         const write = setTabs([makeTab()]);
         await expect(write).rejects.toBeInstanceOf(StorageWriteError);
-        await expect(write).rejects.toThrow("Storage is full. Export your tabs, remove some, then try again.");
+        await expect(write).rejects.toMatchObject({ kind: "full" });
     });
 
-    it("turns any other rejection into a generic retry message", async () => {
+    it("files any other rejection under \"other\"", async () => {
         storage.failNextSetWith = new Error("something odd");
-        await expect(setSettings(DEFAULT_SETTINGS)).rejects.toThrow("Couldn't save your changes. Try again.");
+        await expect(setSettings(DEFAULT_SETTINGS)).rejects.toMatchObject({ kind: "other" });
     });
 
     it("reports usage against Chrome's real quota", async () => {
