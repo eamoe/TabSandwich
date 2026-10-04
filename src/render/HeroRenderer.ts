@@ -143,19 +143,22 @@ function bindManualEntryForm(refresh: Refresh): void {
 
     let isOpen = false;
 
-    function setOpen(open: boolean): void {
+    async function setOpen(open: boolean): Promise<void> {
         isOpen = open;
         toggleBtn.setAttribute("aria-expanded", String(open));
         collapse.inert = !open;
         if (open) {
-            populateManualCategorySelect(categorySelect);
+            // Measured only once the category list has loaded, so the height covers the real
+            // contents — and skipped if it was closed again while the list was still loading.
+            await populateManualCategorySelect(categorySelect);
+            if (!isOpen) return;
             collapse.style.maxHeight = `${collapse.scrollHeight}px`;
         } else {
             collapse.style.maxHeight = "0px";
         }
     }
 
-    toggleBtn.addEventListener("click", () => setOpen(!isOpen));
+    toggleBtn.addEventListener("click", () => void setOpen(!isOpen));
 
     cancelBtn.addEventListener("click", () => {
         form.reset();

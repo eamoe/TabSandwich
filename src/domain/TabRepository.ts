@@ -39,14 +39,31 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
     });
 }
 
+export interface EditTabResult {
+    /** The other saved tab the new URL would have duplicated — set means nothing was written. */
+    duplicateOf: SavedTab | null;
+}
+
+/**
+ * Applies the same duplicate rule as addTab, so an edit can't create the copy that saving is
+ * built to prevent. Only checked when the URL actually changes to a different page: a title or
+ * category edit on a row that already duplicates another (possible in data from before this
+ * rule, or from the legacy migration) must keep working rather than being blocked forever.
+ */
 export async function editTab(
     id: string,
     updates: Partial<Pick<SavedTab, "title" | "url" | "category">>
-): Promise<void> {
+): Promise<EditTabResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
+        const current = tabs.find((t) => t.id === id);
+        if (current && updates.url !== undefined && !urlsMatch(current.url, updates.url)) {
+            const other = tabs.find((t) => t.id !== id && urlsMatch(t.url, updates.url!));
+            if (other) return { duplicateOf: other };
+        }
         const updated = tabs.map((t) => (t.id === id ? { ...t, ...updates } : t));
         await setTabs(updated);
+        return { duplicateOf: null };
     });
 }
 

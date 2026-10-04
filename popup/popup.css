@@ -182,7 +182,7 @@ mark.search-match {
 .pill-outdated[aria-pressed="true"] { background: #E8874A; color: #fff; }
 
 /* ── Tab list ── */
-main {
+#main-view {
   flex: 1; min-height: 0; display: flex; flex-direction: column;
   margin: 0 12px 12px; background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(80,60,140,0.08); overflow: hidden;
 }
@@ -238,6 +238,8 @@ main {
   font-size: 12.5px; padding: 6px 8px; border: 1.5px solid #e3ddf7; border-radius: 8px; width: 100%;
 }
 .edit-input.input-error { border-color: #E5484D; }
+.edit-error { font-size: 11px; font-weight: 600; color: #E5484D; margin-top: -2px; }
+.edit-error:empty { display: none; }
 .edit-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
 .edit-save, .edit-cancel {
   font-size: 12px; padding: 5px 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600;

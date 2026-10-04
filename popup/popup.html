@@ -62,7 +62,7 @@
     </div>
   </header>
 
-  <div class="search-row" id="search-row">
+  <div class="search-row" id="search-row" role="search">
     <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <label for="search-input" class="visually-hidden">Search saved tabs</label>
     <input type="text" id="search-input" class="search-input" placeholder="Search saved tabs" autocomplete="off">
@@ -76,7 +76,9 @@
     <ul id="tab-list" class="tab-list" aria-label="Saved tabs"></ul>
   </main>
 
-  <section id="settings-view" class="settings-view" hidden aria-label="Settings">
+  <!-- Settings takes over as the primary content while open, so it is the page's main landmark
+       then. Two <main> elements are valid as long as only one is visible; the other is [hidden]. -->
+  <main id="settings-view" class="settings-view" hidden aria-label="Settings">
     <div class="settings-header">
       <button type="button" id="back-btn" class="back-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
@@ -144,13 +146,13 @@
       </div>
       <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
     </div>
-  </section>
+  </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite">
     <span id="toast-message"></span>
     <button type="button" id="toast-undo" class="toast-undo">Undo</button>
   </div>
 
-  <script type="module" src="js/popup.js"></script>
+  <script type="module" src="../src/popup.ts"></script>
 </body>
 </html>

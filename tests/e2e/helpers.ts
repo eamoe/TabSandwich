@@ -1,0 +1,92 @@
+import type { BrowserContext, Locator, Page } from "@playwright/test";
+import { expect, TEST_SITE, waitUntilReady } from "./fixtures";
+
+export interface SeedTab {
+    title: string;
+    url: string;
+    category?: string;
+    /** How long ago it was saved; defaults to now. */
+    daysAgo?: number;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Replaces everything stored with this library, then reloads the popup so it renders from it. */
+export async function seedLibrary(
+    popup: Page,
+    tabs: SeedTab[],
+    settings: Record<string, unknown> = {}
+): Promise<void> {
+    await popup.evaluate(
+        async ({ tabs, settings, day }) => {
+            await chrome.storage.local.clear();
+            await chrome.storage.local.set({
+                "tabSandwich.tabs": tabs.map((t, i) => ({
+                    id: `seed-${i}`,
+                    title: t.title,
+                    url: t.url,
+                    category: t.category,
+                    savedAt: Date.now() - (t.daysAgo ?? 0) * day,
+                })),
+                "tabSandwich.settings": {
+                    outdatedEnabled: true,
+                    outdatedDays: 7,
+                    categories: ["Work", "Personal", "Reading", "Entertainment"],
+                    categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
+                    ...settings,
+                },
+            });
+        },
+        { tabs, settings, day: DAY }
+    );
+    await popup.reload();
+    await waitUntilReady(popup);
+}
+
+export async function storedTabs(popup: Page): Promise<Array<{ title: string; url: string; category?: string }>> {
+    return popup.evaluate(async () => (await chrome.storage.local.get("tabSandwich.tabs"))["tabSandwich.tabs"] ?? []);
+}
+
+export async function storedSettings(popup: Page): Promise<{ categories: string[] }> {
+    return popup.evaluate(async () => (await chrome.storage.local.get("tabSandwich.settings"))["tabSandwich.settings"]);
+}
+
+/**
+ * Opens a page of the fake test site as the active tab in the popup's own window — the tab
+ * "Save Tab" saves. Created from inside the extension so it's guaranteed to land in the same
+ * window, and only returns once Chrome reports the page's real title.
+ */
+export async function openSiteTab(context: BrowserContext, popup: Page, title: string): Promise<string> {
+    const url = `${TEST_SITE}/${encodeURIComponent(title)}`;
+    const opened = context.waitForEvent("page");
+    await popup.evaluate((u) => chrome.tabs.create({ url: u, active: true }), url);
+    await (await opened).waitForLoadState();
+    await expect
+        .poll(() => popup.evaluate(async () => (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.title))
+        .toBe(title);
+    return url;
+}
+
+export const tabList = (popup: Page): Locator => popup.getByRole("list", { name: "Saved tabs" });
+
+export const row = (popup: Page, title: string): Locator => tabList(popup).locator("li", { hasText: title });
+
+export async function rowTitles(popup: Page): Promise<string[]> {
+    return tabList(popup).locator("li .tab-title").allTextContents();
+}
+
+export async function openSettings(popup: Page): Promise<void> {
+    await popup.getByRole("button", { name: "Open settings" }).click();
+    await expect(popup.getByRole("main", { name: "Settings" })).toBeVisible();
+}
+
+/** The category choices offered when adding a link manually, in order (leaves the panel closed again). */
+export async function manualEntryCategories(popup: Page): Promise<string[]> {
+    const toggle = popup.getByRole("button", { name: "+ Add link manually" });
+    await toggle.click();
+    const select = popup.getByLabel("Category (optional)");
+    await expect(select).toBeVisible();
+    const options = await select.locator("option").allTextContents();
+    await popup.getByRole("button", { name: "Cancel" }).click();
+    return options;
+}

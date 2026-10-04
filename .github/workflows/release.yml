@@ -9,33 +9,39 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  # A tag whose checks fail never gets a release: `release` below only runs once these pass.
+  checks:
+    uses: ./.github/workflows/checks.yml
+
+  release:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Check the tag matches manifest.json's version
+        run: |
+          MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
+          if [ "v${MANIFEST_VERSION}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} doesn't match manifest.json version ${MANIFEST_VERSION}." >&2
+            exit 1
+          fi
+
+      # The exact build the checks job tested — not a second, separate build of the same commit.
+      - name: Get the tested build
+        uses: actions/download-artifact@v4
         with:
-          node-version: "20"
+          name: dist
+          path: dist
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
+      # dist/ is the complete extension, with manifest.json at the root of the zip.
       - name: Package extension
         run: |
-          mkdir -p dist/tab-sandwich
-          cp manifest.json dist/tab-sandwich/
-          cp -r images dist/tab-sandwich/
-          cp -r popup dist/tab-sandwich/
-          cd dist/tab-sandwich
+          cd dist
           zip -r "../tab-sandwich-${GITHUB_REF_NAME}.zip" .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/tab-sandwich-${{ github.ref_name }}.zip
+          files: tab-sandwich-${{ github.ref_name }}.zip
