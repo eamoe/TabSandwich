@@ -10,20 +10,22 @@ pnpm exec playwright install chromium   # once
 pnpm check                     # lint, typecheck, logic tests, build, robot tests
 ```
 
-- **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, categories, backup files, data upgrades, legacy migration, manifest permissions.
-- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search and filters, categories, export and import — then runs an accessibility scan of each screen. Color contrast is excluded from the scan until the v3.0 redesign (see `KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts`).
+- **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
+- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search and filters, categories, export and import — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
+- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
 ## Manual release pass
 
 Run on the build being released (`dist/`, or the release zip unpacked), about 10 minutes:
 
-1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check the favicon shows (TC-102) and no request goes to the site for it (TC-105).
+1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
 2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); confirm drag is off while searching (TC-119).
-3. Watch the animations: rows grow, collapse and flash smoothly; no squished rows after using Settings (TC-049, TC-123).
+3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops; all of it stops with the system's reduce-motion setting (TC-049, TC-192).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
-6. Anything new in this release that isn't marked **[auto]** yet.
+6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
+7. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -46,29 +48,29 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-001 — Save the active tab (P1)** **[auto]**
 - Preconditions: popup open on a normal `http(s)` page; list empty.
-- Steps: Click **Save Tab** (`#save-btn`).
-- Expected: Entry appears at the top of the list (`#tab-list`) with the page's title, URL, and favicon. The button itself briefly reads "Saved!" (also announced to screen readers via `#save-status`) and returns to "Save Tab" after ~2.5s.
+- Steps: Click **Save** in the card under the header (`#save-btn`, named "Save Tab" for screen readers).
+- Expected: Entry appears at the top of the list with the page's title, site, and icon, dropping in with a brief highlight. The button briefly reads "✓ Saved!" (also announced to screen readers) and returns to "Save" after ~2.5s.
 
 **TC-002 — Save via manual entry, URL only (P1)** **[auto]**
 - Preconditions: popup open; list empty.
-- Steps: Click **+ Add link manually** (`#manual-entry-toggle`) → enter `example.com` in URL (`#manual-url`) → click **Add** (`.manual-entry-submit`).
-- Expected: Entry appears with title = `example.com` (hostname fallback), URL normalized to `https://example.com/`. Manual-entry section closes automatically.
+- Steps: Click the **+** button in the header ("Add link manually") → the save card turns into the add-a-link form → enter `example.com` in the URL field (`#manual-url`) → click **Add**.
+- Expected: Entry appears with title = `example.com` (hostname fallback), URL normalized to `https://example.com/`. The form closes and the save card is back.
 
 **TC-003 — Save via manual entry, all fields (P2)** **[auto]**
 - Steps: Open manual entry → URL `https://example.org`, Title `My Site`, Category = any existing category → **Add**.
 - Expected: Entry appears with title `My Site` and the selected category.
 
 **TC-004 — Cancel manual entry (P2)** **[auto]**
-- Steps: Open manual entry → type something in URL → click **Cancel** (`#manual-entry-cancel`).
-- Expected: Section closes, no entry created, fields cleared (verify by reopening — URL field is empty).
+- Steps: Open manual entry → type something in URL → click **Cancel**.
+- Expected: The form closes (the save card is back), no entry created, fields cleared (verify by reopening — URL field is empty).
 
 **TC-005 — Reject unsupported active-tab page (P1)** **[auto]**
-- Steps: Open the popup on an internal page (e.g. `chrome://extensions`) → click **Save Tab**.
-- Expected: The button briefly reads "Only web pages can be saved"; no entry created.
+- Steps: Open the popup on an internal page (e.g. `chrome://extensions`).
+- Expected: The save card says "Only web pages can be saved" under the page's title, and **Save** is disabled; nothing can be saved.
 
 **TC-006 — Reject invalid manual URL — gibberish text (P1)** **[auto]**
 - Steps: Open manual entry → enter `weuirytuiwerytweury` (no scheme, no dot) → **Add**.
-- Expected: Rejected ("Enter a valid URL."); no entry created; section stays open with the text still in the field.
+- Expected: Rejected ("Enter a valid URL" under the fields, the URL field outlined in red); no entry created; the form stays open with the text still in the field.
 
 **TC-007 — Accept manual URL with explicit scheme even if unusual (P3)**
 - Steps: Enter `https://localhost` → **Add**.
@@ -76,7 +78,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-008 — Reject empty manual URL (P2)**
 - Steps: Open manual entry, leave URL blank → try to submit.
-- Expected: Browser's native `required` validation blocks submission (no entry created).
+- Expected: Rejected with "Enter a valid URL" under the fields; no entry created.
 
 ---
 
@@ -85,7 +87,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-010 — Duplicate via Save Tab (P1)** **[auto]**
 - Preconditions: one tab already saved.
 - Steps: Revisit that same URL as the active tab → click **Save Tab**.
-- Expected: No second entry created. "Already saved" acknowledgment appears at the button. The existing entry is highlighted/flashed in the list.
+- Expected: No second entry created. The button briefly reads "Already saved" (orange, with a small shake). The existing entry is highlighted/flashed in the list.
 
 **TC-011 — Duplicate acknowledgment visible when entry is off-screen (P1)**
 - Preconditions: enough tabs saved that the list scrolls; the duplicate target is scrolled out of view.
@@ -94,7 +96,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-012 — Duplicate via manual entry (P2)** **[auto]**
 - Steps: Manually add a URL that's already saved.
-- Expected: Same "Already saved" behavior as TC-010.
+- Expected: No second entry. The form stays open and says "Already saved as “<title>”." under the fields; the existing entry is highlighted in the list.
 
 ---
 
@@ -123,43 +125,43 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-030 — Assign a category via Edit (P1)**
 - Preconditions: one saved tab.
-- Steps: Click the row's edit icon (`aria-label="Edit ..."`) → change category select → **Save**.
-- Expected: Row's background tint and category (visible in Edit mode, and via the screen-reader-only label) update to match.
+- Steps: Hover the row → click its pencil icon (`aria-label="Edit ..."`) → change the category picker → **Save**.
+- Expected: The row's tint, outline and the category name under its title update to match.
 
 **TC-031 — Filter by category (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
-- Steps: Click a category pill in `#pills-container`.
-- Expected: List narrows to only that category. Click **All** → full list restored.
+- Steps: Click a category pill under the save card.
+- Expected: List narrows to only that category, and rows stop repeating the category name under their titles (it's the same for all of them). Click **All** → full list restored.
 
 **TC-032 — Add a new category (P1)** **[auto]**
 - Steps: Settings → Categories → type a name (≤15 chars) → **Add**.
 - Expected: New category appears at the top of the list, immediately selectable in Edit mode and the manual-entry form.
 
 **TC-033 — Category name length capped at 15 characters (P2)**
-- Steps: Try to type a 20-character name into the new-category input.
-- Expected: Input stops accepting characters at 15 (`maxlength`); the live counter (`#new-category-counter`) reads "15/15".
+- Steps: Settings → **Categories** tab → type into the "New category" field.
+- Expected: Input stops accepting characters at 15 (`maxlength`); the counter inside the field reads "15/15".
 
 **TC-034 — Removing an unused category (P1)** **[auto]**
 - Preconditions: a category with no tabs assigned to it.
-- Steps: Settings → click **×** next to that category.
+- Steps: Settings → **Categories** → hover the category → click its trash icon ("Remove …").
 - Expected: Category removed from the list, from all category selects, and from filter pills.
 
 **TC-035 — Removing an in-use category is blocked (P1)** **[auto]**
 - Preconditions: a category assigned to at least one tab.
-- Steps: Settings → click **×** next to that category.
-- Expected: Not removed. A message appears on that category's own card ("In use — reassign its tabs first."), auto-clears after ~3s. The **×** is visually muted but remains clickable.
+- Steps: Settings → **Categories** → hover the category → click its trash icon.
+- Expected: Not removed. A message floats just under that category ("In use — reassign its tabs first."), without moving the rows, and clears after ~3s. The trash icon is visually muted but remains clickable.
 
 **TC-036 — "Uncategorized" cannot be removed or renamed (P1)**
 - Steps: Inspect the Settings category list.
 - Expected: "Uncategorized" never appears there at all (protected sentinel, not manageable).
 
-**TC-037 — Assign a category color (P2)**
-- Steps: Settings → click a different color swatch under any category.
-- Expected: That category's row tint and pill color update immediately to match; the previously-selected swatch loses its selection ring, the new one gains it.
+**TC-037 — Assign a category color (P2)** **[auto]**
+- Steps: Settings → **Categories** → click a category's color dot → pick a different color in the strip that floats over the row.
+- Expected: The strip opens without moving any row, closes after the pick, and the category's dot, its rows' tint and outline, and its pill dot all take the new color. Escape or a click elsewhere also closes the strip (TC-195).
 
 **TC-038 — Uncategorized tabs stay visually neutral (P2)**
 - Steps: Save a tab without assigning a category.
-- Expected: Row background is plain white (no gray/colored tint); "Uncategorized" pill (if shown) is also neutral, not colored.
+- Expected: Row background is plain white (no colored tint), with a light grey outline and dot; the "Uncategorized" pill has the same grey dot.
 
 **TC-039 — Category-in-use status stays fresh across navigation (P2)**
 - Steps: In Settings, attempt to remove an in-use category (see the blocked message) → click **Back** → reassign that tab's category away from it elsewhere → reopen Settings.
@@ -170,20 +172,20 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 ## 5. Editing & Deleting
 
 **TC-040 — Edit title/URL/category (P1)** **[auto]**
-- Steps: Click edit icon → change title, URL, and category → **Save**.
+- Steps: Hover the row → pencil icon → change title, URL, and category → **Save**.
 - Expected: Changes persist after closing and reopening the popup.
 
 **TC-041 — Edit rejects invalid URL (P1)** **[auto]**
 - Steps: Enter edit mode → clear URL, type `notaurl` → **Save**.
-- Expected: Save blocked, field shows an error state, edit mode stays open.
+- Expected: Save blocked, "Enter a valid URL." under the fields, the URL field outlined in red and focused; edit mode stays open.
 
 **TC-042 — Cancel edit discards changes (P2)** **[auto]**
 - Steps: Enter edit mode → change fields → **Cancel**.
 - Expected: Original values remain; nothing persisted.
 
 **TC-043 — Delete a tab (P1)** **[auto]**
-- Steps: Click the delete icon on a row.
-- Expected: Removed immediately from the list and from storage (still gone after reopening the popup). A toast ("Deleted", `#toast`) appears with an **Undo** button (`#toast-undo`).
+- Steps: Hover a row → click its trash icon.
+- Expected: The row slides away and is removed from the list and from storage (still gone after reopening the popup). A toast ("Deleted") appears at the bottom with an **Undo** button.
 
 **TC-044 — Undo restores the tab to its exact original position (P1)** **[auto]**
 - Preconditions: 3+ saved tabs in manual order.
@@ -210,15 +212,15 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-049 — Undo from within Settings doesn't corrupt the list (P1)**
 - Preconditions: 5+ saved tabs.
 - Steps: Delete a tab → open Settings (gear icon) before the toast times out → click **Undo** → click **Back**.
-- Expected: The list renders normally — every row at its usual height with normal spacing, the restored tab in its original position. (Regression case: the toast is deliberately usable from Settings — restoring from there was corrupting the hidden list the same way TC-123 was, since both trigger a row-insert animation against display:none content. Fixed at the animation helpers themselves, not by closing this specific path.)
+- Expected: The list renders normally — every row at its usual height with normal spacing, the restored tab in its original position. (Regression case from v2.x, where restoring while the list was hidden corrupted row heights. Since v3.0 the main screen stays in the page, just hidden, while Settings is open.)
 
 ---
 
 ## 6. Drag-and-Drop Reorder
 
-**TC-050 — Reorder persists (P1)**
+**TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
-- Steps: Drag one row to a new position.
+- Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position.
 - Expected: Order updates immediately and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
@@ -237,32 +239,32 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-060 — Outdated badge appears past threshold (P1)** **[auto]**
 - Preconditions: Settings → outdated threshold set to 1 day; a tab's `savedAt` backdated via console (`chrome.storage.local.get('tabSandwich.tabs', r => {...})`) to 2+ days ago.
 - Steps: Reopen popup.
-- Expected: That row shows an age badge (e.g. "2d").
+- Expected: That row shows a small moon badge with its age (e.g. "☾ 2d"); hovering it says "Saved 2 days ago".
 
 **TC-061 — Outdated quick filter (P1)** **[auto]**
 - Preconditions: at least one outdated tab exists.
-- Steps: Click the "Outdated (N)" pill (appears right after "All").
+- Steps: Click the moon "Outdated N" pill (appears right after "All"; screen readers hear "Outdated (N)").
 - Expected: List narrows to only outdated tabs, regardless of position in the full list.
 
-**TC-062 — Disabling outdated tracking hides badges and filter (P1)**
-- Steps: Settings → toggle "Outdated tabs" off.
+**TC-062 — Disabling outdated tracking hides badges and filter (P1)** **[auto]**
+- Steps: Settings → **General** → switch "Outdated tabs" off.
 - Expected: All age badges disappear; the "Outdated" pill is no longer offered.
 
 **TC-063 — Default threshold is 7 days on fresh install (P2)**
 - Steps: Clear storage, reopen popup, check Settings.
 - Expected: Toggle is on, day input reads 7.
 
-**TC-064 — Changing the day threshold updates badges live (P2)**
-- Steps: Change the day-threshold input to a smaller/larger value.
-- Expected: Badges and the Outdated pill count update on the next render.
+**TC-064 — Changing the day threshold updates badges live (P2)** **[auto]**
+- Steps: Change the day-threshold input to a smaller/larger value (press Enter or click away).
+- Expected: Badges and the Outdated pill count update; a value outside 1–365 is corrected to the nearest limit.
 
 ---
 
 ## 8. Settings
 
 **TC-070 — Keyboard shortcut display (P2)**
-- Steps: Open Settings.
-- Expected: A badge shows the actual assigned shortcut (e.g. "Alt+S"), not a placeholder.
+- Steps: Open Settings (it opens on **General**).
+- Expected: Key caps show the actual assigned shortcut (e.g. "Alt" "S", or "⌥S" on a Mac), or "Not set" if there is none.
 
 **TC-071 — Shortcut customize link (P2)**
 - Steps: Click **Customize** next to the shortcut badge.
@@ -273,33 +275,32 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: Popup opens.
 
 **TC-073 — Settings view toggle + focus management (P1)** **[auto]**
-- Steps: Click the gear icon → note focus location → click **Back**.
-- Expected: Gear click shows Settings and hides the main list/pills/action row; focus lands on **Back**. Back click reverses this and returns focus to the gear icon.
+- Steps: Click the gear button in the header → note focus location → click **Back**.
+- Expected: Settings replaces the main screen; focus lands on **Back**. Back returns to the main screen exactly as it was (same search, filter and scroll position) and focus returns to the gear button.
 
 ---
 
 ## 9. Storage Capacity Indicator
 
-**TC-080 — Capacity estimate reflects real usage (P2)**
-- Preconditions: several tabs saved.
-- Steps: Read the hero's storage line.
-- Expected: Shows "N% of storage used" against the real `chrome.storage.local` quota (below 1%, shows "<1%" rather than rounding to "0%"). At normal usage this is white/neutral, not amber (see TC-082).
+**TC-080 — Storage use shown in Settings (P2)** **[auto]**
+- Steps: Settings → **General** → **Storage**.
+- Expected: A meter and "N saved · less than 1% of the space Chrome gives extensions" (or the real percentage), against the real `chrome.storage.local` quota. Past 80% the meter turns orange and the line adds "Export a backup, then remove tabs you no longer need."
 
-**TC-081 — No capacity text on empty list (P3)**
-- Steps: Clear all tabs.
-- Expected: Storage-usage text is blank (not "0% of storage used" or similar).
+**TC-081 — Storage with nothing saved (P3)**
+- Steps: Delete every tab → Settings → **General**.
+- Expected: "0 saved · less than 1% of …"; the meter shows a sliver, never an error.
 
-**TC-082 — Capacity indicator turns amber past 80% (P2)**
+**TC-082 — A storage warning appears past 80% (P2)** **[auto]** (TC-191)
 - Preconditions: `chrome.storage.local` usage pushed past 80% of quota — e.g. from the popup's DevTools console, `chrome.storage.local.set({ "tabSandwich.tabs": Array.from({length: N}, (_, i) => ({ id: String(i), title: "x".repeat(2000), url: "https://example.com/"+i, savedAt: Date.now() })) })` with `N` large enough to cross the threshold against the real quota reported by TC-103's `chrome.storage.local.QUOTA_BYTES`.
 - Steps: Reopen the popup.
-- Expected: The storage-usage text (e.g. "83% of storage used") and the progress fill both switch to amber. Below the threshold, both stay in their normal white/neutral color regardless of the exact percentage shown. Reset with `chrome.storage.local.clear()` afterward.
+- Expected: An amber "Storage is 83% full." line appears at the top of the list, with **See storage**, which opens Settings. Below the threshold there is no such line. Reset with `chrome.storage.local.clear()` afterward.
 
 ---
 
 ## 10. Accessibility (keyboard-only, no mouse)
 
 **TC-090 — Full keyboard pass: save flow (P1)**
-- Steps: Tab to and activate **Save Tab**; Tab to and open **+ Add link manually**, fill fields via keyboard, submit.
+- Steps: Tab to and activate **Save**; Tab to the **+** button ("Add link manually") and open it, fill the fields via keyboard (including the category picker), submit.
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
@@ -307,20 +308,20 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
-- Steps: Tab into Settings; operate the outdated toggle and day input, add and remove a category, reach the shortcut Customize button, tab to a color swatch and select it with Enter/Space, return via Back.
+- Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; operate the outdated switch and day input; on **Categories** add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
 - Expected: All operable via keyboard with visible focus indicators throughout.
 
 **TC-093 — No control relies on color alone (P2)**
 - Steps: Using a screen reader (or the browser's accessibility inspector), inspect a saved-tab row.
-- Expected: Category is exposed via an accessible name/label (screen-reader-only text), not conveyed only by the row's background tint.
+- Expected: The category is written under the title next to its color dot (or, under a category filter, given as screen-reader-only text "Category: …"), never conveyed only by the row's tint and outline.
 
 **TC-094 — Drag-reorder has no keyboard equivalent (documented exemption) (P3)**
 - Expected: Confirm this is a known, accepted gap (FR-019 exemption) — not something to fail the suite over.
 
-**TC-095 — Collapsed manual-entry fields are unreachable on a fresh popup open (P1)**
-- Preconditions: a freshly opened popup where **+ Add link manually** has never been clicked this session.
-- Steps: Tab to **+ Add link manually**, then press **Tab** once more.
-- Expected: Focus moves to the next visible control (e.g. the search input), not into the collapsed form's URL/Title/Category fields. (Regression case: `inert` on the collapsed form was only ever applied reactively via toggle/cancel/submit, never on initial load, so its fields were tabbable until the form had been opened and closed at least once.)
+**TC-095 — The add-a-link fields are unreachable until the form is opened (P1)**
+- Preconditions: a freshly opened popup where **+** has never been clicked this session.
+- Steps: Tab through the header and the save card.
+- Expected: Focus never lands on URL/Title/Category fields of a closed form. (Since v3.0 the form isn't in the page at all until **+** opens it, in place of the save card.)
 
 ---
 
@@ -331,12 +332,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: "No saved tabs yet." message shown instead of a blank list.
 
 **TC-101 — Rapid duplicate save attempts (P3)**
-- Steps: Click **Save Tab** twice in quick succession on the same page.
+- Steps: Click **Save** twice in quick succession on the same page.
 - Expected: Only one entry ever exists for that URL.
 
 **TC-102 — Favicon with no local cache entry falls back to placeholder (P3)**
 - Preconditions: a saved tab for a page Chrome has never visited (so its local favicon cache has nothing for that URL) — e.g. manually add a link to a domain you've never opened in this browser.
-- Expected: Chrome's own generic fallback icon or the app's placeholder icon is shown — never a broken-image glyph.
+- Expected: Chrome's own generic icon, or a tinted tile with the site's first letter, is shown — never a broken-image glyph.
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
@@ -357,7 +358,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-110 — Basic substring match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub" (`github.com`) among several others.
-- Steps: Type `git` into search (`#search-input`).
+- Steps: Type `git` into the search box in the header (`#search-input`).
 - Expected: Only tabs matching on title/domain/path remain; matched characters in the title are visually highlighted.
 
 **TC-111 — Non-contiguous (fuzzy) match (P1)** **[auto]**
@@ -377,7 +378,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-114 — No results state (P1)** **[auto]**
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
-- Expected: List shows "No matching tabs." (distinct from the "No saved tabs yet." empty-library message); `#search-status` announces "No matching tabs".
+- Expected: List shows "No matching tabs." (distinct from the "No saved tabs yet." empty-library message); screen readers hear "No matching tabs".
 
 **TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
@@ -385,7 +386,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: Only matches within the selected pill's tabs appear. Pills themselves are unaffected by the query (all pills with any tabs in the full library stay visible).
 
 **TC-116 — Clearing search restores prior state (P1)** **[auto]**
-- Steps: Apply a category pill → search a query → click the clear button (`#search-clear`) or press **Escape**.
+- Steps: Apply a category pill → search a query → click the × in the search box or press **Escape**.
 - Expected: Search input empties, full (category-filtered) list returns in its original manual order, focus stays in the search input.
 
 **TC-117 — Escape on an empty search field closes the popup (P3)**
@@ -396,13 +397,13 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Type a query that matches at least one tab → press **Enter**.
 - Expected: The top-ranked result opens in a new tab.
 
-**TC-119 — Drag-to-reorder is disabled while searching (P2)**
+**TC-119 — Drag-to-reorder is disabled while searching (P2)** **[auto]**
 - Steps: With a query active, attempt to drag a row.
 - Expected: No drag occurs; cursor does not indicate draggability. Clearing the query restores drag-to-reorder.
 
 **TC-120 — Search box hidden on an empty library (P3)**
 - Steps: Delete all tabs.
-- Expected: The search row is hidden along with the pills row.
+- Expected: The search box is hidden (the header keeps the logo, **+** and the gear), and so are the filter pills.
 
 **TC-121 — Rapid typing doesn't show stale results (P2)**
 - Steps: Type a multi-character query very quickly (fast enough that renders could overlap).
@@ -411,12 +412,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-122 — Search is hidden and non-interactive while Settings is open (P1)**
 - Preconditions: several saved tabs.
 - Steps: Open Settings (gear icon). Try to click into where the search box was.
-- Expected: The search row is not visible and cannot receive focus or input while Settings is open.
+- Expected: The whole main screen, search included, is hidden while Settings is open and cannot receive focus or input.
 
 **TC-123 — Searching, then visiting Settings and back, doesn't corrupt the list (P1)**
 - Preconditions: 5+ saved tabs.
 - Steps: Type a query that narrows the list to a subset → clear the query (list returns to full) → open Settings → click **Back**.
-- Expected: Every row renders at its normal height with normal spacing — no squished, overlapping, or zero-height rows. (Regression case: TC-122 closes off the only path that could previously cause this — typing into a search box left reachable while the list behind it was hidden corrupted row-insert animations.)
+- Expected: Every row renders at its normal height with normal spacing — no squished, overlapping, or zero-height rows. (Regression case from v2.x.)
 
 ---
 
@@ -497,7 +498,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: Not renamed. A message appears on that category's own card ("That name is already used by another category."), auto-clears after ~3s; "Work" keeps its original name.
 
 **TC-152 — Renaming to an empty value is rejected (P3)** **[auto]**
-- Steps: Click rename, clear the input entirely, click away.
+- Steps: Click the category's name (rename), clear the input entirely, click away.
 - Expected: Reverts to the original name with a "Name can't be empty." message; nothing is written to storage.
 
 **TC-153 — Renaming to "Uncategorized" is rejected (P2)** **[auto]**
@@ -514,7 +515,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-156 — Reorder categories with the up/down controls (P1)** **[auto]**
 - Preconditions: 3+ configured categories.
-- Steps: In Settings, click the down-arrow on the first category.
+- Steps: Settings → **Categories** → hover the first category → click its down-arrow.
 - Expected: It swaps places with the category directly below it. The new order shows immediately in the Settings list and in every category select dropdown (edit row, manual-entry form).
 
 **TC-157 — Reorder controls disable at the ends of the list (P2)** **[auto]**
@@ -526,13 +527,13 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Reorder categories in Settings, then check the filter pill order on the main view.
 - Expected: Category pills appear in the same order as Settings' category list. **All** and **Outdated** (when shown) always come first, in that fixed order, and **Uncategorized**'s pill (when shown) always comes last — reordering never moves those three.
 
-**TC-159 — Drag-and-drop also reorders categories (P2)**
+**TC-159 — Drag-and-drop also reorders categories (P2)** **[auto]**
 - Preconditions: 3+ configured categories.
-- Steps: Drag a category card to a different position in the list (not just an adjacent swap).
+- Steps: Drag a category by its handle (⋮⋮) to a different position in the list (not just an adjacent swap).
 - Expected: It moves to sit exactly where dropped; order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
 
 **TC-160 — A category mid-rename is not draggable (P3)**
-- Steps: Click a category's rename icon (input now showing) → attempt to drag that card.
+- Steps: Click a category's name so the rename field shows → attempt to drag that row.
 - Expected: No drag occurs. Pressing Escape or committing the rename restores normal drag behavior.
 
 ---
@@ -548,23 +549,23 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-170 — A failed save shows a specific error, not a silent no-op (P1)**
 - Preconditions: write patched to reject (see above).
-- Steps: Click **Save Tab**.
-- Expected: The Save button itself shows an error message (reusing its existing error-flash state) — "Storage is full. Export your tabs, remove some, then try again." — not "Saved!". Reopen the popup with the patch removed: the tab was not actually saved.
+- Steps: Click **Save**.
+- Expected: A toast says "Storage is full. Export your tabs, remove some, then try again." and the button never reads "Saved!". Reopen the popup with the patch removed: the tab was not actually saved.
 
 **TC-171 — A failed manual-entry save leaves the form open with its input intact (P2)**
 - Preconditions: write patched to reject.
-- Steps: Open **+ Add link manually**, fill in a URL, submit.
-- Expected: An error message appears; the form stays open with what was typed still in it (nothing is reset, since nothing was saved).
+- Steps: Click **+**, fill in a URL, click **Add**.
+- Expected: The error appears under the fields; the form stays open with what was typed still in it (nothing is reset, since nothing was saved).
 
 **TC-172 — A failed edit shows an error and reverts the row (P1)**
 - Preconditions: write patched to reject; at least one saved tab.
 - Steps: Edit a tab's title, click **Save**.
-- Expected: The row briefly shows the edited title (the optimistic update), then an error toast appears and the row reverts to its original, actually-stored title.
+- Expected: An error toast appears and the row closes showing its original, actually-stored title.
 
-**TC-173 — A failed delete shows an error and leaves the row in place (P1)**
+**TC-173 — A failed delete shows an error and leaves the row in place (P1)** **[auto]**
 - Preconditions: write patched to reject; at least one saved tab.
 - Steps: Delete a tab.
-- Expected: An error toast appears; the row is never removed (no undo toast either — nothing was deleted to undo).
+- Expected: An error toast appears; the row starts to slide away but comes straight back at full size (no undo toast either — nothing was deleted to undo).
 
 **TC-174 — A failed tab reorder shows an error and leaves the order unchanged (P2)**
 - Preconditions: write patched to reject; 2+ saved tabs.
@@ -574,22 +575,22 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-175 — A failed category action shows an error on that category's own card (P2)**
 - Preconditions: write patched to reject; 1+ configured category.
 - Steps: Try renaming a category, changing its color, and moving it up/down — one at a time.
-- Expected: Each attempt flashes an error message on that category's own status line (same spot used for validation errors like "That name is already used"); nothing changes in the category list once the patch is removed and the popup is reopened.
+- Expected: Each attempt shows an error message floating just under that category (the same spot used for validation errors like "That name is already used"), without moving the rows; nothing changes in the category list once the patch is removed and the popup is reopened.
 
 **TC-176 — A failed category add shows an error (P3)**
 - Preconditions: write patched to reject.
 - Steps: Add a new category.
 - Expected: An error toast appears; the typed name stays in the input (nothing is cleared, since nothing was saved).
 
-**TC-177 — A failed outdated-settings change shows an error and reverts the control (P3)**
+**TC-177 — A failed outdated-settings change shows an error and reverts the control (P3)** **[auto]** (TC-199)
 - Preconditions: write patched to reject.
-- Steps: Toggle **Outdated tracking** off, or change the days field.
+- Steps: Settings → **General** → flip the outdated switch, or change the days field.
 - Expected: An error toast appears and the control snaps back to its actual stored value (not left showing the un-saved change).
 
 **TC-178 — A failed import shows an error without discarding what was there before (P2)**
 - Preconditions: write patched to reject; a valid backup file ready to import.
-- Steps: Import the file, choose **Merge** (or **Replace**).
-- Expected: The backup status line shows an error, not a success message; reopening the popup (patch removed) shows the tabs/settings from before the import attempt, untouched.
+- Steps: Settings → **Backup** → import the file, choose **Merge** (or **Replace all**).
+- Expected: The line under the Backup buttons shows the error in red, not a success message; reopening the popup (patch removed) shows the tabs/settings from before the import attempt, untouched.
 
 **TC-179 — No `unlimitedStorage` permission (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
@@ -611,7 +612,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
   const __origSet = chrome.storage.local.set.bind(chrome.storage.local);
   chrome.storage.local.set = (obj) => new Promise((r) => setTimeout(() => r(__origSet(obj)), 400));
   ```
-- Steps: While the delay is patched in, trigger two different mutations back to back, well within that 400ms window — e.g. edit one tab's title (click Save) and immediately delete a different tab; or rename a category and immediately toggle **Outdated tracking**.
+- Steps: While the delay is patched in, trigger two different mutations back to back, well within that 400ms window — e.g. edit one tab's title (click Save) and immediately delete a different tab; or rename a category and immediately flip the outdated switch.
 - Expected: Wait for both actions to finish (~800ms), then reopen the popup with the patch removed (`chrome.storage.local.set = __origSet;`) — both changes are present. Neither mutation's write silently reverted the other's (the historical failure mode: two overlapping read-modify-write cycles, the second one's read taken before the first one's write landed).
 
 ---
@@ -628,9 +629,70 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: `tabSandwich.schemaVersion` is `1`; tabs and settings are unchanged. (A future release that changes the stored format runs each upgrade step on a copy, keeps a backup in `tabSandwich.upgradeBackup`, writes data and version together, and restores the original exactly if anything fails — the logic tests force each failure path.)
 
 **TC-185 — Accessibility scan passes on every screen (P1)** **[auto]**
-- Steps: `pnpm test:e2e` (the accessibility tests scan the list, manual entry, edit mode, Settings, and the undo toast).
-- Expected: No violations other than those listed in `KNOWN_GAPS` (color contrast, until v3.0).
+- Steps: `pnpm test:e2e` (the accessibility tests scan the list, manual entry, edit mode, Settings, and the undo toast, in both light and dark mode).
+- Expected: No violations. `KNOWN_GAPS` is empty since v3.0: every screen, including each Settings tab, passes every rule, color contrast included, in both themes.
 
 **TC-186 — A failing check blocks the release zip (P1, release gate)**
 - Steps: On GitHub, open the run for the release tag under **Actions**.
 - Expected: The **Release** job only runs after **checks** passes, and fails if the tag doesn't match `manifest.json`'s version. A tag whose checks fail gets no release zip.
+
+---
+
+## 18. Fresh Look (v3.0)
+
+**TC-187 — The save card shows the page you're on (P1)** **[auto]**
+- Steps: Open the popup on a normal web page.
+- Expected: The white card under the purple header shows the page's title on its own full-width row with its site underneath; the category picker and **Save** sit on the row below, so the title is never squeezed by them.
+
+**TC-188 — Save straight into a category (P1)** **[auto]**
+- Steps: Pick a category in the card's picker → **Save**.
+- Expected: The tab is saved with that category; the row shows it under the title. No editing needed afterwards.
+
+**TC-189 — Settings and back keeps your place (P2)** **[auto]**
+- Steps: Pick a category pill, type a search, scroll the list → open Settings → **Back**.
+- Expected: The same filter, search text and scroll position are still there.
+
+**TC-190 — Roomy rows, at least 8 visible (P2)** **[auto]**
+- Preconditions: 25 saved tabs.
+- Expected: At least 8 whole rows are visible at once in the 600px-tall popup; each row is a rounded tile with breathing room around its two lines of text.
+
+**TC-191 — Storage warning on the main screen (P2)** **[auto]**
+- See TC-082.
+
+**TC-192 — Motion, and reduce-motion (P3)**
+- Steps: Open the popup; save a tab; delete one; hover a row. Then turn on the system's reduce-motion setting and repeat.
+- Expected: Rows rise in quickly on open, a saved row drops in and flashes, a deleted row slides away, Save presses down and pops "✓ Saved!", "Already saved" gives a small shake, hovered rows lift slightly. With reduce motion on, all of it is instant.
+
+**TC-193 — Dark mode follows the system (P1)** **[auto]**
+- Steps: Switch the computer between light and dark mode with the popup open.
+- Expected: Both screens switch theme immediately, without reopening, and stay readable in both (the accessibility scan checks contrast in both themes).
+
+**TC-194 — Light / Dark / System in Settings (P1)** **[auto]**
+- Steps: Settings → **General** → **Appearance** → choose **Dark**, then reopen the popup; then choose **System**.
+- Expected: Dark applies at once and is still on after reopening, whatever the computer's setting. System goes back to following the computer.
+
+**TC-195 — The color strip closes with Escape (P3)** **[auto]**
+- Steps: Settings → **Categories** → open a category's color dot → press **Escape**.
+- Expected: The strip closes and focus returns to that color dot.
+
+**TC-196 — About (P3)** **[auto]**
+- Steps: Settings → **About**.
+- Expected: The app icon, "Version x.y.z" matching the manifest, the local-only promise, and working **Privacy policy** and **Source code** links (they open in a new tab).
+
+**TC-197 — Settings tabs work from the keyboard (P2)** **[auto]**
+- Steps: Focus the **General** tab → press the right arrow.
+- Expected: **Categories** becomes the selected tab and shows its contents; Left, Home and End move the same way.
+
+**TC-198 — The popup never shrinks back and forth (P2)** **[auto]**
+- Steps: With one saved tab, and again with a dozen: open Settings, click through all four tabs, then **Back**.
+- Expected: The popup window may grow when a screen needs more room, but never shrinks while it's open — no resizing back and forth between screens or tabs.
+
+**TC-199 — A settings change that fails to save is undone on screen (P2)** **[auto]**
+- Preconditions: writes patched to fail (see section 15).
+- Steps: Settings → **General** → change the day count, choose **Dark**, flip the outdated switch.
+- Expected: Each shows "Couldn't save your changes. Try again." in a toast, and each control goes back to what's actually stored (the day count, the theme, the switch).
+
+**TC-200 — Every screen matches its approved screenshot (P1, release gate)** **[auto]**
+- Steps: `pnpm visual` (or CI's `visual` job).
+- Expected: All screens match. A failure's report shows what changed; if the change is intended, approve it with `pnpm visual:update` and show before/after in the pull request.
+

@@ -1,0 +1,116 @@
+.wrap { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+.list { list-style: none; margin: 0; padding: 2px 8px 10px; display: flex; flex-direction: column; gap: var(--row-gap); }
+.empty { margin: 0; padding: 28px 12px; text-align: center; color: var(--ink-2); }
+
+/* Each saved tab is a rounded layer, tinted and outlined in its category's color. */
+.row {
+    position: relative;
+    flex-shrink: 0;
+    height: var(--row-h);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px 0 10px;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc) var(--row-edge), transparent), var(--row-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.row:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc) var(--row-edge), transparent), var(--row-lift);
+    z-index: 1;
+}
+.rise { animation: rise 0.32s cubic-bezier(0.3, 1.3, 0.5, 1) both; }
+.drop { animation: drop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.leaving { animation: leave 0.24s ease-in forwards; pointer-events: none; }
+.dragging { opacity: 0.45; }
+.dragOver { box-shadow: inset 0 0 0 2px var(--accent), var(--row-lift); }
+@keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes drop { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes leave { to { opacity: 0; transform: translateX(28px) scale(0.97); height: 0; margin-bottom: calc(var(--row-gap) * -1); } }
+
+/* The highlight after saving or undo: re-mounted each time, so the flash always restarts. */
+.flash {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--accent);
+    opacity: 0;
+    pointer-events: none;
+    animation: flash 1.8s ease-out;
+}
+@keyframes flash { 0% { opacity: 0.25; } 100% { opacity: 0; } }
+
+/* Above the title's whole-row click area, so grabbing the drag handle never counts as opening the tab. */
+.lead { position: relative; z-index: 1; width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.grip { display: none; color: var(--ink-3); cursor: grab; }
+.draggable:hover .lead > :first-child { display: none; }
+.draggable:hover .grip { display: flex; }
+
+.text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--line-gap); }
+.title {
+    max-width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    line-height: 17px;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+/* The title opens the tab; stretching its click area over the whole row makes the row the target. */
+.title::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.title:focus-visible { outline: none; }
+.title:focus-visible::after { outline: 2px solid var(--accent); outline-offset: 1px; }
+.title mark { background: color-mix(in srgb, var(--save) 55%, transparent); color: inherit; border-radius: 3px; }
+
+.meta { max-width: 100%; display: flex; align-items: center; gap: 6px; font-size: 11.5px; line-height: 15px; color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+.category { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); font-weight: 600; flex-shrink: 0; }
+.category > span:first-child { width: 7px; height: 7px; }
+.separator { opacity: 0.7; }
+.site { overflow: hidden; text-overflow: ellipsis; }
+
+.age {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 18px;
+    padding: 0 7px 0 5px;
+    border-radius: 9px;
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.actions {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    margin-top: -14px;
+    z-index: 2;
+    display: flex;
+    gap: 2px;
+    padding-left: 6px;
+    border-radius: 8px;
+    background: inherit;
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+/* Invisible but still clickable while hidden: the pointer is over the row by then, which shows them. */
+.row:hover .actions, .row:focus-within .actions { opacity: 1; transform: none; }
+.row:hover .age, .row:focus-within .age { visibility: hidden; }
+.delete:hover { color: var(--danger); }
+
+.editing { height: auto; display: block; padding: 8px; background: var(--surface) !important; box-shadow: var(--row-lift); transform: none; }
+.editing:hover { transform: none; }
+.editForm { display: flex; flex-direction: column; gap: 6px; }
+.editActions { display: flex; align-items: center; gap: 6px; }

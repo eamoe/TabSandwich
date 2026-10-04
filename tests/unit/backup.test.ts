@@ -32,6 +32,16 @@ describe("parseBackupFile", () => {
         );
         expect(parsed?.settingsFields).toEqual({ categories: ["Ok"], categoryColors: { Ok: "teal" } });
     });
+
+    it("reads the theme from a backup exported by v3.0 or later", () => {
+        const parsed = parseBackupFile(fileWith(buildBackupFile([], { ...DEFAULT_SETTINGS, theme: "dark" })));
+        expect(parsed?.settingsFields.theme).toBe("dark");
+    });
+
+    it("ignores a theme value it doesn't recognize", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [], settings: { theme: "sepia" } }));
+        expect(parsed?.settingsFields).toEqual({});
+    });
 });
 
 describe("mergeImport", () => {
@@ -55,6 +65,11 @@ describe("mergeImport", () => {
         expect(result.settings.categoryColors.Old).toBe("blue");
     });
 
+    it("keeps your current theme — merging only ever adds tabs and categories", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [], settings: { theme: "dark" } }))!;
+        expect(mergeImport([], { ...DEFAULT_SETTINGS, theme: "light" }, parsed).settings.theme).toBe("light");
+    });
+
     it("never overwrites a color you already chose for an existing category", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [], settings: { categories: ["Work"], categoryColors: { Work: "blue" } } }))!;
         expect(mergeImport([], DEFAULT_SETTINGS, parsed).settings.categoryColors.Work).toBe("purple");
@@ -71,5 +86,18 @@ describe("replaceImport", () => {
         expect(result.settings.outdatedDays).toBe(DEFAULT_SETTINGS.outdatedDays);
         expect(result.settings.categories).toContain("Hobby");
         expect(result.addedCategoryCount).toBe(1);
+    });
+
+    it("takes the theme from the file", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [], settings: { theme: "light" } }))!;
+        expect(replaceImport(parsed).settings.theme).toBe("light");
+    });
+
+    it("still imports a backup made before v3.0, which has no theme, falling back to following the system", () => {
+        const preV3 = { version: 1, exportedAt: "2026-09-01T10:00:00.000Z", tabs: [{ title: "A", url: "https://a.com", savedAt: 1 }],
+            settings: { outdatedEnabled: true, outdatedDays: 7, categories: ["Work"], categoryColors: { Work: "purple" } } };
+        const result = replaceImport(parseBackupFile(fileWith(preV3))!);
+        expect(result.tabs.map((t) => t.title)).toEqual(["A"]);
+        expect(result.settings.theme).toBe("system");
     });
 });

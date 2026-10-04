@@ -43,9 +43,9 @@ describe("renameCategory", () => {
     });
 
     it.each([
-        ["", "Name can't be empty."],
-        ["Personal", "That name is already used by another category."],
-        [UNCATEGORIZED, "That name is already used by another category."],
+        ["", "empty"],
+        ["Personal", "taken"],
+        [UNCATEGORIZED, "taken"],
     ])("refuses %j", async (newName, reason) => {
         seed([], base);
         expect(await renameCategory("Work", newName)).toEqual({ renamed: false, reason });
@@ -54,7 +54,7 @@ describe("renameCategory", () => {
 
     it("reports a category that no longer exists", async () => {
         seed([], base);
-        expect(await renameCategory("Gone", "New")).toEqual({ renamed: false, reason: "Category no longer exists." });
+        expect(await renameCategory("Gone", "New")).toEqual({ renamed: false, reason: "gone" });
     });
 });
 
@@ -68,7 +68,7 @@ describe("removeCategory", () => {
 
     it("refuses while any tab still uses it", async () => {
         seed([makeTab({ category: "Work" })], base);
-        expect(await removeCategory("Work")).toEqual({ removed: false, reason: "In use — reassign its tabs first." });
+        expect(await removeCategory("Work")).toEqual({ removed: false, reason: "in-use" });
     });
 
     it("never removes Uncategorized", async () => {

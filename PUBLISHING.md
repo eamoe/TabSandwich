@@ -42,32 +42,44 @@ Save tabs in one click, organize with color-coded categories, and spot outdated 
 Tab Sandwich is a fast, focused way to save and organize the tabs you want to come back to.
 
 SAVE INSTANTLY
-Click the toolbar icon (or press Alt+S) and hit Save Tab — the current page's title and URL are saved immediately. Need to save a link that isn't your active tab? Use "+ Add link manually."
+Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button.
+
+FIND IT AGAIN, FAST
+Search matches titles and sites as you type, with the matching letters highlighted. Press Enter to open the top result.
 
 ORGANIZE WITH CATEGORIES
-Assign a color-coded category to any saved tab. Filter your list with a click, manage your categories (add, rename, remove, reorder, recolor) from Settings, and scan your list at a glance by color.
+Give any saved tab a color-coded category. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
 
 NEVER LOSE TRACK OF STALE TABS
-Tabs you saved a while ago and haven't revisited get a visible age badge, with a dedicated quick filter to round them all up and decide what to keep.
+Tabs you saved a while ago get a small moon badge with their age, and a quick filter rounds them all up so you can decide what to keep.
 
-EDIT, REORDER, DELETE
-Fix a title or URL without deleting and re-adding. Drag tabs into whatever order makes sense to you. Delete what you don't need with one click.
+EDIT, REORDER, DELETE, UNDO
+Fix a title or URL without deleting and re-adding. Drag tabs into whatever order makes sense to you. Delete what you don't need, with Undo if you change your mind.
 
-KEYBOARD FRIENDLY
-Every core action — saving, filtering, editing, deleting, settings — works without a mouse. Open the popup itself with a customizable keyboard shortcut.
+LIGHT AND DARK
+Follows your computer's light or dark mode, even while open, or pick one in Settings.
+
+BACKUP AND KEYBOARD
+Export everything to a file and import it later. Every core action works without a mouse, and a customizable keyboard shortcut opens the popup.
 
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site).
+
+NEW IN 3.0
+A fresh, playful look with dark mode; pick a category as you save; calmer Settings with Light / Dark / System; and safer data: upgrades keep a backup and undo themselves if anything goes wrong, and editing a link can no longer create a duplicate.
 ```
 
 ### Screenshots
 
-Upload all four from `store-assets/` (each already sized to the required 1280×800):
+Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the 3D logo (`store-assets/3d-branded-logo.png`):
 
-1. `screenshot-1-main-list.png` — main list with color-coded categories, branded with the logo
-2. `screenshot-2-settings-categories.png` — Settings view with the color picker
-3. `screenshot-3-edit-item.png` — a saved tab's inline edit mode open
-4. `screenshot-4-manual-entry.png` — the manual-entry form open
+1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list and save card
+2. `screenshot-2-dark-mode.png` — "Easy on the eyes, day or night": the same list in dark mode
+3. `screenshot-3-search.png` — "Find any saved tab in a keystroke": search with highlighted matches
+4. `screenshot-4-categories.png` — "Organize your way": Settings › Categories with the color strip open
+5. `screenshot-5-private.png` — "Your tabs stay in your browser": Settings › About in dark mode
+
+They're rendered from the built extension, not edited by hand: `pnpm build && pnpm store:screenshots` (on a Mac, with network access — it visits each sample site once so the rows show real site icons). Re-run it whenever the look changes, and check the pictures before uploading: they're public.
 
 ### Icon
 
@@ -81,7 +93,7 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
    ```
 
 2. **Permission justifications:**
-   - `activeTab`: "Used only when the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab so it can be saved. No access to any other tab."
+   - `activeTab`: "Used only after the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab: the popup shows them, and saves them if the user clicks Save. No access to any other tab."
    - `storage`: "Used to persist the user's saved tabs and settings locally via chrome.storage.local. No data is transmitted off-device."
    - `favicon`: "Used to show each saved tab's icon by reading it from Chrome's own local favicon cache, instead of fetching it from the page's own site. No favicon data is stored, and no request is ever made to the saved page's site for this."
 
@@ -114,5 +126,5 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 1. Bump `manifest.json`'s `version`.
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
-4. Update the description/screenshots only if something user-facing actually changed.
+4. Update the description/screenshots only if something user-facing actually changed (3.0.0 did: paste the detailed description above, including its "New in 3.0" paragraph, and replace all screenshots with the five listed above — the old ones show the pre-3.0 look). The Store has no per-version notes field; the full notes go in the GitHub release.
 5. Submit for review again (update reviews are usually faster than the first one).

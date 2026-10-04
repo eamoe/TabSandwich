@@ -13,6 +13,8 @@ When you save a tab, Tab Sandwich stores:
 - A category you assign (optional)
 - The date and time you saved it
 
+Tab Sandwich also stores your settings: your categories and their colors, the outdated-tab setting, and your light/dark theme choice.
+
 This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
 
 Alongside it, Tab Sandwich keeps a data-format version number, and — only after an update has changed the format of your stored data — a backup copy of that data exactly as it was just before the update, so nothing is lost if an update goes wrong. The backup is stored in the same local place, contains only the data listed above plus your settings, and is never transmitted anywhere either.
@@ -23,7 +25,7 @@ No favicon data is stored at all. To show a saved tab's icon, the popup asks Chr
 
 ## Export & import
 
-Settings includes an optional Export/Import feature. Export writes everything listed above (plus your category and outdated-tab settings) to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
+Settings includes an optional Export/Import feature. Export writes everything listed above, including your settings, to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
 
 ## What Tab Sandwich does not do
 
@@ -35,7 +37,7 @@ Settings includes an optional Export/Import feature. Export writes everything li
 
 ## Permissions
 
-- **`activeTab`** — used only at the moment you click the extension's icon or use its keyboard shortcut, to read the title and URL of the tab you're currently viewing so it can be saved. Tab Sandwich cannot see any other tab, and cannot see this information at any other time.
+- **`activeTab`** — used only after you click the extension's icon or use its keyboard shortcut, to read the title and URL of the tab you're currently viewing: the popup shows them so you can see what you're about to save, and saves them if you click Save. Nothing is stored unless you save. Tab Sandwich cannot see any other tab, and cannot see this information at any other time.
 - **`storage`** — used to save your saved tabs and settings locally via `chrome.storage.local`, so they persist between browser sessions.
 - **`favicon`** — lets the popup read icons out of Chrome's own local favicon cache to show next to each saved tab, instead of fetching them from the page's own site. See "Favicons" above.
 

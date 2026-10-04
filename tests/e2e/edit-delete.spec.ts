@@ -60,4 +60,15 @@ test.describe("Editing and deleting", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Bravo", "Charlie"]);
         expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
     });
+
+    test("TC-173: a delete that fails to save leaves the row in place", async ({ popup }) => {
+        await popup.evaluate(() => {
+            chrome.storage.local.set = () => Promise.reject(new Error("disk unavailable"));
+        });
+        await popup.getByRole("button", { name: "Delete Bravo" }).click();
+        await expect(popup.getByRole("status").filter({ hasText: "Couldn't save your changes. Try again." })).toBeVisible();
+        await expect(popup.getByRole("button", { name: "Undo" })).toHaveCount(0);
+        await expect(row(popup, "Bravo")).toBeVisible();
+        expect(await row(popup, "Bravo").evaluate((li) => li.getBoundingClientRect().height)).toBeGreaterThan(30);
+    });
 });

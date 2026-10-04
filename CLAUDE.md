@@ -12,8 +12,10 @@ keyboard shortcut to open. Everything is stored locally via
 
 ## Architecture
 
-Vanilla TypeScript, built with Vite — no UI framework (until the v3.0
-redesign adopts Preact), no state library. `popup/popup.html` points straight
+TypeScript, built with Vite, no state library. Since v3.0 the screens are
+Preact (a ~4 KB component library): every screen is a `.tsx` component in
+`src/ui/`, styled with CSS modules and the shared tokens.
+`popup/popup.html` points straight
 at `src/popup.ts`; `pnpm build` type-checks with `tsc` (Vite itself
 doesn't), then Vite bundles the popup into `dist/` and copies in
 `manifest.json` and `images/`. `dist/` is the complete, loadable extension —
@@ -22,7 +24,7 @@ one the release zip is made from.
 
 ```
 src/
-  types.ts              SavedTab, Settings interfaces
+  types.ts              SavedTab, Settings, ThemeChoice
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
@@ -37,34 +39,61 @@ src/
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
-                            merge (additive, dedupes by URL) vs. replace (full overwrite)
-  render/
-    ListRenderer.ts        tab list rows (display + edit modes, drag handlers, search highlight)
-    PillsRenderer.ts       category filter pills + "Outdated" pill
-    HeroRenderer.ts         hero stats, save actions, manual-entry disclosure
-    SettingsRenderer.ts    settings view (categories, outdated toggle, shortcut display)
-    SearchRenderer.ts      search input wiring (query state, clear, result announcements)
-    ToastRenderer.ts       single dismissible undo toast, reusable beyond delete; also a no-action error variant for a failed write
-    BackupRenderer.ts      export/import UI (file download, file picker, merge/replace confirm)
-    viewController.ts      central refreshView() orchestrator — exists to avoid
-                            circular imports between the render modules above
+                            merge (additive, dedupes by URL) vs. replace (full overwrite) — pure
+    BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
+    SettingsRepository.ts  theme and outdated-tab settings writes; clamps the day count to 1–365
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
-    color.ts               tintHex (pastel row-tint generation from palette colors)
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
-  dom/domHelper.ts          getElement<T>(id) helper
-  popup.ts                  DOMContentLoaded entry point — migrate → refreshView → wire hero/settings
+  ui/                       Preact screens and building blocks of the v3.0 look
+    tokens.css              every color/shadow/size, light + dark; "System" = no data-theme attribute
+                            (CSS follows the OS, even while open), Light/Dark = data-theme on <html>
+    base.css                page-level basics (body, color-scheme, focus ring, reduced motion, .visually-hidden)
+    controls.module.css     buttons, fields, the color dot — shared by several components
+    theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
+    strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
+    Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
+    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
+    CategoryPicker.tsx      native <select> with the chosen category's color dot
+    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
+    main/                   the main screen
+      App.tsx               root of the whole popup: loads the library, owns filter/search/highlight
+                             and which screen shows; the main screen is hidden (not unmounted) while
+                             Settings is open, so it keeps your place; re-applies the stored theme
+      useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
+      useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
+      Header.tsx            logo, search, + (add link manually), gear
+      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button
+      ManualForm.tsx        add a link by hand, shown in place of the save card
+      FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
+      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion
+      listModel.ts          pure list rules (filter options and order, filtering, site names) — logic-tested
+    settings/               the Settings screen: four tabs (arrow keys move between them)
+      SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
+                             screen so the popup window doesn't resize
+      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut, storage meter
+      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; color strip and messages
+                             float over the row so nothing ever shifts
+      BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
+      AboutTab.tsx          version, local-only promise, privacy policy and source links
+  vite-env.d.ts             types for non-code imports, e.g. *.module.css
+  popup.ts                  entry point — migrate → upgrade → apply theme → render App
 
-popup/popup.html / popup.css   markup + styles (hand-written, no CSS framework)
+popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
 dist/                          build output (the loadable extension) — gitignored, never commit this
 vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
-tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake)
+tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
+                                component tests (*.test.tsx, simulated DOM via happy-dom)
 tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
-                                the popup, and runs an accessibility scan (axe)
+                                the popup, and runs an accessibility scan (axe) in light and dark
+tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
+                                pixel (playwright.visual.config.ts); baselines in __screenshots__/
+tests/store/                   not a test: renders the Chrome Web Store screenshots into store-assets/
+scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
                                 release.yml (version tags: checks, then zip the tested dist/)
@@ -80,11 +109,12 @@ pnpm install --frozen-lockfile
 pnpm exec playwright install chromium   # once, for the robot tests
 pnpm build        # tsc type-check, then Vite → dist/
 pnpm watch        # rebuild dist/ on every save
-pnpm check        # everything CI runs: lint, typecheck, logic tests, build, robot tests
+pnpm check        # lint, typecheck, logic tests, build, robot tests
+pnpm visual       # approved-screenshot comparisons, in Docker (CI runs them too)
 ```
 
-Individually: `pnpm lint`, `pnpm typecheck`, `pnpm test` (logic,
-~1 s), `pnpm test:e2e` (robot tests against the current `dist/` — build
+Individually: `pnpm lint`, `pnpm typecheck`, `pnpm test` (logic and
+component tests, ~1 s), `pnpm test:e2e` (robot tests against the current `dist/` — build
 first). To try it by hand: `chrome://extensions` → Developer mode →
 **Load unpacked** → select `dist/` (not the repo root).
 
@@ -95,8 +125,19 @@ tests in the same change: logic in `tests/unit/`, user-visible journeys in
 `tests/e2e/` (select elements by role and accessible name, the way a user
 finds them — not by CSS class — so tests survive restyling). The
 accessibility scan in `tests/e2e/accessibility.spec.ts` skips only the rules
-in its `KNOWN_GAPS` list (currently color contrast, owned by v3.0); never
+in its `KNOWN_GAPS` list (empty since v3.0 — every screen passes every rule,
+color contrast included, in light and dark); never
 add to that list to get a run passing.
+
+**Approved screenshots.** `tests/visual/` compares every screen, in light and
+dark, with its approved picture. Pixels only match on identical rendering, so
+these run only in Playwright's Docker image — `pnpm visual` locally (Docker
+must be running), the same image in CI's `visual` job; the config refuses to
+run anywhere else. The image tag in `scripts/visual-docker.sh` and
+`checks.yml` must match `@playwright/test`'s version. Change the approved
+pictures only for an intended visual change: run `pnpm visual:update`, look
+at every changed picture, and show before/after in the pull request. A
+failing run's report has expected, actual and diff side by side.
 
 What automation doesn't cover still needs a person: drag-and-drop feel,
 animation smoothness, and the manual release pass at the top of
@@ -117,9 +158,14 @@ animation smoothness, and the manual release pass at the top of
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
   `favicon`). If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
-- **No UI framework/state library.** Vanilla DOM APIs are the default;
-  only reach for something heavier if a specific feature genuinely can't
-  be built without it, and say so explicitly when you do.
+- **Preact for screens, no state library.** Preact was adopted for the
+  v3.0 redesign; don't add another UI or state library. Components keep
+  their styles in a sibling `*.module.css` (scoped by the build, so two
+  components can never clash over a class name) and take every color
+  from `src/ui/tokens.css` variables — never a hard-coded color, so light
+  and dark both stay complete. Components call the domain modules
+  (`TabRepository`, `CategoryRepository`, …), never `chrome.storage`
+  directly.
 - **Small, single-responsibility modules.** Data model, storage,
   rendering, and DOM wiring stay in separate files (see the `src/`
   breakdown above) rather than one file doing everything.

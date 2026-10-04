@@ -1,10 +1,10 @@
 import { test, expect } from "./fixtures";
-import { manualEntryCategories, openSettings, row, seedLibrary, storedSettings, storedTabs } from "./helpers";
+import { manualEntryCategories, openSettings, seedLibrary, storedSettings, storedTabs } from "./helpers";
 
 test.describe("Categories in Settings", () => {
     test.beforeEach(async ({ popup }) => {
         await seedLibrary(popup, [{ title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" }]);
-        await openSettings(popup);
+        await openSettings(popup, "Categories");
     });
 
     const categoryList = (popup: import("@playwright/test").Page) => popup.getByRole("list", { name: "Configured categories" });
@@ -68,13 +68,11 @@ test.describe("Categories in Settings", () => {
         expect(await manualEntryCategories(popup)).toEqual(["Uncategorized", "Personal", "Work", "Reading", "Entertainment"]);
     });
 
-    test("TC-073: Settings and Back move focus sensibly and swap the views", async ({ popup }) => {
-        const back = popup.getByRole("button", { name: "Back", exact: true });
-        await expect(back).toBeFocused();
-        await expect(popup.getByRole("button", { name: "Open settings" })).toBeHidden();
-        await back.click();
-        await expect(row(popup, "Q3 Roadmap")).toBeVisible();
-        await expect(popup.getByRole("button", { name: "Open settings" })).toBeFocused();
-        await expect(popup.getByRole("main", { name: "Settings" })).toBeHidden();
+    test("TC-159: dragging a category by its handle moves it there", async ({ popup }) => {
+        await categoryList(popup).getByRole("listitem").filter({ hasText: "Entertainment" }).dragTo(
+            categoryList(popup).getByRole("listitem").filter({ hasText: "Work" }),
+            { sourcePosition: { x: 10, y: 22 } }
+        );
+        await expect.poll(async () => (await storedSettings(popup)).categories).toEqual(["Entertainment", "Work", "Personal", "Reading"]);
     });
 });
