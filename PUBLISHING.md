@@ -42,7 +42,7 @@ Save tabs in one click, organize with color-coded categories, and spot outdated 
 Tab Sandwich is a fast, focused way to save and organize the tabs you want to come back to.
 
 SAVE INSTANTLY
-Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button.
+Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button. Already saved the page? The popup says so, and one click updates the saved copy.
 
 FIND IT AGAIN, FAST
 Search matches titles and sites as you type, with the matching letters highlighted. Press Enter to open the top result. Sort by newest, oldest, title or site, and switch back to your own order any time.

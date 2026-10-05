@@ -86,8 +86,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-010 — Duplicate via Save Tab (P1)** **[auto]**
 - Preconditions: one tab already saved.
-- Steps: Revisit that same URL as the active tab → click **Save Tab**.
-- Expected: No second entry created. The button briefly reads "Already saved" (orange, with a small shake). The existing entry is highlighted/flashed in the list.
+- Steps: Revisit that same URL as the active tab → open the popup. Also: save a page, and watch the card right after.
+- Expected: No **Save Tab** button for a page that's already saved: the card says "✓ Saved N days ago" with **Show** and **Update** instead (TC-215), so no second entry can be created. Right after saving, the button shows "Saved!" for a moment, then the card settles into that saved look. (If the page somehow gets saved twice anyway, e.g. from two windows at once, the button reads "Already saved" in orange with a small shake and the existing entry flashes.)
 
 **TC-011 — Duplicate acknowledgment visible when entry is off-screen (P1)**
 - Preconditions: enough tabs saved that the list scrolls; the duplicate target is scrolled out of view.
@@ -96,7 +96,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-012 — Duplicate via manual entry (P2)** **[auto]**
 - Steps: Manually add a URL that's already saved.
-- Expected: No second entry. The form stays open and says "Already saved as “<title>”." under the fields; the existing entry is highlighted in the list.
+- Expected: No second entry. The form stays open and says "Already saved as “<title>”." under the fields, followed by **Open** (TC-219); the existing entry is highlighted in the list.
 
 ---
 
@@ -753,3 +753,23 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-214 — Restoring a backup doesn't bring back a dismissed note (P3)** **[auto]**
 - Steps: Dismiss the note → import an older backup with **Replace all**.
 - Expected: The note stays dismissed: what you've seen is kept apart from the settings a backup carries.
+
+**TC-215 — The save card knows a page is already saved (P1)** **[auto]**
+- Preconditions: The page you're on was saved 20 days ago, in Reading.
+- Steps: Open the popup.
+- Expected: Under the page title: "✓ Saved 20 days ago · example.com" (today / yesterday read naturally). The picker shows Reading, labelled "Saved in category", and **Show** and **Update** take the place of Save.
+
+**TC-216 — Show finds the saved copy (P2)** **[auto]**
+- Steps: Pick a category pill that hides the saved copy → **Show**.
+- Expected: The filter switches to All (only if needed; a search is cleared too), and the saved row scrolls into view and flashes. Nothing is written.
+
+**TC-217 — Update brings the saved copy up to date (P1)** **[auto]**
+- Steps: Optionally pick another category → **Update** → then **Undo** in the toast.
+- Expected: The button pops "✓ Updated!" without moving anything else on the card. The saved copy takes the page's current title and exact address, the picked category (unchanged if you didn't touch the picker), and today's date, so the moon badge goes away; it keeps its place in your own order. The card now says "Saved today". **Undo** puts the old title, address, category and date back exactly.
+
+**TC-218 — Saving settles into the saved look (P2)** **[auto]**
+- See TC-010.
+
+**TC-219 — Open an already-saved link from the add-a-link form (P2)** **[auto]**
+- Steps: **+** → type a link that's already saved → **Add** → **Open**.
+- Expected: The saved link opens in a new tab. Typing in the URL field again clears the message and its **Open**.

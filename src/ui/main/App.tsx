@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { SavedTab, SortOrder } from "../../types";
-import { editTab, deleteTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
+import { editTab, deleteTab, putBackTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { searchTabs } from "../../domain/search";
 import { setSort } from "../../domain/SettingsRepository";
@@ -116,6 +116,29 @@ export function App(props: { whatsNew?: string | null }) {
         flash(result.tab.id);
     };
 
+    // Brings a saved tab into view and flashes it, widening the list only if it's filtered out.
+    const reveal = (id: string) => {
+        if (!visible.tabs.some((t) => t.id === id)) {
+            setFilter(ALL);
+            setQuery("");
+        }
+        flash(id);
+    };
+
+    const afterUpdate = async (previous: SavedTab) => {
+        await reload();
+        reveal(previous.id);
+        showUndoToast(strings.updatedToast, async () => {
+            try {
+                await putBackTab(previous);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
+            flash(previous.id);
+        });
+    };
+
     const onEdit = async (tab: SavedTab, updates: { title: string; url: string; category: string }): Promise<EditOutcome> => {
         let outcome: EditOutcome;
         try {
@@ -217,7 +240,14 @@ export function App(props: { whatsNew?: string | null }) {
                         onClose={() => setManualOpen(false)}
                     />
                 ) : (
-                    <SaveCard categoryOptions={saveOptions} colorOf={colorOf} onSaved={afterSave} />
+                    <SaveCard
+                        tabs={library.tabs}
+                        categoryOptions={saveOptions}
+                        colorOf={colorOf}
+                        onSaved={afterSave}
+                        onShow={reveal}
+                        onUpdated={afterUpdate}
+                    />
                 )}
             </header>
             {hasTabs && (

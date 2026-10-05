@@ -80,6 +80,14 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`whats-new-${colorScheme}.png`, { mask: [popup.getByRole("region", { name: /^New in / }).getByRole("list")] });
         });
 
+        test("the save card on a page that's already saved", async ({ context, popup }) => {
+            const url = await openSiteTab(context, popup, "Designing calm interfaces");
+            await seedLibrary(popup, [...LIBRARY, { title: "Designing calm interfaces", url, category: "Reading", daysAgo: 12 }], SETTINGS);
+            await popup.mouse.move(0, 599);
+            await expect(popup.getByRole("button", { name: "Update" })).toBeVisible();
+            await expect(popup).toHaveScreenshot(`already-saved-${colorScheme}.png`);
+        });
+
         test("settings: general", async ({ popup }) => {
             await openSettings(popup);
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);

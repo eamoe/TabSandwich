@@ -20,6 +20,17 @@ export const strings = {
     save: "Save",
     saved: "Saved!",
     alreadySaved: "Already saved",
+    // The save card on a page that's already saved.
+    savedAgo: (days: number) => (days <= 0 ? "Saved today" : days === 1 ? "Saved yesterday" : `Saved ${days} days ago`),
+    show: "Show",
+    showTooltip: "Show it in the list",
+    update: "Update",
+    updateTooltip: "Update the saved copy: this page's title and address, today's date, and the category picked here",
+    updatedButton: "Updated!",
+    updatedToast: "Updated",
+    categoryOfSaved: "Saved in category",
+    open: "Open",
+    openSavedTooltip: "Open the saved link in a new tab",
     onlyWebPages: "Only web pages can be saved",
     saveToCategory: "Save to category",
 

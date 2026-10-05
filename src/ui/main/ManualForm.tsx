@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import type { SavedTab } from "../../types";
 import { addTab, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { normalizeUrl } from "../../util/url";
@@ -24,6 +25,8 @@ export function ManualForm(props: {
     const [title, setTitle] = useState("");
     const [category, setCategory] = useState(UNCATEGORIZED);
     const [error, setError] = useState("");
+    // The saved tab the typed link turned out to be, offered to open.
+    const [duplicateOf, setDuplicateOf] = useState<SavedTab | null>(null);
     const [busy, setBusy] = useState(false);
     const urlInput = useRef<HTMLInputElement>(null);
     // Same moment the form appears (see EditForm in TabRow.tsx for why not later).
@@ -48,6 +51,7 @@ export function ManualForm(props: {
             });
             if (result.duplicate) {
                 setError(strings.alreadySavedAs(result.tab.title));
+                setDuplicateOf(result.tab);
                 props.onDuplicate(result.tab.id);
                 return;
             }
@@ -76,6 +80,7 @@ export function ManualForm(props: {
                     onInput={(e) => {
                         setUrl(e.currentTarget.value);
                         setError("");
+                        setDuplicateOf(null);
                     }}
                 />
                 <label for="manual-title" class="visually-hidden">
@@ -89,9 +94,21 @@ export function ManualForm(props: {
                     value={title}
                     onInput={(e) => setTitle(e.currentTarget.value)}
                 />
-                <p class={controls.error} role="alert">
-                    {error}
-                </p>
+                <div class={styles.errorRow}>
+                    <p class={controls.error} role="alert">
+                        {error}
+                    </p>
+                    {duplicateOf && (
+                        <button
+                            type="button"
+                            class={styles.inlineLink}
+                            title={strings.openSavedTooltip}
+                            onClick={() => void chrome.tabs.create({ url: duplicateOf.url })}
+                        >
+                            {strings.open}
+                        </button>
+                    )}
+                </div>
                 <div class={styles.actionRow}>
                     <CategoryPicker
                         id="manual-category"

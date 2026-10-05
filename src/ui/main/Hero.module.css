@@ -118,7 +118,28 @@
 .save:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 .saved { animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
 @keyframes pop { 0% { transform: scale(0.92); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+/* Wide enough for "✓ Updated!" too, so the row never shifts when it flashes. */
+.update { min-width: 108px; padding: 0 12px; }
+/* "✓ Saved 12 days ago" under the title of a page that's already saved. */
+.savedNote { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); font-weight: 600; }
 .duplicate, .duplicate:hover { background: var(--dup); color: var(--on-dup); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); animation: shake 0.35s ease; }
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
 .form { display: flex; flex-direction: column; gap: 6px; }
+.errorRow { display: flex; align-items: baseline; gap: 6px; }
+/* No message, no row: the form keeps its usual height (the message itself hides when empty too). */
+.errorRow:has(> p:empty) { display: none; }
+.inlineLink {
+    flex-shrink: 0;
+    border: 0;
+    padding: 0 2px;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    border-radius: 4px;
+}

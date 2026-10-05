@@ -67,6 +67,33 @@ export async function editTab(
     });
 }
 
+/**
+ * "Update" in the save card: brings a saved tab up to date with the page it was saved from —
+ * the page's title and exact address now, the chosen category, and now as its saved date (so it
+ * no longer counts as outdated). The address is a variant of the same page (the card only
+ * offers Update when the two match), so there's no duplicate to check for. Hands back the tab
+ * as it was, for Undo; null if it was deleted meanwhile (nothing written).
+ */
+export async function refreshTab(id: string, page: { title: string; url: string; category?: string }): Promise<SavedTab | null> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const previous = tabs.find((t) => t.id === id);
+        if (!previous) return null;
+        const refreshed: SavedTab = { ...previous, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
+        await setTabs(tabs.map((t) => (t.id === id ? refreshed : t)));
+        return previous;
+    });
+}
+
+/** Undo for refreshTab: puts the tab back exactly as it was, in its place (unless it's been deleted since). */
+export async function putBackTab(previous: SavedTab): Promise<void> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        if (!tabs.some((t) => t.id === previous.id)) return;
+        await setTabs(tabs.map((t) => (t.id === previous.id ? previous : t)));
+    });
+}
+
 export interface DeleteTabResult {
     tab: SavedTab;
     /** Position in the full stored array (not whatever's currently rendered) — what restoreTab needs to put it back exactly where it was. */

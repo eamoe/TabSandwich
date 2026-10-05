@@ -34,7 +34,7 @@ src/
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection,
+    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
@@ -70,8 +70,9 @@ src/
       useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo, search, + (add link manually), gear
-      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button
-      ManualForm.tsx        add a link by hand, shown in place of the save card
+      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
+                             on a page already saved: "Saved N days ago", Show and Update instead of Save
+      ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
