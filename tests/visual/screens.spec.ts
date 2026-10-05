@@ -88,6 +88,13 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`already-saved-${colorScheme}.png`);
         });
 
+        test("a row reached with the keyboard", async ({ popup }) => {
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
+            await popup.keyboard.press("ArrowDown");
+            await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
+            await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`);
+        });
+
         test("settings: general", async ({ popup }) => {
             await openSettings(popup);
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);

@@ -11,6 +11,19 @@ import controls from "../controls.module.css";
 import styles from "./Settings.module.css";
 
 const STORAGE_WARNING_PCT = 80;
+
+const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
+/** The list's keys, named the way this computer's keyboard labels them. */
+const LIST_KEYS: Array<{ keys: string[]; what: string }> = [
+    { keys: ["/"], what: strings.keyHelp.search },
+    { keys: ["↑", "↓"], what: strings.keyHelp.move },
+    { keys: ["Enter"], what: strings.keyHelp.open },
+    { keys: ["E"], what: strings.keyHelp.edit },
+    { keys: [IS_MAC ? "⌫" : "Delete"], what: strings.keyHelp.delete },
+    { keys: [IS_MAC ? "⌘" : "Ctrl", "Z"], what: strings.keyHelp.undo },
+    { keys: [IS_MAC ? "⌥" : "Alt", "↑", "↓"], what: strings.keyHelp.reorder },
+    { keys: ["Esc"], what: strings.keyHelp.back },
+];
 const THEMES: Array<{ value: ThemeChoice; label: string }> = [
     { value: "light", label: strings.themeLight },
     { value: "dark", label: strings.themeDark },
@@ -121,6 +134,20 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                         </button>
                     </div>
                 </div>
+                <dl class={styles.keys} aria-label={strings.keyboardKeys}>
+                    {LIST_KEYS.map(({ keys, what }) => (
+                        <div key={what} class={styles.keyRow}>
+                            <dt class={styles.keyCombo}>
+                                {keys.map((key) => (
+                                    <kbd key={key} class={styles.kbdSmall}>
+                                        {key}
+                                    </kbd>
+                                ))}
+                            </dt>
+                            <dd class={styles.keyWhat}>{what}</dd>
+                        </div>
+                    ))}
+                </dl>
             </section>
 
             <section class={styles.group} aria-labelledby="storage-title">

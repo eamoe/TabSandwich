@@ -26,7 +26,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
-- **Keyboard accessible** — every core action (save, filter, edit, delete, settings) works without a mouse.
+- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, / jumps to search. The keys are listed in Settings › General.
 
 ## Installation
 

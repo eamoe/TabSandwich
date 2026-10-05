@@ -100,6 +100,21 @@ export const strings = {
     enterValidUrlSentence: "Enter a valid URL.",
     alreadySavedAs: (title: string) => `Already saved as “${title}”.`,
 
+    // Keyboard control of the list (stage 4 of v3.1).
+    movedTo: (title: string, position: number, total: number) => `Moved “${title}” to position ${position} of ${total}`,
+    cantMoveSorted: "Tabs can only be moved in your own order. Switch the sort to Your order first.",
+    cantMoveSearching: "Clear the search to move tabs.",
+    keyboardKeys: "Keys in the list",
+    keyHelp: {
+        search: "Jump to search",
+        move: "Move through your saved tabs",
+        open: "Open the tab",
+        edit: "Edit it",
+        delete: "Delete it",
+        undo: "Undo, while Undo is showing",
+        reorder: "Move it up or down (in your own order)",
+        back: "Back to search",
+    },
     deleted: "Deleted",
     undo: "Undo",
     upgradeFailed: "Couldn't update your saved data for this version. Nothing was changed.",

@@ -60,7 +60,7 @@ LIGHT AND DARK
 Follows your computer's light or dark mode, even while open, or pick one in Settings.
 
 BACKUP AND KEYBOARD
-Export everything to a file and import it later. Every core action works without a mouse, and a customizable keyboard shortcut opens the popup.
+Export everything to a file and import it later. Every action works from the keyboard — arrow keys, Enter to open, E to edit, Delete, Alt+arrows to reorder, / to search — and a customizable keyboard shortcut opens the popup.
 
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site).

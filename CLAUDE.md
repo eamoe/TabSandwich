@@ -64,7 +64,7 @@ src/
     CategoryPicker.tsx      native <select> with the chosen category's color dot
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
     main/                   the main screen
-      App.tsx               root of the whole popup: loads the library, owns filter/search/highlight
+      App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
@@ -76,12 +76,13 @@ src/
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
-      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion
+      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
+                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, Escape), one Tab stop
       listModel.ts          pure list rules (filter options and order, filtering, sorting, site names) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut, storage meter
+      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove, drag; color strip and messages
                              float over the row so nothing ever shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast

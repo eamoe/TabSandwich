@@ -304,8 +304,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
-- Steps: Tab to a category pill and the Outdated pill and activate each; Tab to a row's edit and delete icons and activate each.
-- Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable.
+- Steps: Tab to a category pill and the Outdated pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
+- Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable, Escape cancels.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
 - Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; operate the outdated switch and day input; on **Categories** add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
@@ -315,8 +315,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Using a screen reader (or the browser's accessibility inspector), inspect a saved-tab row.
 - Expected: The category is written under the title next to its color dot (or, under a category filter, given as screen-reader-only text "Category: …"), never conveyed only by the row's tint and outline.
 
-**TC-094 — Drag-reorder has no keyboard equivalent (documented exemption) (P3)**
-- Expected: Confirm this is a known, accepted gap (FR-019 exemption) — not something to fail the suite over.
+**TC-094 — Reordering from the keyboard (P2)** **[auto]**
+- Since v3.1, Alt+↑/↓ (⌥ on a Mac) moves the focused tab, the keyboard equivalent of dragging. See TC-223.
 
 **TC-095 — The add-a-link fields are unreachable until the form is opened (P1)**
 - Preconditions: a freshly opened popup where **+** has never been clicked this session.
@@ -773,3 +773,35 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-219 — Open an already-saved link from the add-a-link form (P2)** **[auto]**
 - Steps: **+** → type a link that's already saved → **Add** → **Open**.
 - Expected: The saved link opens in a new tab. Typing in the URL field again clears the message and its **Open**.
+
+**TC-220 — Arrow keys move through the list (P1)** **[auto]**
+- Steps: In the search box press ↓; then ↓, ↑, Home, End. Then Tab.
+- Expected: ↓ from search lands on the first row; arrows, Home and End move between rows (stopping at the ends), with a purple outline on the current row and its Edit and Delete showing. The list is one Tab stop: Tab goes to the current row's Edit, its Delete, then on past the list.
+
+**TC-221 — Enter opens, E edits (P1)** **[auto]**
+- Steps: On a row press Enter. Then E, Escape. Then E, change the title, Enter.
+- Expected: Enter opens the tab in a new browser tab. E opens the edit form with the title selected; Escape cancels it and focus returns to the row; saving with Enter also returns focus to the row.
+
+**TC-222 — Delete from the keyboard, and undo (P1)** **[auto]**
+- Steps: On a row press Delete (on a Mac, the delete key, which is Backspace). Then Ctrl+Z (⌘Z on a Mac).
+- Expected: The row is deleted with the usual Undo toast, and focus moves to the next row (or the one before, at the end of the list). Ctrl+Z / ⌘Z undoes it while Undo is showing.
+
+**TC-223 — Move a tab with Alt+arrows (P1)** **[auto]**
+- Steps: On a row press Alt+↓ (⌥↓), then Alt+↑. Try it under a category filter, and with a sort on.
+- Expected: The tab moves one place and keeps focus; screen readers hear "Moved “…” to position 2 of 9". Under a filter it moves past the next tab you can see. With a sort on (or while searching) nothing moves and screen readers hear why.
+
+**TC-224 — / and Escape (P2)** **[auto]**
+- Steps: Anywhere on the main screen (not in a field) press /. On a row press Escape.
+- Expected: / puts focus in the search box; Escape on a row goes back to the search box. (Escape in an empty search box still closes the popup, as before.)
+
+**TC-225 — Keys typed in a field stay in the field (P1)** **[auto]**
+- Steps: In a row's edit form, type "e", "/" and press Backspace.
+- Expected: They edit the text; nothing is deleted, edited or searched.
+
+**TC-226 — Everything without a mouse (P1, release gate)** **[auto]**
+- Steps: Using only the keyboard: save the page into a category, find it with search, open it, edit it, delete it, undo, and move it.
+- Expected: Every step works. This is v3.1's "done when".
+
+**TC-227 — The keys are listed in Settings (P3)**
+- Steps: Settings → **General**, under **Keyboard shortcut**.
+- Expected: A short list of the list's keys, named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).

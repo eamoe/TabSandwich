@@ -11,6 +11,8 @@ export function Header(props: {
     tabCount: number;
     onQuery: (query: string) => void;
     onSubmitSearch: () => void;
+    /** ↓ in the search box: into the list. */
+    onArrowDown: () => void;
     manualOpen: boolean;
     onToggleManual: () => void;
     onOpenSettings: () => void;
@@ -57,6 +59,9 @@ export function Header(props: {
                             } else if (e.key === "Enter") {
                                 e.preventDefault();
                                 props.onSubmitSearch();
+                            } else if (e.key === "ArrowDown") {
+                                e.preventDefault();
+                                props.onArrowDown();
                             }
                         }}
                     />

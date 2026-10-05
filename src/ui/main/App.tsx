@@ -7,7 +7,7 @@ import { setSort } from "../../domain/SettingsRepository";
 import { setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
-import { showErrorToast, showUndoToast } from "../toastStore";
+import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
 import { Toast } from "../Toast";
 import { strings } from "../strings";
 import { Header } from "./Header";
@@ -80,6 +80,29 @@ export function App(props: { whatsNew?: string | null }) {
     }, [loaded]);
 
     const flash = useCallback((id: string) => setHighlight({ id, seq: ++highlightSeq.current }), []);
+
+    // Keys that work anywhere on the main screen (but never while typing in a field):
+    // "/" jumps to search, Ctrl+Z / ⌘Z undoes whatever the toast offers to undo.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (view !== "main" || target.closest("input, textarea, select, [contenteditable]")) return;
+            if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const search = document.getElementById("search-input");
+                if (!search) return;
+                e.preventDefault();
+                search.focus();
+            } else if (e.key.toLowerCase() === "z" && (e.ctrlKey || e.metaKey) && !e.shiftKey && hasPendingUndo()) {
+                e.preventDefault();
+                undoFromToast();
+            }
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [view]);
+
+    const focusSearch = () => document.getElementById("search-input")?.focus();
+    const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view li[data-tab-id] [data-row-title]")?.focus();
 
     const colorOf = useCallback(
         (category: string) => getCategoryColorHex(category, library?.settings.categoryColors ?? {}),
@@ -226,6 +249,7 @@ export function App(props: { whatsNew?: string | null }) {
                     tabCount={library.tabs.length}
                     onQuery={setQuery}
                     onSubmitSearch={() => visible.tabs[0] && openTab(visible.tabs[0])}
+                    onArrowDown={focusFirstRow}
                     manualOpen={manualOpen}
                     onToggleManual={() => setManualOpen((open) => !open)}
                     onOpenSettings={() => openSettings()}
@@ -293,6 +317,7 @@ export function App(props: { whatsNew?: string | null }) {
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onReorder={onReorder}
+                    onEscape={focusSearch}
                 />
             </main>
         </div>
