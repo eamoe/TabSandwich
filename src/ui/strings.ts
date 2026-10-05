@@ -81,8 +81,8 @@ export const strings = {
     whatsNewNotes: {
         "3.1": [
             "Sort your list by newest, oldest, title or site.",
-            "A page you've already saved says so when you open the popup, with Show and Update.",
-            "Every action works from the keyboard. The keys are listed in Settings › General.",
+            "A page you've already saved says so, with Show and Update.",
+            "Everything works from the keyboard. The keys are in Settings › General.",
         ],
     } as Record<string, readonly string[]>,
     categoryForScreenReaders: (category: string) => `Category: ${category}`,

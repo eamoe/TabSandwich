@@ -65,8 +65,8 @@ Export everything to a file and import it later. Every action works from the key
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site).
 
-NEW IN 3.0
-A fresh, playful look with dark mode; pick a category as you save; calmer Settings with Light / Dark / System; and safer data: upgrades keep a backup and undo themselves if anything goes wrong, and editing a link can no longer create a duplicate.
+NEW IN 3.1
+Sort your list by newest, oldest, title or site. Pages you've already saved say so, with one click to find or update them. Everything works from the keyboard. A friendlier first run, a short "What's new" note after updates, and a new icon.
 ```
 
 ### Screenshots
@@ -126,5 +126,6 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 1. Bump `manifest.json`'s `version`.
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
-4. Update the description/screenshots only if something user-facing actually changed (3.0.0 did: paste the detailed description above, including its "New in 3.0" paragraph, and replace all screenshots with the five listed above — the old ones show the pre-3.0 look). The Store has no per-version notes field; the full notes go in the GitHub release.
+4. Update the description/screenshots only if something user-facing actually changed (3.1.0 did: paste the detailed description above, including its "New in 3.1" paragraph, and replace all five screenshots — they show the new icon and the sort button, and About shows the version, so re-render them with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - A new icon (3.1.0 has one) normally comes from the uploaded zip. If the **Store listing** tab also has its own 128×128 store icon field, upload `images/icon-128.png` there too, or the listing keeps the old one.
 5. Submit for review again (update reviews are usually faster than the first one).

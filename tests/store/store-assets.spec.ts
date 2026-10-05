@@ -94,7 +94,7 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
 
     await compose(canvas, "screenshot-3-search.png", await shot("light", async () => {
         await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("news");
-    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Press Enter to open the top result."], "light");
+    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Sort by newest, title or site, and never touch the mouse."], "light");
 
     await compose(canvas, "screenshot-4-categories.png", await shot("light", async () => {
         await openSettings(popup, "Categories");
