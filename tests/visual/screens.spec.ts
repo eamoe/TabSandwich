@@ -51,6 +51,20 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`filter-${colorScheme}.png`);
         });
 
+        test("the sort menu open", async ({ popup }) => {
+            await popup.getByRole("button", { name: /^Sort:/ }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
+            await expect(popup).toHaveScreenshot(`sort-menu-${colorScheme}.png`);
+        });
+
+        test("sorted newest first", async ({ popup }) => {
+            await popup.getByRole("button", { name: /^Sort:/ }).click();
+            await popup.getByRole("menuitemradio", { name: "Newest first" }).click();
+            await expect(popup.getByRole("button", { name: "Sort: Newest first" })).toBeVisible();
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`sorted-${colorScheme}.png`);
+        });
+
         test("settings: general", async ({ popup }) => {
             await openSettings(popup);
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);

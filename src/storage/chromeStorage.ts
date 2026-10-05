@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: Settings = {
     categories: ["Work", "Personal", "Reading", "Entertainment"],
     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
     theme: "system",
+    sort: "custom",
 };
 
 export async function hasStoredTabs(): Promise<boolean> {

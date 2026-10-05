@@ -21,6 +21,7 @@ export function TabList(props: {
     settings: Settings;
     titleRanges: Map<string, MatchRange[]> | null;
     searchActive: boolean;
+    canReorder: boolean;
     showCategory: boolean;
     entered: boolean;
     highlight: Highlight | null;
@@ -69,9 +70,7 @@ export function TabList(props: {
                         entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
                         entranceDelayMs={Math.min(index, STAGGER_CAP) * STAGGER_MS}
                         flashSeq={props.highlight?.id === tab.id ? props.highlight.seq : null}
-                        // Search results are in match order, not your order: dragging one would
-                        // reorder the real list to match a ranking that disappears with the query.
-                        draggable={!props.searchActive}
+                        draggable={props.canReorder}
                         dragging={dragId === tab.id}
                         dragOver={dragOverId === tab.id}
                         editOptions={props.editOptions}

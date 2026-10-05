@@ -24,7 +24,7 @@ one the release zip is made from.
 
 ```
 src/
-  types.ts              SavedTab, Settings, ThemeChoice
+  types.ts              SavedTab, Settings, ThemeChoice, SortOrder
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
@@ -41,7 +41,7 @@ src/
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
                             merge (additive, dedupes by URL) vs. replace (full overwrite) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme and outdated-tab settings writes; clamps the day count to 1–365
+    SettingsRepository.ts  theme, sort and outdated-tab settings writes; clamps the day count to 1–365
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -70,8 +70,9 @@ src/
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button
       ManualForm.tsx        add a link by hand, shown in place of the save card
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
+      SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion
-      listModel.ts          pure list rules (filter options and order, filtering, site names) — logic-tested
+      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize

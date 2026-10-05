@@ -1,1 +1,11 @@
 .app { display: flex; flex-direction: column; max-height: 600px; }
+/* The filter pills scroll sideways; the sort button stays put at the row's right end. */
+.filterBar { display: flex; align-items: flex-start; flex-shrink: 0; position: relative; z-index: 2; }
+.filterBar > [role="group"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 16px;
+    /* Pills that scroll on past the sort button fade out instead of being cut off; with no
+       overflow, the faded strip is just the padding. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
+}

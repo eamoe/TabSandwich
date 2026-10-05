@@ -19,6 +19,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Storage write protection** — a save, edit, delete, or category change that fails to write (e.g. storage full) shows a specific error instead of silently vanishing, and a warning appears once storage is over 80% full, before you actually hit the limit.
 - **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
+- **Sorting** — newest, oldest, title or site, remembered between opens. Sorting never rewrites your own order, so switching back restores it exactly.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a small moon badge with their age and their own quick filter.
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.

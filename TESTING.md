@@ -701,3 +701,31 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-201 — The new icon looks right everywhere (P2)**
 - Steps: Load the build; look at the toolbar icon in Chrome's light and dark themes (pin it if needed), on a normal and a high-resolution screen; open `chrome://extensions`; open the popup and Settings › **About**.
 - Expected: The icon is the purple tile with a white browser-tab top slice, a yellow filling and a white bottom slice, crisp (no blur or smeared edges) at toolbar size in both themes. `chrome://extensions` shows the same icon. The popup header shows the same shape without its tile, white and yellow, and **About** shows the full icon. The approved screenshots cover the header and About (TC-200); the toolbar and `chrome://extensions` need a person.
+
+**TC-202 — Sort the list (P1)** **[auto]**
+- Steps: Click the sort button at the right end of the filter row → pick **Newest first**, then **Oldest first**, **Title (A–Z)**, **Site (A–Z)**.
+- Expected: The menu floats over the list (nothing moves when it opens). Each choice reorders the list at once; the button turns purple and names the sort ("Newest"). Titles sort ignoring case, with numbers in number order ("Chapter 9" before "Chapter 10"); sites sort as shown under the title, without "www.".
+
+**TC-203 — The sort is remembered (P2)** **[auto]**
+- Steps: Pick **Oldest first** → close and reopen the popup.
+- Expected: Still sorted oldest first, and the button still says so.
+
+**TC-204 — Back to your order restores it exactly (P1)** **[auto]**
+- Steps: Arrange tabs by dragging → pick **Title (A–Z)** → pick **Your order**.
+- Expected: Your arrangement comes back exactly; sorting never rewrote it. With your own order on, the button shows only its icon.
+
+**TC-205 — Dragging only in your own order (P2)** **[auto]**
+- Steps: Pick any sort other than **Your order** → try to drag a row.
+- Expected: Rows can't be dragged (no handle on hover) until you switch back to **Your order** — the other orders are views, so a drag there would mean nothing.
+
+**TC-206 — The sort menu from the keyboard (P2)** **[auto]**
+- Steps: Tab to the sort button → Enter → arrow keys → Enter. Open it again → Escape.
+- Expected: The menu opens on the current choice; arrows move, Enter picks and closes it, Escape closes it without changing anything. Focus returns to the sort button either way.
+
+**TC-207 — Sorting inside a filter (P3)** **[auto]**
+- Steps: Pick a category pill → change the sort.
+- Expected: The filtered list is sorted the same way.
+
+**TC-208 — Clicking outside closes the sort menu (P3)** **[auto]**
+- Steps: Open the sort menu → click anywhere else.
+- Expected: The menu closes without changing the sort.

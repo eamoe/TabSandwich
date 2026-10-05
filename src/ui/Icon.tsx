@@ -13,6 +13,14 @@ const PATHS: Record<IconName, JSX.Element> = {
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </>
     ),
+    sort: (
+        <>
+            <line x1="7" y1="5" x2="7" y2="19" />
+            <polyline points="3.5 8.5 7 5 10.5 8.5" />
+            <line x1="17" y1="5" x2="17" y2="19" />
+            <polyline points="13.5 15.5 17 19 20.5 15.5" />
+        </>
+    ),
     plus: (
         <>
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -69,6 +77,7 @@ const PATHS: Record<IconName, JSX.Element> = {
 
 export type IconName =
     | "search"
+    | "sort"
     | "plus"
     | "close"
     | "settings"

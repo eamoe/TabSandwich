@@ -1,0 +1,64 @@
+/* Pinned at the right end of the filter row, outside the part that scrolls sideways. */
+.wrap { position: relative; flex-shrink: 0; padding: 4px 12px 8px 0; }
+
+.button {
+    height: 26px;
+    min-width: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 7px;
+    border-radius: 13px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.button:hover { background: var(--hover); color: var(--ink); transform: translateY(-1px); }
+/* A sort other than your own order is on: say so, in the accent color. */
+.active { padding: 0 10px 0 8px; border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.active:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+
+/* Floats over the list: opening it never moves anything. */
+.menu {
+    position: absolute;
+    top: calc(100% - 4px);
+    right: 12px;
+    z-index: 5;
+    min-width: 168px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    animation: pop 0.14s ease-out;
+}
+@keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.item {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.item:hover, .item:focus-visible { background: var(--hover); }
+.item[aria-checked="true"] { font-weight: 600; }
+.check { width: 14px; display: inline-flex; color: var(--accent); }

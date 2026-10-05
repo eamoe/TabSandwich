@@ -1,3 +1,5 @@
+import type { SortOrder } from "../types";
+
 /**
  * Every piece of text the v3.0 screens show or announce, in one place — ready for translation
  * (v4.1) without hunting through components. Accessible names the robot tests find controls
@@ -30,10 +32,18 @@ export const strings = {
     cancel: "Cancel",
     enterValidUrl: "Enter a valid URL",
 
+    filterBarLabel: "Filter and sort saved tabs",
     filterLabel: "Filter saved tabs",
     all: "All",
     outdated: "Outdated",
     outdatedPill: (count: number) => `Outdated (${count})`,
+
+    sortButton: (choice: string) => `Sort: ${choice}`,
+    sortMenuLabel: "Sort saved tabs",
+    /** The menu's full wording. */
+    sortOptions: { custom: "Your order", newest: "Newest first", oldest: "Oldest first", title: "Title (A–Z)", site: "Site (A–Z)" } as Record<SortOrder, string>,
+    /** The short form the button shows while a sort other than your own order is on. */
+    sortShort: { custom: "Your order", newest: "Newest", oldest: "Oldest", title: "Title", site: "Site" } as Record<SortOrder, string>,
 
     storageNearlyFull: (pct: number) => `Storage is ${pct}% full.`,
     seeStorage: "See storage",

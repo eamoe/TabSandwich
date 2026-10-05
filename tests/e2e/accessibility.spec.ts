@@ -37,6 +37,12 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("sort menu open", async ({ popup }) => {
+            await popup.getByRole("button", { name: /^Sort:/ }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("manual entry open", async ({ popup }) => {
             await popup.getByRole("button", { name: "Add link manually" }).click();
             await expect(popup.getByLabel("URL")).toBeVisible();

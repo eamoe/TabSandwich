@@ -53,6 +53,7 @@ export interface StoredSettings {
     outdatedEnabled?: boolean;
     outdatedDays?: number;
     theme?: string;
+    sort?: string;
 }
 
 export async function storedSettings(popup: Page): Promise<StoredSettings> {

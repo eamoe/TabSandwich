@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { SavedTab } from "../../types";
+import type { SavedTab, SortOrder } from "../../types";
 import { editTab, deleteTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { searchTabs } from "../../domain/search";
+import { setSort } from "../../domain/SettingsRepository";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast, showUndoToast } from "../toastStore";
@@ -12,9 +13,10 @@ import { Header } from "./Header";
 import { SaveCard } from "./SaveCard";
 import { ManualForm } from "./ManualForm";
 import { FilterPills, StorageWarning } from "./FilterPills";
+import { SortMenu } from "./SortMenu";
 import { TabList, type Highlight } from "./TabList";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions } from "./listModel";
+import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, sortTabs } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -33,6 +35,9 @@ export function App() {
     const [manualOpen, setManualOpen] = useState(false);
     const [highlight, setHighlight] = useState<Highlight | null>(null);
     const [entered, setEntered] = useState(false);
+    // The sort just picked, shown straight away while it's being saved; cleared once the
+    // library reloads with what's actually stored (so a failed save puts the old sort back).
+    const [pendingSort, setPendingSort] = useState<SortOrder | null>(null);
     const settingsButton = useRef<HTMLButtonElement>(null);
     const mainScreen = useRef<HTMLDivElement>(null);
     // The tallest either screen has been while the popup is open. Both screens are at least this
@@ -78,15 +83,16 @@ export function App() {
 
     const options = useMemo(() => (library ? filterOptions(library.tabs, library.settings) : []), [library]);
     const activeFilter = effectiveFilter(filter, options);
+    const sort = pendingSort ?? library?.settings.sort ?? "custom";
 
     const visible = useMemo(() => {
         if (!library) return { tabs: [] as SavedTab[], ranges: null };
-        const filtered = applyFilter(library.tabs, library.settings, activeFilter);
+        const filtered = sortTabs(applyFilter(library.tabs, library.settings, activeFilter), sort);
         const q = query.trim();
         if (!q) return { tabs: filtered, ranges: null };
         const matches = searchTabs(filtered, q);
         return { tabs: matches.map((m) => m.tab), ranges: new Map(matches.map((m) => [m.tab.id, m.titleRanges])) };
-    }, [library, activeFilter, query]);
+    }, [library, activeFilter, sort, query]);
 
     // The toast sits outside the main screen so it still shows while Settings is open.
     if (!library) return <Toast />;
@@ -153,6 +159,17 @@ export function App() {
         await reload();
     };
 
+    const onSort = async (next: SortOrder) => {
+        setPendingSort(next);
+        try {
+            await setSort(next);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
+        setPendingSort(null);
+    };
+
     const openTab = (tab: SavedTab) => void chrome.tabs.create({ url: tab.url });
 
     return (
@@ -190,7 +207,12 @@ export function App() {
                     <SaveCard categoryOptions={saveOptions} colorOf={colorOf} onSaved={afterSave} />
                 )}
             </header>
-            {hasTabs && <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />}
+            {hasTabs && (
+                <nav class={styles.filterBar} aria-label={strings.filterBarLabel}>
+                    <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />
+                    <SortMenu value={sort} onChange={onSort} />
+                </nav>
+            )}
             <main id="main-view" class={listStyles.wrap}>
                 {library.storagePct >= STORAGE_WARNING_PCT && (
                     <StorageWarning pct={library.storagePct} onSeeStorage={openSettings} />
@@ -203,6 +225,9 @@ export function App() {
                     settings={library.settings}
                     titleRanges={visible.ranges}
                     searchActive={searching}
+                    // Your own order is the only one dragging can change: search results are in
+                    // match order and the other sorts are views, so a drag there would mean nothing.
+                    canReorder={!searching && sort === "custom"}
                     // Under a category filter every row shares that category, so rows leave it out.
                     showCategory={activeFilter === ALL || activeFilter === OUTDATED}
                     entered={entered}
