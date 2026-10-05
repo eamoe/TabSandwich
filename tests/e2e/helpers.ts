@@ -30,13 +30,16 @@ export async function seedLibrary(
                     "tabSandwich.lastSeenVersion": seenVersion === "current" ? chrome.runtime.getManifest().version : seenVersion,
                 });
             }
+            // One clock reading for the whole library: tabs seeded with the same age get exactly
+            // the same time, so sorting by date keeps them in a fixed order on every run.
+            const now = Date.now();
             await chrome.storage.local.set({
                 "tabSandwich.tabs": tabs.map((t, i) => ({
                     id: `seed-${i}`,
                     title: t.title,
                     url: t.url,
                     category: t.category,
-                    savedAt: Date.now() - (t.daysAgo ?? 0) * day,
+                    savedAt: now - (t.daysAgo ?? 0) * day,
                 })),
                 "tabSandwich.settings": {
                     outdatedEnabled: true,
