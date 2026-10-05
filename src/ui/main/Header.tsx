@@ -1,6 +1,7 @@
 import type { Ref } from "preact";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { Icon } from "../Icon";
+import { Logo } from "../Logo";
 import { strings } from "../strings";
 import styles from "./Hero.module.css";
 
@@ -30,7 +31,7 @@ export function Header(props: {
     return (
         <div class={styles.header}>
             <span class={styles.mark} aria-hidden="true">
-                <Icon name="logo" size={18} />
+                <Logo />
             </span>
             {props.showSearch ? (
                 <div class={styles.search} role="search">

@@ -7,13 +7,6 @@ import styles from "./Icon.module.css";
  * holds an icon carries the accessible name, so the svg is hidden from screen readers.
  */
 const PATHS: Record<IconName, JSX.Element> = {
-    logo: (
-        <>
-            <rect x="2" y="5" width="20" height="4" rx="2" />
-            <rect x="3" y="11" width="18" height="4" rx="2" />
-            <rect x="2" y="17" width="20" height="4" rx="2" />
-        </>
-    ),
     search: (
         <>
             <circle cx="11" cy="11" r="7" />
@@ -75,7 +68,6 @@ const PATHS: Record<IconName, JSX.Element> = {
 };
 
 export type IconName =
-    | "logo"
     | "search"
     | "plus"
     | "close"

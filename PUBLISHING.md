@@ -71,7 +71,7 @@ A fresh, playful look with dark mode; pick a category as you save; calmer Settin
 
 ### Screenshots
 
-Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the 3D logo (`store-assets/3d-branded-logo.png`):
+Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the icon, large (`branding/icon.svg`):
 
 1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list and save card
 2. `screenshot-2-dark-mode.png` — "Easy on the eyes, day or night": the same list in dark mode
@@ -83,7 +83,7 @@ They're rendered from the built extension, not edited by hand: `pnpm build && pn
 
 ### Icon
 
-Already bundled in the package (`images/icon-128.png`, referenced from the manifest's top-level `icons` field) — the Store should pick it up automatically from the uploaded zip.
+Already bundled in the package (`images/icon-128.png`, referenced from the manifest's top-level `icons` field) — the Store should pick it up automatically from the uploaded zip. The icons are drawn in `branding/` and rendered with `pnpm icons`; after changing them, re-run `pnpm store:screenshots` too, since the icon appears in every screenshot.
 
 ## 3. Privacy practices tab
 

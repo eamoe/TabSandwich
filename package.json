@@ -13,7 +13,8 @@
     "test:visual": "playwright test -c playwright.visual.config.ts",
     "visual": "sh scripts/visual-docker.sh",
     "visual:update": "sh scripts/visual-docker.sh --update-snapshots",
-    "store:screenshots": "TS_STORE_SCREENSHOTS=1 playwright test -c playwright.store.config.ts"
+    "store:screenshots": "TS_STORE_SCREENSHOTS=1 playwright test -c playwright.store.config.ts store-assets",
+    "icons": "TS_RENDER_ICONS=1 playwright test -c playwright.store.config.ts icons"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

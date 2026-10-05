@@ -56,6 +56,7 @@ src/
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
+    Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
     CategoryPicker.tsx      native <select> with the chosen category's color dot
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
@@ -84,6 +85,9 @@ src/
 
 popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
+branding/                      the icon's drawings: icon.svg (48 px and up), icon-32.svg and icon-16.svg
+                                (redrawn on whole pixels for the toolbar), mark.svg (no tile, for purple)
+images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
 vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
 tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
@@ -92,7 +96,8 @@ tests/e2e/                     robot tests (Playwright): real Chromium loads dis
                                 the popup, and runs an accessibility scan (axe) in light and dark
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
                                 pixel (playwright.visual.config.ts); baselines in __screenshots__/
-tests/store/                   not a test: renders the Chrome Web Store screenshots into store-assets/
+tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
+                                (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),

@@ -696,3 +696,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: `pnpm visual` (or CI's `visual` job).
 - Expected: All screens match. A failure's report shows what changed; if the change is intended, approve it with `pnpm visual:update` and show before/after in the pull request.
 
+## 19. Effortless Everyday (v3.1)
+
+**TC-201 — The new icon looks right everywhere (P2)**
+- Steps: Load the build; look at the toolbar icon in Chrome's light and dark themes (pin it if needed), on a normal and a high-resolution screen; open `chrome://extensions`; open the popup and Settings › **About**.
+- Expected: The icon is the purple tile with a white browser-tab top slice, a yellow filling and a white bottom slice, crisp (no blur or smeared edges) at toolbar size in both themes. `chrome://extensions` shows the same icon. The popup header shows the same shape without its tile, white and yellow, and **About** shows the full icon. The approved screenshots cover the header and About (TC-200); the toolbar and `chrome://extensions` need a person.

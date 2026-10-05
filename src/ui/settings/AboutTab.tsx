@@ -4,17 +4,9 @@ import styles from "./Settings.module.css";
 const PRIVACY_URL = "https://github.com/eamoe/TabSandwich/blob/main/PRIVACY.md";
 const SOURCE_URL = "https://github.com/eamoe/TabSandwich";
 
-/** The app's own icon in full color: the same three bars as the Store icon. */
+/** The app's own icon in full color: the shipped Store icon, so the two can never drift apart. */
 function AppIcon() {
-    return (
-        <span class={styles.appIcon} aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24">
-                <rect x="2" y="3.5" width="20" height="4.5" rx="1" fill="#6C63C5" />
-                <rect x="2" y="9.75" width="20" height="4.5" rx="1" fill="#2DBEA6" />
-                <rect x="2" y="16" width="20" height="4.5" rx="1" fill="#6C63C5" />
-            </svg>
-        </span>
-    );
+    return <img class={styles.appIcon} src="/images/icon-128.png" alt="" aria-hidden="true" />;
 }
 
 export function AboutTab() {

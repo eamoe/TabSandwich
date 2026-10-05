@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Tab Sandwich icon, 48 px and up. The drawing stays inside the central 96×96, as the Chrome Web Store asks. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="16" x2="0" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7A71E0"/>
+      <stop offset="1" stop-color="#584FA3"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="96" height="96" rx="24" fill="url(#tile)"/>
+  <!-- top slice: a browser tab -->
+  <path d="M32 60 L37.6 43.2 Q39.6 37 46 37 H82 Q88.4 37 90.4 43.2 L96 60 Z" fill="#FFFFFF"/>
+  <!-- filling -->
+  <rect x="28" y="64" width="72" height="11" rx="5.5" fill="#FFC24B"/>
+  <!-- bottom slice -->
+  <rect x="32" y="79" width="64" height="14" rx="7" fill="#FFFFFF"/>
+</svg>
