@@ -37,6 +37,25 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("first run: nothing saved yet", async ({ popup }) => {
+            await seedLibrary(popup, []);
+            await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("a search with no results inside a filter", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Work", exact: true }).click();
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("zzzz");
+            await expect(popup.getByRole("button", { name: "Search all tabs" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("what's new showing", async ({ popup }) => {
+            await seedLibrary(popup, [{ title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" }], {}, { seenVersion: "3.0.0" });
+            await expect(popup.getByRole("region", { name: "New in 3.1" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("sort menu open", async ({ popup }) => {
             await popup.getByRole("button", { name: /^Sort:/ }).click();
             await expect(popup.getByRole("menu")).toBeVisible();

@@ -6,6 +6,7 @@ import { applyTheme } from "../theme";
 import { showErrorToast } from "../toastStore";
 import { strings } from "../strings";
 import type { Library } from "../main/useLibrary";
+import { SHORTCUTS_PAGE, useShortcut } from "../useShortcut";
 import controls from "../controls.module.css";
 import styles from "./Settings.module.css";
 
@@ -29,14 +30,9 @@ async function attempt(write: () => Promise<void>, reload: () => Promise<void>):
 export function GeneralTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
     const { settings } = library;
     const [days, setDays] = useState(String(settings.outdatedDays));
-    const [shortcut, setShortcut] = useState<string | null>(null);
+    const shortcut = useShortcut();
     // Every load resets the field to what's stored, so a change that failed to save doesn't linger.
     useEffect(() => setDays(String(library.settings.outdatedDays)), [library]);
-    useEffect(() => {
-        chrome.commands.getAll((commands) => {
-            setShortcut(commands.find((c) => c.name === "_execute_action")?.shortcut || "");
-        });
-    }, []);
 
     const chooseTheme = (theme: ThemeChoice) => {
         applyTheme(theme); // straight away; the write follows
@@ -120,7 +116,7 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                         ) : (
                             <span class={styles.hint}>{strings.shortcutNotSet}</span>
                         )}
-                        <button type="button" class={controls.btn} onClick={() => void chrome.tabs.create({ url: "chrome://extensions/shortcuts" })}>
+                        <button type="button" class={controls.btn} onClick={() => void chrome.tabs.create({ url: SHORTCUTS_PAGE })}>
                             {strings.customize}
                         </button>
                     </div>

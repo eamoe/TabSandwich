@@ -17,7 +17,7 @@ Tab Sandwich also stores your settings: your categories and their colors, the ou
 
 This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
 
-Alongside it, Tab Sandwich keeps a data-format version number, and — only after an update has changed the format of your stored data — a backup copy of that data exactly as it was just before the update, so nothing is lost if an update goes wrong. The backup is stored in the same local place, contains only the data listed above plus your settings, and is never transmitted anywhere either.
+Alongside it, Tab Sandwich keeps a data-format version number, the version number of the last "What's new" note you've seen (so it isn't shown again), and — only after an update has changed the format of your stored data — a backup copy of that data exactly as it was just before the update, so nothing is lost if an update goes wrong. The backup is stored in the same local place, contains only the data listed above plus your settings, and is never transmitted anywhere either.
 
 ## Favicons
 

@@ -4,6 +4,7 @@ import { editTab, deleteTab, restoreTab, reorderTabs, type AddTabResult } from "
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { searchTabs } from "../../domain/search";
 import { setSort } from "../../domain/SettingsRepository";
+import { setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast, showUndoToast } from "../toastStore";
@@ -14,11 +15,12 @@ import { SaveCard } from "./SaveCard";
 import { ManualForm } from "./ManualForm";
 import { FilterPills, StorageWarning } from "./FilterPills";
 import { SortMenu } from "./SortMenu";
+import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
 import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, sortTabs } from "./listModel";
 import { useLibrary } from "./useLibrary";
-import { SettingsScreen } from "../settings/SettingsScreen";
+import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
 import listStyles from "./TabList.module.css";
 import styles from "./App.module.css";
@@ -27,9 +29,11 @@ const STORAGE_WARNING_PCT = 80;
 /** Rows rise in when the popup opens; after this, a row that appears (saved, restored) drops in instead. */
 const ENTRANCE_MS = 900;
 
-export function App() {
+export function App(props: { whatsNew?: string | null }) {
     const { library, reload } = useLibrary();
     const [view, setView] = useState<"main" | "settings">("main");
+    const [settingsTab, setSettingsTab] = useState<SettingsTabKey>("general");
+    const [whatsNew, setWhatsNew] = useState(props.whatsNew ?? null);
     const [filter, setFilter] = useState(ALL);
     const [query, setQuery] = useState("");
     const [manualOpen, setManualOpen] = useState(false);
@@ -49,8 +53,9 @@ export function App() {
 
     // Settings opens at least as tall as the main screen was, so the popup window doesn't
     // shrink on the way in and grow again on the way back.
-    const openSettings = () => {
+    const openSettings = (tab: SettingsTabKey = "general") => {
         raiseFloor(mainScreen.current?.offsetHeight ?? 0);
+        setSettingsTab(tab);
         setView("settings");
     };
     const closeSettings = () => {
@@ -170,6 +175,14 @@ export function App() {
         setPendingSort(null);
     };
 
+    // Dismissed for good: the version is recorded, so the note doesn't come back next time.
+    const dismissWhatsNew = () => {
+        setWhatsNew(null);
+        // The dismiss button just disappeared; keep keyboard focus somewhere useful.
+        document.getElementById("search-input")?.focus();
+        setLastSeenVersion(chrome.runtime.getManifest().version).catch((err) => showErrorToast(writeErrorMessage(err)));
+    };
+
     const openTab = (tab: SavedTab) => void chrome.tabs.create({ url: tab.url });
 
     return (
@@ -192,7 +205,7 @@ export function App() {
                     onSubmitSearch={() => visible.tabs[0] && openTab(visible.tabs[0])}
                     manualOpen={manualOpen}
                     onToggleManual={() => setManualOpen((open) => !open)}
-                    onOpenSettings={openSettings}
+                    onOpenSettings={() => openSettings()}
                     settingsButtonRef={settingsButton}
                 />
                 {manualOpen ? (
@@ -214,8 +227,9 @@ export function App() {
                 </nav>
             )}
             <main id="main-view" class={listStyles.wrap}>
+                {whatsNew && <WhatsNew release={whatsNew} onDismiss={dismissWhatsNew} />}
                 {library.storagePct >= STORAGE_WARNING_PCT && (
-                    <StorageWarning pct={library.storagePct} onSeeStorage={openSettings} />
+                    <StorageWarning pct={library.storagePct} onSeeStorage={() => openSettings()} />
                 )}
                 <p class="visually-hidden" role="status" aria-live="polite">
                     {searching ? strings.matches(visible.tabs.length) : ""}
@@ -232,7 +246,17 @@ export function App() {
                     showCategory={activeFilter === ALL || activeFilter === OUTDATED}
                     entered={entered}
                     highlight={highlight}
-                    emptyText={hasTabs ? strings.noMatchingTabs : strings.noSavedTabs}
+                    empty={
+                        !hasTabs ? (
+                            <EmptyLibrary onEditCategories={() => openSettings("categories")} />
+                        ) : (
+                            <NoMatches
+                                query={query.trim()}
+                                filterLabel={activeFilter === ALL ? null : activeFilter === OUTDATED ? strings.outdated : activeFilter}
+                                onSearchAll={() => setFilter(ALL)}
+                            />
+                        )
+                    }
                     editOptions={editOptions}
                     colorOf={colorOf}
                     onOpen={openTab}
@@ -243,7 +267,14 @@ export function App() {
             </main>
         </div>
         {view === "settings" && (
-            <SettingsScreen library={library} reload={reload} onBack={closeSettings} minHeight={floorHeight} onHeight={raiseFloor} />
+            <SettingsScreen
+                library={library}
+                reload={reload}
+                onBack={closeSettings}
+                initialTab={settingsTab}
+                minHeight={floorHeight}
+                onHeight={raiseFloor}
+            />
         )}
         <Toast />
         </>

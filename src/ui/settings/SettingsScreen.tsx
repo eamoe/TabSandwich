@@ -26,12 +26,14 @@ export function SettingsScreen(props: {
     library: Library;
     reload: () => Promise<void>;
     onBack: () => void;
+    /** The tab to open on (General unless a shortcut elsewhere asked for another). */
+    initialTab?: SettingsTabKey;
     /** At least this tall (see App: the popup never shrinks while open). */
     minHeight: number;
     /** Reports this screen's height after each tab switch, so the floor can rise to the tallest tab. */
     onHeight: (height: number) => void;
 }) {
-    const [tab, setTab] = useState<SettingsTabKey>("general");
+    const [tab, setTab] = useState<SettingsTabKey>(props.initialTab ?? "general");
     const backButton = useRef<HTMLButtonElement>(null);
     const screen = useRef<HTMLElement>(null);
     const tabButtons = useRef<Record<string, HTMLButtonElement | null>>({});

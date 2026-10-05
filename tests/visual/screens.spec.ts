@@ -65,6 +65,21 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`sorted-${colorScheme}.png`);
         });
 
+        test("a search with no results inside a filter", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Work", exact: true }).click();
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("sourdough");
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`no-matches-${colorScheme}.png`);
+        });
+
+        test("what's new after an update", async ({ popup }) => {
+            await seedLibrary(popup, LIBRARY, SETTINGS, { seenVersion: "3.0.0" });
+            await popup.mouse.move(0, 599);
+            await expect(popup.getByRole("region", { name: /^New in / })).toBeVisible();
+            // The note's wording changes every release; that's not a visual change.
+            await expect(popup).toHaveScreenshot(`whats-new-${colorScheme}.png`, { mask: [popup.getByRole("region", { name: /^New in / }).getByRole("list")] });
+        });
+
         test("settings: general", async ({ popup }) => {
             await openSettings(popup);
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);
@@ -95,8 +110,12 @@ for (const colorScheme of ["light", "dark"] as const) {
     });
 }
 
-test("empty library", async ({ popup }) => {
-    await popup.setViewportSize({ width: 380, height: 600 });
-    await seedLibrary(popup, []);
-    await expect(popup).toHaveScreenshot("empty-light.png");
-});
+for (const colorScheme of ["light", "dark"] as const) {
+    test(`first run: nothing saved yet (${colorScheme})`, async ({ popup }) => {
+        await popup.setViewportSize({ width: 380, height: 600 });
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, []);
+        await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
+        await expect(popup).toHaveScreenshot(`empty-${colorScheme}.png`);
+    });
+}

@@ -49,8 +49,31 @@ export const strings = {
     seeStorage: "See storage",
 
     savedTabsLabel: "Saved tabs",
-    noSavedTabs: "No saved tabs yet.",
-    noMatchingTabs: "No matching tabs.",
+    // The list with nothing to show: first run (or everything deleted), and a search with no results.
+    emptyTitle: "Nothing saved yet",
+    emptyLead: "Tabs you save land here, ready for when you need them.",
+    emptyTipsLabel: "Getting started",
+    tipSave: "Save the page you're on: pick a category above, then press Save.",
+    tipShortcut: "Open Tab Sandwich from anywhere with",
+    tipShortcutUnset: "Open Tab Sandwich from anywhere with a keyboard shortcut.",
+    setShortcut: "Set one",
+    tipCategories: "Make the categories yours.",
+    editCategories: "Edit categories",
+    noMatchesTitle: (query: string) => `No saved tabs match “${query}”`,
+    noMatchesHint: "Search looks at titles and sites. Try fewer letters, or part of the site's name.",
+    noMatchesInFilter: (filter: string) => `Only tabs in ${filter} were searched.`,
+    searchAllTabs: "Search all tabs",
+
+    // "What's new": one note per feature release, shown once after updating (see domain/whatsNew.ts).
+    whatsNewTitle: (release: string) => `New in ${release}`,
+    dismissWhatsNew: "Dismiss what's new",
+    whatsNewNotes: {
+        "3.1": [
+            "Sort your list by newest, oldest, title or site.",
+            "A page you've already saved says so when you open the popup, with Show and Update.",
+            "Every action works from the keyboard. The keys are listed in Settings › General.",
+        ],
+    } as Record<string, readonly string[]>,
     categoryForScreenReaders: (category: string) => `Category: ${category}`,
     savedDaysAgo: (days: number) => `Saved ${days} day${days === 1 ? "" : "s"} ago`,
     ageBadge: (days: number) => `${days}d`,

@@ -329,7 +329,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-100 — Empty state (P2)**
 - Steps: Delete all tabs.
-- Expected: "No saved tabs yet." message shown instead of a blank list.
+- Expected: The "Nothing saved yet" welcome with its three tips (TC-209) instead of a blank list.
 
 **TC-101 — Rapid duplicate save attempts (P3)**
 - Steps: Click **Save** twice in quick succession on the same page.
@@ -378,7 +378,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-114 — No results state (P1)** **[auto]**
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
-- Expected: List shows "No matching tabs." (distinct from the "No saved tabs yet." empty-library message); screen readers hear "No matching tabs".
+- Expected: The list says "No saved tabs match “zzzzz”" with a hint to try fewer letters or part of the site's name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
 
 **TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
@@ -729,3 +729,27 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-208 — Clicking outside closes the sort menu (P3)** **[auto]**
 - Steps: Open the sort menu → click anywhere else.
 - Expected: The menu closes without changing the sort.
+
+**TC-209 — A welcoming first run (P1)** **[auto]**
+- Preconditions: Nothing saved (a fresh install, or every tab deleted).
+- Expected: Under the save card, the app icon, "Nothing saved yet", and three tips: save the page you're on (pick a category above, then Save); open Tab Sandwich from anywhere with your keyboard shortcut, shown as keys (or **Set one** when no shortcut is set, which opens Chrome's shortcut page); make the categories yours with **Edit categories**, which opens Settings straight on **Categories**.
+
+**TC-210 — Widen a search that a filter narrowed (P2)** **[auto]**
+- Steps: Pick a category pill → search for something only in another category.
+- Expected: "No saved tabs match “…”" and "Only tabs in Work were searched." with a **Search all tabs** button. Clicking it switches the filter to All, keeps the search, and shows the match.
+
+**TC-211 — No "What's new" on a fresh install (P2)** **[auto]**
+- Steps: Install fresh, open the popup, reopen it.
+- Expected: No "What's new" note either time: there's nothing new to someone who just arrived.
+
+**TC-212 — "What's new" after an update (P1)** **[auto]**
+- Preconditions: Updated from 3.0 (or any earlier version) with tabs saved.
+- Steps: Open the popup; reopen it; click the note's ×; reopen it.
+- Expected: A "New in 3.1" note sits at the top of the list with three short lines about the release. It stays on every open until dismissed; × removes it at once (focus moves to the search box) and it doesn't come back. A later patch release (3.1.x) doesn't bring it back either.
+
+**TC-213 — "What's new" when updating from before 3.1 (P2)** **[auto]**
+- Expected: Versions before 3.1 kept no record of notes seen; updating from one still shows the note.
+
+**TC-214 — Restoring a backup doesn't bring back a dismissed note (P3)** **[auto]**
+- Steps: Dismiss the note → import an older backup with **Replace all**.
+- Expected: The note stays dismissed: what you've seen is kept apart from the settings a backup carries.

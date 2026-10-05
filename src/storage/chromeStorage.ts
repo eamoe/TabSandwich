@@ -2,6 +2,12 @@ import { SavedTab, Settings } from "../types";
 
 const TABS_KEY = "tabSandwich.tabs";
 const SETTINGS_KEY = "tabSandwich.settings";
+/**
+ * The last version whose "What's new" note you've seen (or that was installed fresh). Kept apart
+ * from Settings on purpose: backups carry Settings, and restoring an old backup must not bring
+ * back a note you already dismissed.
+ */
+const LAST_SEEN_VERSION_KEY = "tabSandwich.lastSeenVersion";
 
 export const DEFAULT_SETTINGS: Settings = {
     outdatedEnabled: true,
@@ -64,4 +70,23 @@ export async function setSettings(settings: Settings): Promise<void> {
 export async function getStorageUsage(): Promise<{ bytesInUse: number; quotaBytes: number }> {
     const bytesInUse = await chrome.storage.local.getBytesInUse();
     return { bytesInUse, quotaBytes: chrome.storage.local.QUOTA_BYTES };
+}
+
+/** True when nothing at all is stored yet: a fresh install, before its first write. */
+export async function isStorageEmpty(): Promise<boolean> {
+    return Object.keys(await chrome.storage.local.get(null)).length === 0;
+}
+
+export async function getLastSeenVersion(): Promise<string | undefined> {
+    const result = await chrome.storage.local.get(LAST_SEEN_VERSION_KEY);
+    const value = result[LAST_SEEN_VERSION_KEY];
+    return typeof value === "string" ? value : undefined;
+}
+
+export async function setLastSeenVersion(version: string): Promise<void> {
+    try {
+        await chrome.storage.local.set({ [LAST_SEEN_VERSION_KEY]: version });
+    } catch (err) {
+        throw writeFailure(err);
+    }
 }

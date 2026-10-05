@@ -9,6 +9,8 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 ## Features
 
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
+- **A friendly start** — with nothing saved yet, the list shows three tips: saving, the keyboard shortcut, and categories. A search that finds nothing says so and, inside a filter, offers to search everything.
+- **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
 - **Duplicate detection** — saving an already-saved URL highlights the existing entry instead of creating a copy.
 - **Search** — fuzzy-matches on title, domain, and path as you type, with matched characters highlighted; combines with an active category or Outdated filter.

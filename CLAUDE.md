@@ -26,7 +26,8 @@ one the release zip is made from.
 src/
   types.ts              SavedTab, Settings, ThemeChoice, SortOrder
   storage/
-    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
+    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
+                            the last "What's new" version seen, kept apart from Settings so backups can't revive it
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
                             backup before writing, original restored if anything fails
@@ -36,6 +37,7 @@ src/
     TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
@@ -55,6 +57,7 @@ src/
     controls.module.css     buttons, fields, the color dot — shared by several components
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
+    useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
@@ -71,6 +74,7 @@ src/
       ManualForm.tsx        add a link by hand, shown in place of the save card
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
+      EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion
       listModel.ts          pure list rules (filter options and order, filtering, sorting, site names) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
@@ -82,7 +86,8 @@ src/
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
   vite-env.d.ts             types for non-code imports, e.g. *.module.css
-  popup.ts                  entry point — migrate → upgrade → apply theme → render App
+  popup.ts                  entry point — note a fresh install → migrate → upgrade → apply theme → render App
+                            (with the "What's new" release to show, if any)
 
 popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon

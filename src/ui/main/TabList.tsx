@@ -1,3 +1,4 @@
+import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, Settings } from "../../types";
 import type { MatchRange } from "../../domain/search";
@@ -25,7 +26,8 @@ export function TabList(props: {
     showCategory: boolean;
     entered: boolean;
     highlight: Highlight | null;
-    emptyText: string;
+    /** What the list shows when it has no rows: the first-run tips, or why a search found nothing. */
+    empty: ComponentChildren;
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: (tab: SavedTab) => void;
@@ -48,7 +50,7 @@ export function TabList(props: {
     if (props.tabs.length === 0) {
         return (
             <ul class={styles.list} aria-label={strings.savedTabsLabel}>
-                <li class={styles.empty}>{props.emptyText}</li>
+                <li class={styles.empty}>{props.empty}</li>
             </ul>
         );
     }

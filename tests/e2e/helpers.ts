@@ -11,15 +11,25 @@ export interface SeedTab {
 
 const DAY = 24 * 60 * 60 * 1000;
 
-/** Replaces everything stored with this library, then reloads the popup so it renders from it. */
+/**
+ * Replaces everything stored with this library, then reloads the popup so it renders from it.
+ * Seeded as someone who has already seen this version's "What's new" note, so it only shows in
+ * the tests about it (pass `seenVersion: null` for someone who just updated).
+ */
 export async function seedLibrary(
     popup: Page,
     tabs: SeedTab[],
-    settings: Record<string, unknown> = {}
+    settings: Record<string, unknown> = {},
+    { seenVersion = "current" }: { seenVersion?: string | null } = {}
 ): Promise<void> {
     await popup.evaluate(
-        async ({ tabs, settings, day }) => {
+        async ({ tabs, settings, day, seenVersion }) => {
             await chrome.storage.local.clear();
+            if (seenVersion !== null) {
+                await chrome.storage.local.set({
+                    "tabSandwich.lastSeenVersion": seenVersion === "current" ? chrome.runtime.getManifest().version : seenVersion,
+                });
+            }
             await chrome.storage.local.set({
                 "tabSandwich.tabs": tabs.map((t, i) => ({
                     id: `seed-${i}`,
@@ -37,7 +47,7 @@ export async function seedLibrary(
                 },
             });
         },
-        { tabs, settings, day: DAY }
+        { tabs, settings, day: DAY, seenVersion }
     );
     await popup.reload();
     await waitUntilReady(popup);
