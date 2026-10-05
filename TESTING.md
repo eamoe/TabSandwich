@@ -700,7 +700,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-201 — The new icon looks right everywhere (P2)**
 - Steps: Load the build; look at the toolbar icon in Chrome's light and dark themes (pin it if needed), on a normal and a high-resolution screen; open `chrome://extensions`; open the popup and Settings › **About**.
-- Expected: The icon is the purple tile with a white browser-tab top slice, a yellow filling and a white bottom slice, crisp (no blur or smeared edges) at toolbar size in both themes. `chrome://extensions` shows the same icon. The popup header shows the same shape without its tile, white and yellow, and **About** shows the full icon. The approved screenshots cover the header and About (TC-200); the toolbar and `chrome://extensions` need a person.
+- Expected: The icon is the purple tile with a white browser-tab top slice, a yellow filling and a white bottom slice, crisp (no blur or smeared edges) at toolbar size in both themes, and as big as other extensions' icons in the toolbar and the extensions (puzzle-piece) menu, not shrunk inside a margin. `chrome://extensions` shows the same icon, filling its square. The popup header shows the same shape without its tile, white and yellow, and **About** shows the full icon. The approved screenshots cover the header and About (TC-200); the toolbar and `chrome://extensions` need a person.
 
 **TC-202 — Sort the list (P1)** **[auto]**
 - Steps: Click the sort button at the right end of the filter row → pick **Newest first**, then **Oldest first**, **Title (A–Z)**, **Site (A–Z)**.

@@ -93,8 +93,9 @@ src/
 
 popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
-branding/                      the icon's drawings: icon.svg (48 px and up), icon-32.svg and icon-16.svg
-                                (redrawn on whole pixels for the toolbar), mark.svg (no tile, for purple)
+branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
+                                to its tile for 48 px), icon-32.svg and icon-16.svg (redrawn on whole pixels,
+                                filling the square like other toolbar icons), mark.svg (no tile, for purple)
 images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
 vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
