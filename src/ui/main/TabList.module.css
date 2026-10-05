@@ -1,6 +1,6 @@
 .wrap { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .list { list-style: none; margin: 0; padding: 2px 8px 10px; display: flex; flex-direction: column; gap: var(--row-gap); }
-.empty { margin: 0; padding: 28px 12px; text-align: center; color: var(--ink-2); }
+.empty { margin: 0; }
 
 /* Each saved tab is a rounded layer, tinted and outlined in its category's color. */
 .row {

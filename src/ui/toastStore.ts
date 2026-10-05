@@ -49,6 +49,11 @@ export function hideToast(): void {
     publish(null);
 }
 
+/** True while the toast offers Undo: what Ctrl+Z / ⌘Z acts on. */
+export function hasPendingUndo(): boolean {
+    return pendingUndo !== undefined;
+}
+
 /** Runs the pending undo (if any) and closes the toast first, so a second click can't undo twice. */
 export function undoFromToast(): void {
     const undo = pendingUndo;

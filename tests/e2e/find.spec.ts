@@ -25,7 +25,8 @@ test.describe("Search and filters", () => {
 
     test("TC-114/TC-116: no results, then clearing restores the full list", async ({ popup }) => {
         await search(popup).fill("zzzz");
-        await expect(tabList(popup)).toContainText("No matching tabs.");
+        await expect(tabList(popup).getByRole("heading", { name: "No saved tabs match “zzzz”" })).toBeVisible();
+        await expect(tabList(popup)).toContainText("Try fewer letters");
         await popup.getByRole("button", { name: "Clear search" }).click();
         await expect.poll(() => rowTitles(popup)).toEqual(["Open Pull Requests", "Weekend Trip Itinerary", "The Pragmatic Programmer"]);
     });
@@ -54,9 +55,14 @@ test.describe("Search and filters", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Open Pull Requests"]);
     });
 
-    test("TC-115: search only looks inside the selected category", async ({ popup }) => {
+    test("TC-115/TC-210: search only looks inside the selected category, and one click widens it", async ({ popup }) => {
         await popup.getByRole("button", { name: "Work", exact: true }).click();
         await search(popup).fill("itinerary");
-        await expect(tabList(popup)).toContainText("No matching tabs.");
+        await expect(tabList(popup).getByRole("heading", { name: "No saved tabs match “itinerary”" })).toBeVisible();
+        await expect(tabList(popup)).toContainText("Only tabs in Work were searched.");
+        await popup.getByRole("button", { name: "Search all tabs" }).click();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Weekend Trip Itinerary"]);
+        await expect(popup.getByRole("button", { name: "All", exact: true })).toHaveAttribute("aria-pressed", "true");
+        await expect(search(popup)).toHaveValue("itinerary");
     });
 });

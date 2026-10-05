@@ -12,7 +12,7 @@ export function FilterPills(props: {
     onSelect: (key: string) => void;
 }) {
     return (
-        <nav class={styles.pills} aria-label={strings.filterLabel}>
+        <div class={styles.pills} role="group" aria-label={strings.filterLabel}>
             {props.options.map((o) => {
                 const isCategory = o.key !== ALL && o.key !== OUTDATED;
                 const label = o.key === ALL ? strings.all : o.key === OUTDATED ? strings.outdated : o.key;
@@ -34,7 +34,7 @@ export function FilterPills(props: {
                     </button>
                 );
             })}
-        </nav>
+        </div>
     );
 }
 

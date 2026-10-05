@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Tab Sandwich icon redrawn on a 16 grid (the toolbar and extensions menu): every edge on a whole
+       pixel, one solid purple, and the tile fills the square (Chrome adds its own spacing). -->
+  <rect x="0" y="0" width="16" height="16" rx="4" fill="#5F56C8"/>
+  <path d="M3 7 L4.2 3.6 Q4.4 3 5.1 3 H10.9 Q11.6 3 11.8 3.6 L13 7 Z" fill="#FFFFFF"/>
+  <rect x="2" y="8" width="12" height="2" rx="1" fill="#FFC24B"/>
+  <rect x="3" y="11" width="10" height="2" rx="1" fill="#FFFFFF"/>
+</svg>

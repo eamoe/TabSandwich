@@ -24,24 +24,26 @@ one the release zip is made from.
 
 ```
 src/
-  types.ts              SavedTab, Settings, ThemeChoice
+  types.ts              SavedTab, Settings, ThemeChoice, SortOrder
   storage/
-    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write
+    chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
+                            the last "What's new" version seen, kept apart from Settings so backups can't revive it
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
                             backup before writing, original restored if anything fails
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, duplicate detection,
+    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
                             merge (additive, dedupes by URL) vs. replace (full overwrite) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme and outdated-tab settings writes; clamps the day count to 1–365
+    SettingsRepository.ts  theme, sort and outdated-tab settings writes; clamps the day count to 1–365
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -55,35 +57,46 @@ src/
     controls.module.css     buttons, fields, the color dot — shared by several components
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
+    useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
+    Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
     CategoryPicker.tsx      native <select> with the chosen category's color dot
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
     main/                   the main screen
-      App.tsx               root of the whole popup: loads the library, owns filter/search/highlight
+      App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo, search, + (add link manually), gear
-      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button
-      ManualForm.tsx        add a link by hand, shown in place of the save card
+      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
+                             on a page already saved: "Saved N days ago", Show and Update instead of Save
+      ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
-      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion
-      listModel.ts          pure list rules (filter options and order, filtering, site names) — logic-tested
+      SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
+      EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
+      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
+                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, Escape), one Tab stop
+      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut, storage meter
+      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove, drag; color strip and messages
                              float over the row so nothing ever shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
   vite-env.d.ts             types for non-code imports, e.g. *.module.css
-  popup.ts                  entry point — migrate → upgrade → apply theme → render App
+  popup.ts                  entry point — note a fresh install → migrate → upgrade → apply theme → render App
+                            (with the "What's new" release to show, if any)
 
 popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
+branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
+                                to its tile for 48 px), icon-32.svg and icon-16.svg (redrawn on whole pixels,
+                                filling the square like other toolbar icons), mark.svg (no tile, for purple)
+images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
 vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
 tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
@@ -92,7 +105,8 @@ tests/e2e/                     robot tests (Playwright): real Chromium loads dis
                                 the popup, and runs an accessibility scan (axe) in light and dark
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
                                 pixel (playwright.visual.config.ts); baselines in __screenshots__/
-tests/store/                   not a test: renders the Chrome Web Store screenshots into store-assets/
+tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
+                                (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),

@@ -1,4 +1,4 @@
-import type { ThemeChoice } from "../types";
+import type { SortOrder, ThemeChoice } from "../types";
 import { getSettings, setSettings } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 
@@ -6,7 +6,7 @@ export const MIN_OUTDATED_DAYS = 1;
 export const MAX_OUTDATED_DAYS = 365;
 const FALLBACK_OUTDATED_DAYS = 7;
 
-/** The one-field settings changes Settings › General makes; each is a full read-modify-write under the storage lock. */
+/** The one-field settings changes (Settings › General, and the main list's sort); each is a full read-modify-write under the storage lock. */
 async function update(change: (settings: Awaited<ReturnType<typeof getSettings>>) => void): Promise<void> {
     return withStorageLock(async () => {
         const settings = await getSettings();
@@ -18,6 +18,12 @@ async function update(change: (settings: Awaited<ReturnType<typeof getSettings>>
 export function setTheme(theme: ThemeChoice): Promise<void> {
     return update((s) => {
         s.theme = theme;
+    });
+}
+
+export function setSort(sort: SortOrder): Promise<void> {
+    return update((s) => {
+        s.sort = sort;
     });
 }
 

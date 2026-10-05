@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampOutdatedDays, setOutdatedDays, setOutdatedEnabled, setTheme } from "../../src/domain/SettingsRepository";
+import { clampOutdatedDays, setOutdatedDays, setOutdatedEnabled, setSort, setTheme } from "../../src/domain/SettingsRepository";
 import { getSettings } from "../../src/storage/chromeStorage";
 
 describe("SettingsRepository", () => {
@@ -7,6 +7,13 @@ describe("SettingsRepository", () => {
         const before = await getSettings();
         await setTheme("dark");
         expect(await getSettings()).toEqual({ ...before, theme: "dark" });
+    });
+
+    it("remembers the chosen sort and leaves everything else alone", async () => {
+        const before = await getSettings();
+        expect(before.sort).toBe("custom");
+        await setSort("newest");
+        expect(await getSettings()).toEqual({ ...before, sort: "newest" });
     });
 
     it("turns outdated tracking on and off", async () => {

@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
-import { openSettings, seedLibrary, tabList } from "./helpers";
+import { openSettings, openSiteTab, seedLibrary, tabList } from "./helpers";
 
 /**
  * Accessibility rules not enforced yet, each with the release that fixes it. Kept as a named,
@@ -34,6 +34,46 @@ for (const colorScheme of ["light", "dark"] as const) {
         });
 
         test("main list", async ({ popup }) => {
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("first run: nothing saved yet", async ({ popup }) => {
+            await seedLibrary(popup, []);
+            await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("a search with no results inside a filter", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Work", exact: true }).click();
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("zzzz");
+            await expect(popup.getByRole("button", { name: "Search all tabs" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("what's new showing", async ({ popup }) => {
+            await seedLibrary(popup, [{ title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" }], {}, { seenVersion: "3.0.0" });
+            await expect(popup.getByRole("region", { name: "New in 3.1" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("the save card on a page that's already saved", async ({ context, popup }) => {
+            const url = await openSiteTab(context, popup, "Example Article");
+            await seedLibrary(popup, [{ title: "Example Article", url, category: "Work", daysAgo: 3 }]);
+            await expect(popup.getByRole("button", { name: "Update" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("adding a link that's already saved", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Add link manually" }).click();
+            await popup.getByLabel("URL").fill("https://notion.so/q3");
+            await popup.getByRole("button", { name: "Add", exact: true }).click();
+            await expect(popup.getByRole("button", { name: "Open", exact: true })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("sort menu open", async ({ popup }) => {
+            await popup.getByRole("button", { name: /^Sort:/ }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
             expect(await scan(popup)).toEqual([]);
         });
 

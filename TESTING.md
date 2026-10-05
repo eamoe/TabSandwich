@@ -86,8 +86,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-010 — Duplicate via Save Tab (P1)** **[auto]**
 - Preconditions: one tab already saved.
-- Steps: Revisit that same URL as the active tab → click **Save Tab**.
-- Expected: No second entry created. The button briefly reads "Already saved" (orange, with a small shake). The existing entry is highlighted/flashed in the list.
+- Steps: Revisit that same URL as the active tab → open the popup. Also: save a page, and watch the card right after.
+- Expected: No **Save Tab** button for a page that's already saved: the card says "✓ Saved N days ago" with **Show** and **Update** instead (TC-215), so no second entry can be created. Right after saving, the button shows "Saved!" for a moment, then the card settles into that saved look. (If the page somehow gets saved twice anyway, e.g. from two windows at once, the button reads "Already saved" in orange with a small shake and the existing entry flashes.)
 
 **TC-011 — Duplicate acknowledgment visible when entry is off-screen (P1)**
 - Preconditions: enough tabs saved that the list scrolls; the duplicate target is scrolled out of view.
@@ -96,7 +96,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-012 — Duplicate via manual entry (P2)** **[auto]**
 - Steps: Manually add a URL that's already saved.
-- Expected: No second entry. The form stays open and says "Already saved as “<title>”." under the fields; the existing entry is highlighted in the list.
+- Expected: No second entry. The form stays open and says "Already saved as “<title>”." under the fields, followed by **Open** (TC-219); the existing entry is highlighted in the list.
 
 ---
 
@@ -304,8 +304,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
-- Steps: Tab to a category pill and the Outdated pill and activate each; Tab to a row's edit and delete icons and activate each.
-- Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable.
+- Steps: Tab to a category pill and the Outdated pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
+- Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable, Escape cancels.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
 - Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; operate the outdated switch and day input; on **Categories** add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
@@ -315,8 +315,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Using a screen reader (or the browser's accessibility inspector), inspect a saved-tab row.
 - Expected: The category is written under the title next to its color dot (or, under a category filter, given as screen-reader-only text "Category: …"), never conveyed only by the row's tint and outline.
 
-**TC-094 — Drag-reorder has no keyboard equivalent (documented exemption) (P3)**
-- Expected: Confirm this is a known, accepted gap (FR-019 exemption) — not something to fail the suite over.
+**TC-094 — Reordering from the keyboard (P2)** **[auto]**
+- Since v3.1, Alt+↑/↓ (⌥ on a Mac) moves the focused tab, the keyboard equivalent of dragging. See TC-223.
 
 **TC-095 — The add-a-link fields are unreachable until the form is opened (P1)**
 - Preconditions: a freshly opened popup where **+** has never been clicked this session.
@@ -329,7 +329,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-100 — Empty state (P2)**
 - Steps: Delete all tabs.
-- Expected: "No saved tabs yet." message shown instead of a blank list.
+- Expected: The "Nothing saved yet" welcome with its three tips (TC-209) instead of a blank list.
 
 **TC-101 — Rapid duplicate save attempts (P3)**
 - Steps: Click **Save** twice in quick succession on the same page.
@@ -378,7 +378,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-114 — No results state (P1)** **[auto]**
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
-- Expected: List shows "No matching tabs." (distinct from the "No saved tabs yet." empty-library message); screen readers hear "No matching tabs".
+- Expected: The list says "No saved tabs match “zzzzz”" with a hint to try fewer letters or part of the site's name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
 
 **TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
@@ -696,3 +696,112 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: `pnpm visual` (or CI's `visual` job).
 - Expected: All screens match. A failure's report shows what changed; if the change is intended, approve it with `pnpm visual:update` and show before/after in the pull request.
 
+## 19. Effortless Everyday (v3.1)
+
+**TC-201 — The new icon looks right everywhere (P2)**
+- Steps: Load the build; look at the toolbar icon in Chrome's light and dark themes (pin it if needed), on a normal and a high-resolution screen; open `chrome://extensions`; open the popup and Settings › **About**.
+- Expected: The icon is the purple tile with a white browser-tab top slice, a yellow filling and a white bottom slice, crisp (no blur or smeared edges) at toolbar size in both themes, and as big as other extensions' icons in the toolbar and the extensions (puzzle-piece) menu, not shrunk inside a margin. `chrome://extensions` shows the same icon, filling its square. The popup header shows the same shape without its tile, white and yellow, and **About** shows the full icon. The approved screenshots cover the header and About (TC-200); the toolbar and `chrome://extensions` need a person.
+
+**TC-202 — Sort the list (P1)** **[auto]**
+- Steps: Click the sort button at the right end of the filter row → pick **Newest first**, then **Oldest first**, **Title (A–Z)**, **Site (A–Z)**.
+- Expected: The menu floats over the list (nothing moves when it opens). Each choice reorders the list at once; the button turns purple and names the sort ("Newest"). Titles sort ignoring case, with numbers in number order ("Chapter 9" before "Chapter 10"); sites sort as shown under the title, without "www.".
+
+**TC-203 — The sort is remembered (P2)** **[auto]**
+- Steps: Pick **Oldest first** → close and reopen the popup.
+- Expected: Still sorted oldest first, and the button still says so.
+
+**TC-204 — Back to your order restores it exactly (P1)** **[auto]**
+- Steps: Arrange tabs by dragging → pick **Title (A–Z)** → pick **Your order**.
+- Expected: Your arrangement comes back exactly; sorting never rewrote it. With your own order on, the button shows only its icon.
+
+**TC-205 — Dragging only in your own order (P2)** **[auto]**
+- Steps: Pick any sort other than **Your order** → try to drag a row.
+- Expected: Rows can't be dragged (no handle on hover) until you switch back to **Your order** — the other orders are views, so a drag there would mean nothing.
+
+**TC-206 — The sort menu from the keyboard (P2)** **[auto]**
+- Steps: Tab to the sort button → Enter → arrow keys → Enter. Open it again → Escape.
+- Expected: The menu opens on the current choice; arrows move, Enter picks and closes it, Escape closes it without changing anything. Focus returns to the sort button either way.
+
+**TC-207 — Sorting inside a filter (P3)** **[auto]**
+- Steps: Pick a category pill → change the sort.
+- Expected: The filtered list is sorted the same way.
+
+**TC-208 — Clicking outside closes the sort menu (P3)** **[auto]**
+- Steps: Open the sort menu → click anywhere else.
+- Expected: The menu closes without changing the sort.
+
+**TC-209 — A welcoming first run (P1)** **[auto]**
+- Preconditions: Nothing saved (a fresh install, or every tab deleted).
+- Expected: Under the save card, the app icon, "Nothing saved yet", and three tips: save the page you're on (pick a category above, then Save); open Tab Sandwich from anywhere with your keyboard shortcut, shown as keys (or **Set one** when no shortcut is set, which opens Chrome's shortcut page); make the categories yours with **Edit categories**, which opens Settings straight on **Categories**.
+
+**TC-210 — Widen a search that a filter narrowed (P2)** **[auto]**
+- Steps: Pick a category pill → search for something only in another category.
+- Expected: "No saved tabs match “…”" and "Only tabs in Work were searched." with a **Search all tabs** button. Clicking it switches the filter to All, keeps the search, and shows the match.
+
+**TC-211 — No "What's new" on a fresh install (P2)** **[auto]**
+- Steps: Install fresh, open the popup, reopen it.
+- Expected: No "What's new" note either time: there's nothing new to someone who just arrived.
+
+**TC-212 — "What's new" after an update (P1)** **[auto]**
+- Preconditions: Updated from 3.0 (or any earlier version) with tabs saved.
+- Steps: Open the popup; reopen it; click the note's ×; reopen it.
+- Expected: A "New in 3.1" note sits at the top of the list with three short lines about the release. It stays on every open until dismissed; × removes it at once (focus moves to the search box) and it doesn't come back. A later patch release (3.1.x) doesn't bring it back either.
+
+**TC-213 — "What's new" when updating from before 3.1 (P2)** **[auto]**
+- Expected: Versions before 3.1 kept no record of notes seen; updating from one still shows the note.
+
+**TC-214 — Restoring a backup doesn't bring back a dismissed note (P3)** **[auto]**
+- Steps: Dismiss the note → import an older backup with **Replace all**.
+- Expected: The note stays dismissed: what you've seen is kept apart from the settings a backup carries.
+
+**TC-215 — The save card knows a page is already saved (P1)** **[auto]**
+- Preconditions: The page you're on was saved 20 days ago, in Reading.
+- Steps: Open the popup.
+- Expected: Under the page title: "✓ Saved 20 days ago · example.com" (today / yesterday read naturally). The picker shows Reading, labelled "Saved in category", and **Show** and **Update** take the place of Save.
+
+**TC-216 — Show finds the saved copy (P2)** **[auto]**
+- Steps: Pick a category pill that hides the saved copy → **Show**.
+- Expected: The filter switches to All (only if needed; a search is cleared too), and the saved row scrolls into view and flashes. Nothing is written.
+
+**TC-217 — Update brings the saved copy up to date (P1)** **[auto]**
+- Steps: Optionally pick another category → **Update** → then **Undo** in the toast.
+- Expected: The button pops "✓ Updated!" without moving anything else on the card. The saved copy takes the page's current title and exact address, the picked category (unchanged if you didn't touch the picker), and today's date, so the moon badge goes away; it keeps its place in your own order. The card now says "Saved today". **Undo** puts the old title, address, category and date back exactly.
+
+**TC-218 — Saving settles into the saved look (P2)** **[auto]**
+- See TC-010.
+
+**TC-219 — Open an already-saved link from the add-a-link form (P2)** **[auto]**
+- Steps: **+** → type a link that's already saved → **Add** → **Open**.
+- Expected: The saved link opens in a new tab. Typing in the URL field again clears the message and its **Open**.
+
+**TC-220 — Arrow keys move through the list (P1)** **[auto]**
+- Steps: In the search box press ↓; then ↓, ↑, Home, End. Then Tab.
+- Expected: ↓ from search lands on the first row; arrows, Home and End move between rows (stopping at the ends), with a purple outline on the current row and its Edit and Delete showing. The list is one Tab stop: Tab goes to the current row's Edit, its Delete, then on past the list.
+
+**TC-221 — Enter opens, E edits (P1)** **[auto]**
+- Steps: On a row press Enter. Then E, Escape. Then E, change the title, Enter.
+- Expected: Enter opens the tab in a new browser tab. E opens the edit form with the title selected; Escape cancels it and focus returns to the row; saving with Enter also returns focus to the row.
+
+**TC-222 — Delete from the keyboard, and undo (P1)** **[auto]**
+- Steps: On a row press Delete (on a Mac, the delete key, which is Backspace). Then Ctrl+Z (⌘Z on a Mac).
+- Expected: The row is deleted with the usual Undo toast, and focus moves to the next row (or the one before, at the end of the list). Ctrl+Z / ⌘Z undoes it while Undo is showing.
+
+**TC-223 — Move a tab with Alt+arrows (P1)** **[auto]**
+- Steps: On a row press Alt+↓ (⌥↓), then Alt+↑. Try it under a category filter, and with a sort on.
+- Expected: The tab moves one place and keeps focus; screen readers hear "Moved “…” to position 2 of 9". Under a filter it moves past the next tab you can see. With a sort on (or while searching) nothing moves and screen readers hear why.
+
+**TC-224 — / and Escape (P2)** **[auto]**
+- Steps: Anywhere on the main screen (not in a field) press /. On a row press Escape.
+- Expected: / puts focus in the search box; Escape on a row goes back to the search box. (Escape in an empty search box still closes the popup, as before.)
+
+**TC-225 — Keys typed in a field stay in the field (P1)** **[auto]**
+- Steps: In a row's edit form, type "e", "/" and press Backspace.
+- Expected: They edit the text; nothing is deleted, edited or searched.
+
+**TC-226 — Everything without a mouse (P1, release gate)** **[auto]**
+- Steps: Using only the keyboard: save the page into a category, find it with search, open it, edit it, delete it, undo, and move it.
+- Expected: Every step works. This is v3.1's "done when".
+
+**TC-227 — The keys are listed in Settings (P3)**
+- Steps: Settings → **General**, under **Keyboard shortcut**.
+- Expected: A short list of the list's keys, named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).

@@ -1,4 +1,4 @@
-import type { SavedTab, Settings } from "../../types";
+import type { SavedTab, Settings, SortOrder } from "../../types";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isOutdated } from "../../util/time";
 
@@ -55,6 +55,25 @@ export function applyFilter(tabs: SavedTab[], settings: Settings, filter: string
     if (filter === ALL) return tabs;
     if (filter === OUTDATED) return tabs.filter((t) => isTabOutdated(t, settings));
     return tabs.filter((t) => getTabCategory(t) === filter);
+}
+
+const byText = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
+/**
+ * The list in the chosen order. A view only: the stored order (your own, "custom") is never
+ * rewritten, which is why switching back to it restores it exactly. Ties keep your own order,
+ * so the result never shuffles between opens.
+ */
+export function sortTabs(tabs: SavedTab[], sort: SortOrder): SavedTab[] {
+    if (sort === "custom") return tabs;
+    const compare: (a: SavedTab, b: SavedTab) => number = {
+        newest: (a: SavedTab, b: SavedTab) => b.savedAt - a.savedAt,
+        oldest: (a: SavedTab, b: SavedTab) => a.savedAt - b.savedAt,
+        title: (a: SavedTab, b: SavedTab) => byText.compare(a.title, b.title),
+        site: (a: SavedTab, b: SavedTab) => byText.compare(siteName(a.url), siteName(b.url)) || byText.compare(a.title, b.title),
+    }[sort];
+    // Array.prototype.sort is stable, so equal tabs stay in your own order.
+    return [...tabs].sort(compare);
 }
 
 /** "github.com" for "https://www.github.com/x" — what a row shows under its title. */

@@ -1,6 +1,7 @@
 import type { Ref } from "preact";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { Icon } from "../Icon";
+import { Logo } from "../Logo";
 import { strings } from "../strings";
 import styles from "./Hero.module.css";
 
@@ -10,6 +11,8 @@ export function Header(props: {
     tabCount: number;
     onQuery: (query: string) => void;
     onSubmitSearch: () => void;
+    /** ↓ in the search box: into the list. */
+    onArrowDown: () => void;
     manualOpen: boolean;
     onToggleManual: () => void;
     onOpenSettings: () => void;
@@ -30,7 +33,7 @@ export function Header(props: {
     return (
         <div class={styles.header}>
             <span class={styles.mark} aria-hidden="true">
-                <Icon name="logo" size={18} />
+                <Logo />
             </span>
             {props.showSearch ? (
                 <div class={styles.search} role="search">
@@ -56,6 +59,9 @@ export function Header(props: {
                             } else if (e.key === "Enter") {
                                 e.preventDefault();
                                 props.onSubmitSearch();
+                            } else if (e.key === "ArrowDown") {
+                                e.preventDefault();
+                                props.onArrowDown();
                             }
                         }}
                     />

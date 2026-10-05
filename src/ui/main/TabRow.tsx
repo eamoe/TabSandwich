@@ -27,6 +27,11 @@ export interface RowProps {
     entranceDelayMs: number;
     flashSeq: number | null;
     draggable: boolean;
+    /**
+     * The row the keyboard is on. Only its buttons are in the Tab order, so Tab moves past the
+     * list in one step and the arrow keys move between rows (see TabList).
+     */
+    current: boolean;
     dragging: boolean;
     dragOver: boolean;
     editOptions: PickerOption[];
@@ -66,6 +71,14 @@ function highlighted(title: string, ranges: MatchRange[]) {
 export function TabRow(props: RowProps) {
     const [editing, setEditing] = useState(false);
     const [leaving, setLeaving] = useState(false);
+    const titleButton = useRef<HTMLButtonElement>(null);
+    // Leaving the edit form (saved or cancelled) puts focus back on the row, not on the page.
+    const wasEditing = useRef(false);
+    useLayoutEffect(() => {
+        if (wasEditing.current && !editing) titleButton.current?.focus();
+        wasEditing.current = editing;
+    }, [editing]);
+    const tabIndex = props.current ? 0 : -1;
     // Decided once, when the row first appears: re-renders never replay the entrance.
     const [entrance] = useState(props.entrance);
     const { tab } = props;
@@ -110,7 +123,7 @@ export function TabRow(props: RowProps) {
                 </span>
             </span>
             <div class={styles.text}>
-                <button type="button" class={styles.title} title={tab.title} onClick={props.onOpen}>
+                <button ref={titleButton} type="button" class={styles.title} title={tab.title} tabIndex={tabIndex} data-row-title onClick={props.onOpen}>
                     {highlighted(tab.title, props.titleRanges)}
                 </button>
                 <span class={styles.meta}>
@@ -137,7 +150,15 @@ export function TabRow(props: RowProps) {
                 </span>
             )}
             <span class={styles.actions}>
-                <button type="button" class={`${controls.iconBtn} ${controls.small}`} aria-label={strings.editTab(tab.title)} title={strings.editTooltip} onClick={() => setEditing(true)}>
+                <button
+                    type="button"
+                    class={`${controls.iconBtn} ${controls.small}`}
+                    aria-label={strings.editTab(tab.title)}
+                    title={strings.editTooltip}
+                    tabIndex={tabIndex}
+                    data-row-action="edit"
+                    onClick={() => setEditing(true)}
+                >
                     <Icon name="edit" size={14} />
                 </button>
                 <button
@@ -145,6 +166,8 @@ export function TabRow(props: RowProps) {
                     class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
                     aria-label={strings.deleteTab(tab.title)}
                     title={strings.deleteTooltip}
+                    tabIndex={tabIndex}
+                    data-row-action="delete"
                     onClick={() => void startDelete()}
                 >
                     <Icon name="trash" size={14} />
@@ -195,7 +218,18 @@ function EditForm(props: RowProps & { onDone: () => void }) {
 
     const idPrefix = `edit-${tab.id}`;
     return (
-        <form class={styles.editForm} onSubmit={save} noValidate>
+        <form
+            class={styles.editForm}
+            onSubmit={save}
+            noValidate
+            onKeyDown={(e) => {
+                // Escape cancels the edit, like the Cancel button (and stays inside the form).
+                if (e.key !== "Escape") return;
+                e.preventDefault();
+                e.stopPropagation();
+                props.onDone();
+            }}
+        >
             <label for={`${idPrefix}-title`} class="visually-hidden">
                 {strings.titleLabel}
             </label>

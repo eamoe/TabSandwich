@@ -9,8 +9,10 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 ## Features
 
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
+- **A friendly start** — with nothing saved yet, the list shows three tips: saving, the keyboard shortcut, and categories. A search that finds nothing says so and, inside a filter, offers to search everything.
+- **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
-- **Duplicate detection** — saving an already-saved URL highlights the existing entry instead of creating a copy.
+- **Knows what you've saved** — on a page you've already saved, the popup says when ("Saved 12 days ago") instead of offering Save again. **Show** finds it in the list; **Update** refreshes the saved copy with the page's current title and address, today's date and the picked category (undoable). Adding an already-saved link by hand offers to open it.
 - **Search** — fuzzy-matches on title, domain, and path as you type, with matched characters highlighted; combines with an active category or Outdated filter.
 - **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/rename/remove/reorder) from Settings.
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings). Saved tabs are tinted and outlined in it and show the category name next to a matching dot, so the list scans by color without relying on color alone.
@@ -19,11 +21,12 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Storage write protection** — a save, edit, delete, or category change that fails to write (e.g. storage full) shows a specific error instead of silently vanishing, and a warning appears once storage is over 80% full, before you actually hit the limit.
 - **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
+- **Sorting** — newest, oldest, title or site, remembered between opens. Sorting never rewrites your own order, so switching back restores it exactly.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a small moon badge with their age and their own quick filter.
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
-- **Keyboard accessible** — every core action (save, filter, edit, delete, settings) works without a mouse.
+- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, / jumps to search. The keys are listed in Settings › General.
 
 ## Installation
 
@@ -56,6 +59,7 @@ Then load the `dist/` folder (not the repository root) as an unpacked extension 
 - `pnpm test:e2e` — robot tests: a real Chromium loads the built `dist/`, clicks through the popup, and runs an accessibility scan. Needs `pnpm exec playwright install chromium` once, and a fresh `pnpm build`.
 - `pnpm visual` — compares every screen, light and dark, with its approved screenshot, inside Playwright's Docker image (Docker must be running). `pnpm visual:update` approves new pictures after an intended visual change.
 - `pnpm store:screenshots` — renders the Chrome Web Store screenshots into `store-assets/` (after `pnpm build`).
+- `pnpm icons` — renders the extension's icons into `images/` from the drawings in `branding/`.
 - `pnpm lint` / `pnpm typecheck` — code checks.
 - `pnpm check` — all of the above, in the same order CI runs them.
 - GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` (`.github/workflows/release.yml`); `dist/` itself is never committed.

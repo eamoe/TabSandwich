@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { addTab, type AddTabResult } from "../../domain/TabRepository";
-import { UNCATEGORIZED } from "../../domain/CategoryRepository";
-import { isSupportedTabUrl } from "../../util/url";
+import type { SavedTab } from "../../types";
+import { addTab, refreshTab, type AddTabResult } from "../../domain/TabRepository";
+import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
+import { isSupportedTabUrl, urlsMatch } from "../../util/url";
+import { daysSince } from "../../util/time";
 import { writeErrorMessage } from "../errors";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
@@ -10,31 +12,50 @@ import { showErrorToast } from "../toastStore";
 import { strings } from "../strings";
 import { siteName } from "./listModel";
 import { useActiveTab } from "./useActiveTab";
+import controls from "../controls.module.css";
 import styles from "./Hero.module.css";
 
-type Status = "idle" | "saved" | "duplicate";
+type Status = "idle" | "saved" | "duplicate" | "updated";
 const STATUS_MS = 2500;
 
 /**
  * The page you're on, a category to save it into, and Save. The page gets its own full-width
  * row so its title is never squeezed by the controls. Feedback lands on the button itself and,
  * for screen readers, in a live region (a button's text changing isn't reliably announced).
+ *
+ * A page that's already saved says so straight away — when, and in which category (the picker
+ * starts on it) — and offers Show (find it in the list) and Update (bring the saved copy up to
+ * date with the page) instead of a Save that could only answer "Already saved".
  */
 export function SaveCard(props: {
+    tabs: SavedTab[];
     categoryOptions: PickerOption[];
     colorOf: (category: string) => string;
     onSaved: (result: AddTabResult) => void;
+    onShow: (id: string) => void;
+    onUpdated: (previous: SavedTab) => void;
 }) {
     const tab = useActiveTab();
-    const [category, setCategory] = useState(UNCATEGORIZED);
+    // What you picked, and for which saved copy (none: a page not saved yet).
+    const [picked, setPicked] = useState<{ forId: string | undefined; value: string } | null>(null);
     const [status, setStatus] = useState<Status>("idle");
     const [busy, setBusy] = useState(false);
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     useEffect(() => () => clearTimeout(timer.current), []);
 
+    const supported = isSupportedTabUrl(tab?.url);
+    const savedCopy = supported ? props.tabs.find((t) => urlsMatch(t.url, tab!.url!)) : undefined;
+    // The picker follows the page: the saved copy's category on a saved page, Uncategorized on a
+    // new one, until you pick something for that page. Worked out as the card renders (not in a
+    // later effect), so it never shows the wrong category for a moment, or overwrites a pick.
+    const category =
+        picked && picked.forId === savedCopy?.id ? picked.value : savedCopy ? getTabCategory(savedCopy) : UNCATEGORIZED;
+    const setCategory = (value: string) => setPicked({ forId: savedCopy?.id, value });
+
     // A category removed in Settings while it was picked here falls back to Uncategorized.
     const chosen = props.categoryOptions.some((o) => o.value === category) ? category : UNCATEGORIZED;
-    const supported = isSupportedTabUrl(tab?.url);
+    // "Saved!" gets its moment on the Save button before the card settles into its saved look.
+    const showSaved = savedCopy !== undefined && status !== "saved" && status !== "duplicate";
 
     const flash = (next: Status) => {
         clearTimeout(timer.current);
@@ -42,20 +63,22 @@ export function SaveCard(props: {
         timer.current = setTimeout(() => setStatus("idle"), STATUS_MS);
     };
 
+    /** The active tab right now: Save and Update always act on what is active at click time. */
+    const activePage = async () => {
+        const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!active || !isSupportedTabUrl(active.url)) {
+            showErrorToast(strings.onlyWebPages);
+            return null;
+        }
+        return { title: active.title?.trim() || active.url!, url: active.url! };
+    };
+
     const save = async () => {
         setBusy(true);
         try {
-            // Re-read at click time: Save always saves what is active right now.
-            const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (!active || !isSupportedTabUrl(active.url)) {
-                showErrorToast(strings.onlyWebPages);
-                return;
-            }
-            const result = await addTab({
-                title: active.title?.trim() || active.url,
-                url: active.url,
-                category: chosen === UNCATEGORIZED ? undefined : chosen,
-            });
+            const page = await activePage();
+            if (!page) return;
+            const result = await addTab({ ...page, category: chosen === UNCATEGORIZED ? undefined : chosen });
             flash(result.duplicate ? "duplicate" : "saved");
             props.onSaved(result);
         } catch (err) {
@@ -65,7 +88,25 @@ export function SaveCard(props: {
         }
     };
 
-    const label = status === "saved" ? strings.saved : status === "duplicate" ? strings.alreadySaved : strings.save;
+    const update = async () => {
+        if (!savedCopy) return;
+        setBusy(true);
+        try {
+            const page = await activePage();
+            if (!page) return;
+            const previous = await refreshTab(savedCopy.id, { ...page, category: chosen === UNCATEGORIZED ? undefined : chosen });
+            if (!previous) return;
+            flash("updated");
+            props.onUpdated(previous);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const label =
+        status === "saved" ? strings.saved : status === "duplicate" ? strings.alreadySaved : status === "updated" ? strings.updatedButton : strings.save;
     const saveButton = (
         <button
             id="save-btn"
@@ -86,7 +127,18 @@ export function SaveCard(props: {
                 {tab?.url && <SiteIcon url={tab.url} large />}
                 <div class={styles.pageText}>
                     <p class={styles.pageTitle}>{tab ? tab.title || tab.url : ""}</p>
-                    <p class={styles.pageSite}>{tab === undefined ? "" : supported ? siteName(tab!.url!) : strings.onlyWebPages}</p>
+                    {showSaved ? (
+                        <p class={styles.pageSite}>
+                            <span class={styles.savedNote}>
+                                <Icon name="check" size={12} />
+                                {strings.savedAgo(daysSince(savedCopy.savedAt))}
+                            </span>
+                            {" · "}
+                            {siteName(tab!.url!)}
+                        </p>
+                    ) : (
+                        <p class={styles.pageSite}>{tab === undefined ? "" : supported ? siteName(tab!.url!) : strings.onlyWebPages}</p>
+                    )}
                 </div>
                 {tab !== undefined && !supported && saveButton}
             </div>
@@ -94,13 +146,31 @@ export function SaveCard(props: {
                 <div class={styles.actionRow}>
                     <CategoryPicker
                         id="save-category"
-                        label={strings.saveToCategory}
+                        label={showSaved ? strings.categoryOfSaved : strings.saveToCategory}
                         value={chosen}
                         options={props.categoryOptions}
                         color={props.colorOf(chosen)}
                         onChange={setCategory}
                     />
-                    {saveButton}
+                    {showSaved ? (
+                        <>
+                            <button type="button" class={controls.btn} title={strings.showTooltip} onClick={() => props.onShow(savedCopy.id)}>
+                                {strings.show}
+                            </button>
+                            <button
+                                type="button"
+                                class={`${styles.save} ${styles.update} ${status === "updated" ? styles.saved : ""}`}
+                                title={strings.updateTooltip}
+                                disabled={busy}
+                                onClick={update}
+                            >
+                                {status === "updated" && <Icon name="check" size={14} />}
+                                {status === "updated" ? strings.updatedButton : strings.update}
+                            </button>
+                        </>
+                    ) : (
+                        saveButton
+                    )}
                 </div>
             )}
             <p class="visually-hidden" role="status" aria-live="polite">

@@ -20,8 +20,10 @@ export default defineConfig({
     forbidOnly: Boolean(process.env.CI),
     reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
     expect: {
-        // Strict: both sides always render in the same Docker image, so even a subtle color shift counts.
-        toHaveScreenshot: { animations: "disabled", caret: "hide", scale: "css", threshold: 0.02, maxDiffPixelRatio: 0.001 },
+        // Strict: both sides always render in the same Docker image, so even a subtle color shift counts,
+        // and so does a change to something small: no pixel may differ (a ratio of 0.1% let a whole new
+        // 18 px logo through unnoticed).
+        toHaveScreenshot: { animations: "disabled", caret: "hide", scale: "css", threshold: 0.02, maxDiffPixels: 0 },
     },
     use: { trace: "retain-on-failure" },
 });

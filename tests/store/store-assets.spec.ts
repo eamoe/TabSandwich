@@ -22,53 +22,35 @@ const SETTINGS = {
     categoryColors: { Work: "blue", Reading: "purple", Travel: "teal", Recipes: "coral" },
 };
 
-// The 3D logo (the main screenshot shows it, as the previous Store listing did).
-const LOGO = `data:image/png;base64,${readFileSync("store-assets/3d-branded-logo.png").toString("base64")}`;
+// The icon, large, on the main screenshot: the tile only (the drawing's transparent margin cropped off).
+const ICON = readFileSync("branding/icon.svg", "utf8")
+    .replace('viewBox="0 0 128 128"', 'viewBox="16 16 96 96"')
+    .replace(/ width="\d+" height="\d+"/, ' width="180" height="180" style="display:block"');
+const ICON_TILE = `<div style="width:180px;height:180px;border-radius:45px;margin-bottom:30px;box-shadow:0 0 0 6px rgba(255,255,255,.18),0 24px 50px rgba(20,16,50,.35)">${ICON}</div>`;
 
 const BACKGROUNDS = {
     light: "radial-gradient(circle at 85% 15%, rgba(255,255,255,.18) 0 160px, transparent 161px), radial-gradient(circle at 70% 105%, rgba(255,194,75,.35) 0 120px, transparent 121px), linear-gradient(135deg, #7A71E0, #584FA3)",
     dark: "radial-gradient(circle at 85% 15%, rgba(255,255,255,.08) 0 160px, transparent 161px), radial-gradient(circle at 70% 105%, rgba(255,194,75,.18) 0 120px, transparent 121px), linear-gradient(135deg, #3B3488, #15122A)",
 };
 
-const MARK = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="4" rx="2"/><rect x="3" y="11" width="18" height="4" rx="2"/><rect x="2" y="17" width="20" height="4" rx="2"/></svg>`;
-
-/**
- * The 3D logo as a rounded tile: the image has its own light backdrop, so it's framed as a card
- * in that same color (read from the image) instead of sitting on the purple as a hard rectangle.
- * Cropped to the sandwich, which leaves out the generator's corner mark.
- */
-const LOGO_TILE = `<div id="logo-tile" style="width:220px;height:220px;border-radius:44px;margin-bottom:30px;box-shadow:0 24px 50px rgba(20,16,50,.35);background:url(${LOGO}) -${120 * (220 / 780)}px -${110 * (220 / 780)}px / ${1024 * (220 / 780)}px no-repeat"></div>`;
+// The mark beside the name on the other screenshots: the icon without its tile, as in the popup header.
+const MARK = readFileSync("branding/mark.svg", "utf8").replace(/ width="\d+" height="\d+"/, ' width="36" height="30"');
 
 /** Places a popup screenshot on a branded 1280×800 canvas with a headline, and saves it. */
-async function compose(page: Page, file: string, popupPng: Buffer, headline: string, lines: string[], theme: "light" | "dark", withLogo = false) {
+async function compose(page: Page, file: string, popupPng: Buffer, headline: string, lines: string[], theme: "light" | "dark", withIcon = false) {
     await page.setViewportSize({ width: 1280, height: 800 });
     const img = `data:image/png;base64,${popupPng.toString("base64")}`;
-    const brand = withLogo
-        ? `${LOGO_TILE}<div style="font-size:22px;font-weight:700;opacity:.95;margin-bottom:14px">Tab Sandwich</div>`
+    const brand = withIcon
+        ? `${ICON_TILE}<div style="font-size:22px;font-weight:700;opacity:.95;margin-bottom:14px">Tab Sandwich</div>`
         : `<div style="display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700;opacity:.95;margin-bottom:28px">${MARK}Tab Sandwich</div>`;
     await page.setContent(`<!doctype html><html><body style="margin:0;width:1280px;height:800px;overflow:hidden;background:${BACKGROUNDS[theme]};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#fff;display:flex;align-items:center;gap:72px;padding:0 96px;box-sizing:border-box">
       <div style="flex:1;min-width:0">
         ${brand}
-        <h1 style="margin:0 0 24px;font-size:${withLogo ? 46 : 52}px;line-height:1.08;font-weight:800;letter-spacing:-.02em">${headline}</h1>
+        <h1 style="margin:0 0 24px;font-size:${withIcon ? 46 : 52}px;line-height:1.08;font-weight:800;letter-spacing:-.02em">${headline}</h1>
         ${lines.map((l) => `<p style="margin:0 0 12px;font-size:21px;line-height:1.4;opacity:.88">${l}</p>`).join("")}
       </div>
       <img src="${img}" width="380" height="600" style="border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35),0 8px 20px rgba(0,0,0,.2);flex-shrink:0">
     </body></html>`);
-    if (withLogo) {
-        // The tile takes the logo's own backdrop color, read from the image, so its edges disappear.
-        await page.evaluate(async (src) => {
-            const logo = new Image();
-            logo.src = src;
-            await logo.decode();
-            const canvas = document.createElement("canvas");
-            canvas.width = logo.width;
-            canvas.height = logo.height;
-            const ctx = canvas.getContext("2d")!;
-            ctx.drawImage(logo, 0, 0);
-            const [r, g, b] = ctx.getImageData(150, 512, 1, 1).data;
-            document.getElementById("logo-tile")!.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-        }, LOGO);
-    }
     await page.screenshot({ path: `${OUT}/${file}` });
 }
 
@@ -112,7 +94,7 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
 
     await compose(canvas, "screenshot-3-search.png", await shot("light", async () => {
         await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("news");
-    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Press Enter to open the top result."], "light");
+    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Sort by newest, title or site, and never touch the mouse."], "light");
 
     await compose(canvas, "screenshot-4-categories.png", await shot("light", async () => {
         await openSettings(popup, "Categories");

@@ -42,10 +42,10 @@ Save tabs in one click, organize with color-coded categories, and spot outdated 
 Tab Sandwich is a fast, focused way to save and organize the tabs you want to come back to.
 
 SAVE INSTANTLY
-Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button.
+Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button. Already saved the page? The popup says so, and one click updates the saved copy.
 
 FIND IT AGAIN, FAST
-Search matches titles and sites as you type, with the matching letters highlighted. Press Enter to open the top result.
+Search matches titles and sites as you type, with the matching letters highlighted. Press Enter to open the top result. Sort by newest, oldest, title or site, and switch back to your own order any time.
 
 ORGANIZE WITH CATEGORIES
 Give any saved tab a color-coded category. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
@@ -60,18 +60,18 @@ LIGHT AND DARK
 Follows your computer's light or dark mode, even while open, or pick one in Settings.
 
 BACKUP AND KEYBOARD
-Export everything to a file and import it later. Every core action works without a mouse, and a customizable keyboard shortcut opens the popup.
+Export everything to a file and import it later. Every action works from the keyboard — arrow keys, Enter to open, E to edit, Delete, Alt+arrows to reorder, / to search — and a customizable keyboard shortcut opens the popup.
 
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site).
 
-NEW IN 3.0
-A fresh, playful look with dark mode; pick a category as you save; calmer Settings with Light / Dark / System; and safer data: upgrades keep a backup and undo themselves if anything goes wrong, and editing a link can no longer create a duplicate.
+NEW IN 3.1
+Sort your list by newest, oldest, title or site. Pages you've already saved say so, with one click to find or update them. Everything works from the keyboard. A friendlier first run, a short "What's new" note after updates, and a new icon.
 ```
 
 ### Screenshots
 
-Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the 3D logo (`store-assets/3d-branded-logo.png`):
+Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the icon, large (`branding/icon.svg`):
 
 1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list and save card
 2. `screenshot-2-dark-mode.png` — "Easy on the eyes, day or night": the same list in dark mode
@@ -83,7 +83,7 @@ They're rendered from the built extension, not edited by hand: `pnpm build && pn
 
 ### Icon
 
-Already bundled in the package (`images/icon-128.png`, referenced from the manifest's top-level `icons` field) — the Store should pick it up automatically from the uploaded zip.
+Already bundled in the package (`images/icon-128.png`, referenced from the manifest's top-level `icons` field) — the Store should pick it up automatically from the uploaded zip. The icons are drawn in `branding/` and rendered with `pnpm icons`; after changing them, re-run `pnpm store:screenshots` too, since the icon appears in every screenshot.
 
 ## 3. Privacy practices tab
 
@@ -126,5 +126,6 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 1. Bump `manifest.json`'s `version`.
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
-4. Update the description/screenshots only if something user-facing actually changed (3.0.0 did: paste the detailed description above, including its "New in 3.0" paragraph, and replace all screenshots with the five listed above — the old ones show the pre-3.0 look). The Store has no per-version notes field; the full notes go in the GitHub release.
+4. Update the description/screenshots only if something user-facing actually changed (3.1.0 did: paste the detailed description above, including its "New in 3.1" paragraph, and replace all five screenshots — they show the new icon and the sort button, and About shows the version, so re-render them with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - A new icon (3.1.0 has one) normally comes from the uploaded zip. If the **Store listing** tab also has its own 128×128 store icon field, upload `images/icon-128.png` there too, or the listing keeps the old one.
 5. Submit for review again (update reviews are usually faster than the first one).

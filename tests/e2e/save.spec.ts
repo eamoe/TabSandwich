@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, TEST_SITE } from "./fixtures";
 import { openSiteTab, row, seedLibrary, storedTabs, tabList } from "./helpers";
 
 test.describe("Saving tabs", () => {
@@ -29,14 +29,15 @@ test.describe("Saving tabs", () => {
         await expect(row(popup, "Example Article")).toContainText("Reading");
     });
 
-    test("TC-010: saving the same page twice keeps one copy", async ({ context, popup }) => {
+    test("TC-010/TC-218: after saving, the card says the page is saved instead of offering Save again", async ({ context, popup }) => {
         await openSiteTab(context, popup, "Example Article");
-        const save = popup.locator("#save-btn");
-        await save.click();
-        await expect(save).toHaveText("Saved!");
-        await expect(save).toHaveText("Save");
-        await save.click();
-        await expect(save).toHaveText("Already saved");
+        const card = popup.getByRole("region", { name: "Current tab" });
+        await card.getByRole("button", { name: "Save Tab" }).click();
+        // "Saved!" gets its moment first, then the card settles into its saved look.
+        await expect(card.getByRole("button", { name: "Saved!" })).toBeVisible();
+        await expect(card).toContainText("Saved today");
+        await expect(card.getByRole("button", { name: "Update" })).toBeVisible();
+        await expect(card.locator("#save-btn")).toHaveCount(0);
         expect(await storedTabs(popup)).toHaveLength(1);
     });
 
@@ -96,5 +97,22 @@ test.describe("Saving tabs", () => {
         await popup.getByRole("button", { name: "Add", exact: true }).click();
         await expect(popup.getByRole("alert")).toHaveText("Already saved as “Existing”.");
         await expect(tabList(popup).getByRole("listitem")).toHaveCount(1);
+    });
+
+    test("TC-219: an already-saved link typed by hand can be opened from the message", async ({ popup }) => {
+        await seedLibrary(popup, [{ title: "Existing", url: `${TEST_SITE}/Existing` }]);
+        await popup.getByRole("button", { name: "Add link manually" }).click();
+        await popup.getByLabel("URL").fill(`${TEST_SITE}/Existing/`);
+        await popup.getByRole("button", { name: "Add", exact: true }).click();
+        await popup.getByRole("button", { name: "Open", exact: true }).click();
+        // A new tab for the saved link, exactly as saved. Asked of Chrome rather than the page:
+        // the fake site (the one address the test extension may see) doesn't serve a tab's very
+        // first load when the extension opens it.
+        await expect
+            .poll(() => popup.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.pendingUrl || t.url)))
+            .toContain(`${TEST_SITE}/Existing`);
+        // Typing again clears the message and its Open.
+        await popup.getByLabel("URL").fill("https://b.example.com");
+        await expect(popup.getByRole("button", { name: "Open", exact: true })).toHaveCount(0);
     });
 });

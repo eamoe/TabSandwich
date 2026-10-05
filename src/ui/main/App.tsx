@@ -1,22 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { SavedTab } from "../../types";
-import { editTab, deleteTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
+import type { SavedTab, SortOrder } from "../../types";
+import { editTab, deleteTab, putBackTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { searchTabs } from "../../domain/search";
+import { setSort } from "../../domain/SettingsRepository";
+import { setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
-import { showErrorToast, showUndoToast } from "../toastStore";
+import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
 import { Toast } from "../Toast";
 import { strings } from "../strings";
 import { Header } from "./Header";
 import { SaveCard } from "./SaveCard";
 import { ManualForm } from "./ManualForm";
 import { FilterPills, StorageWarning } from "./FilterPills";
+import { SortMenu } from "./SortMenu";
+import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions } from "./listModel";
+import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, sortTabs } from "./listModel";
 import { useLibrary } from "./useLibrary";
-import { SettingsScreen } from "../settings/SettingsScreen";
+import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
 import listStyles from "./TabList.module.css";
 import styles from "./App.module.css";
@@ -25,14 +29,19 @@ const STORAGE_WARNING_PCT = 80;
 /** Rows rise in when the popup opens; after this, a row that appears (saved, restored) drops in instead. */
 const ENTRANCE_MS = 900;
 
-export function App() {
+export function App(props: { whatsNew?: string | null }) {
     const { library, reload } = useLibrary();
     const [view, setView] = useState<"main" | "settings">("main");
+    const [settingsTab, setSettingsTab] = useState<SettingsTabKey>("general");
+    const [whatsNew, setWhatsNew] = useState(props.whatsNew ?? null);
     const [filter, setFilter] = useState(ALL);
     const [query, setQuery] = useState("");
     const [manualOpen, setManualOpen] = useState(false);
     const [highlight, setHighlight] = useState<Highlight | null>(null);
     const [entered, setEntered] = useState(false);
+    // The sort just picked, shown straight away while it's being saved; cleared once the
+    // library reloads with what's actually stored (so a failed save puts the old sort back).
+    const [pendingSort, setPendingSort] = useState<SortOrder | null>(null);
     const settingsButton = useRef<HTMLButtonElement>(null);
     const mainScreen = useRef<HTMLDivElement>(null);
     // The tallest either screen has been while the popup is open. Both screens are at least this
@@ -44,8 +53,9 @@ export function App() {
 
     // Settings opens at least as tall as the main screen was, so the popup window doesn't
     // shrink on the way in and grow again on the way back.
-    const openSettings = () => {
+    const openSettings = (tab: SettingsTabKey = "general") => {
         raiseFloor(mainScreen.current?.offsetHeight ?? 0);
+        setSettingsTab(tab);
         setView("settings");
     };
     const closeSettings = () => {
@@ -71,6 +81,29 @@ export function App() {
 
     const flash = useCallback((id: string) => setHighlight({ id, seq: ++highlightSeq.current }), []);
 
+    // Keys that work anywhere on the main screen (but never while typing in a field):
+    // "/" jumps to search, Ctrl+Z / ⌘Z undoes whatever the toast offers to undo.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (view !== "main" || target.closest("input, textarea, select, [contenteditable]")) return;
+            if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                const search = document.getElementById("search-input");
+                if (!search) return;
+                e.preventDefault();
+                search.focus();
+            } else if (e.key.toLowerCase() === "z" && (e.ctrlKey || e.metaKey) && !e.shiftKey && hasPendingUndo()) {
+                e.preventDefault();
+                undoFromToast();
+            }
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [view]);
+
+    const focusSearch = () => document.getElementById("search-input")?.focus();
+    const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view li[data-tab-id] [data-row-title]")?.focus();
+
     const colorOf = useCallback(
         (category: string) => getCategoryColorHex(category, library?.settings.categoryColors ?? {}),
         [library]
@@ -78,15 +111,16 @@ export function App() {
 
     const options = useMemo(() => (library ? filterOptions(library.tabs, library.settings) : []), [library]);
     const activeFilter = effectiveFilter(filter, options);
+    const sort = pendingSort ?? library?.settings.sort ?? "custom";
 
     const visible = useMemo(() => {
         if (!library) return { tabs: [] as SavedTab[], ranges: null };
-        const filtered = applyFilter(library.tabs, library.settings, activeFilter);
+        const filtered = sortTabs(applyFilter(library.tabs, library.settings, activeFilter), sort);
         const q = query.trim();
         if (!q) return { tabs: filtered, ranges: null };
         const matches = searchTabs(filtered, q);
         return { tabs: matches.map((m) => m.tab), ranges: new Map(matches.map((m) => [m.tab.id, m.titleRanges])) };
-    }, [library, activeFilter, query]);
+    }, [library, activeFilter, sort, query]);
 
     // The toast sits outside the main screen so it still shows while Settings is open.
     if (!library) return <Toast />;
@@ -103,6 +137,29 @@ export function App() {
         setFilter(ALL);
         setQuery("");
         flash(result.tab.id);
+    };
+
+    // Brings a saved tab into view and flashes it, widening the list only if it's filtered out.
+    const reveal = (id: string) => {
+        if (!visible.tabs.some((t) => t.id === id)) {
+            setFilter(ALL);
+            setQuery("");
+        }
+        flash(id);
+    };
+
+    const afterUpdate = async (previous: SavedTab) => {
+        await reload();
+        reveal(previous.id);
+        showUndoToast(strings.updatedToast, async () => {
+            try {
+                await putBackTab(previous);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
+            flash(previous.id);
+        });
     };
 
     const onEdit = async (tab: SavedTab, updates: { title: string; url: string; category: string }): Promise<EditOutcome> => {
@@ -153,6 +210,25 @@ export function App() {
         await reload();
     };
 
+    const onSort = async (next: SortOrder) => {
+        setPendingSort(next);
+        try {
+            await setSort(next);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
+        setPendingSort(null);
+    };
+
+    // Dismissed for good: the version is recorded, so the note doesn't come back next time.
+    const dismissWhatsNew = () => {
+        setWhatsNew(null);
+        // The dismiss button just disappeared; keep keyboard focus somewhere useful.
+        document.getElementById("search-input")?.focus();
+        setLastSeenVersion(chrome.runtime.getManifest().version).catch((err) => showErrorToast(writeErrorMessage(err)));
+    };
+
     const openTab = (tab: SavedTab) => void chrome.tabs.create({ url: tab.url });
 
     return (
@@ -173,9 +249,10 @@ export function App() {
                     tabCount={library.tabs.length}
                     onQuery={setQuery}
                     onSubmitSearch={() => visible.tabs[0] && openTab(visible.tabs[0])}
+                    onArrowDown={focusFirstRow}
                     manualOpen={manualOpen}
                     onToggleManual={() => setManualOpen((open) => !open)}
-                    onOpenSettings={openSettings}
+                    onOpenSettings={() => openSettings()}
                     settingsButtonRef={settingsButton}
                 />
                 {manualOpen ? (
@@ -187,13 +264,26 @@ export function App() {
                         onClose={() => setManualOpen(false)}
                     />
                 ) : (
-                    <SaveCard categoryOptions={saveOptions} colorOf={colorOf} onSaved={afterSave} />
+                    <SaveCard
+                        tabs={library.tabs}
+                        categoryOptions={saveOptions}
+                        colorOf={colorOf}
+                        onSaved={afterSave}
+                        onShow={reveal}
+                        onUpdated={afterUpdate}
+                    />
                 )}
             </header>
-            {hasTabs && <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />}
+            {hasTabs && (
+                <nav class={styles.filterBar} aria-label={strings.filterBarLabel}>
+                    <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />
+                    <SortMenu value={sort} onChange={onSort} />
+                </nav>
+            )}
             <main id="main-view" class={listStyles.wrap}>
+                {whatsNew && <WhatsNew release={whatsNew} onDismiss={dismissWhatsNew} />}
                 {library.storagePct >= STORAGE_WARNING_PCT && (
-                    <StorageWarning pct={library.storagePct} onSeeStorage={openSettings} />
+                    <StorageWarning pct={library.storagePct} onSeeStorage={() => openSettings()} />
                 )}
                 <p class="visually-hidden" role="status" aria-live="polite">
                     {searching ? strings.matches(visible.tabs.length) : ""}
@@ -203,22 +293,43 @@ export function App() {
                     settings={library.settings}
                     titleRanges={visible.ranges}
                     searchActive={searching}
+                    // Your own order is the only one dragging can change: search results are in
+                    // match order and the other sorts are views, so a drag there would mean nothing.
+                    canReorder={!searching && sort === "custom"}
                     // Under a category filter every row shares that category, so rows leave it out.
                     showCategory={activeFilter === ALL || activeFilter === OUTDATED}
                     entered={entered}
                     highlight={highlight}
-                    emptyText={hasTabs ? strings.noMatchingTabs : strings.noSavedTabs}
+                    empty={
+                        !hasTabs ? (
+                            <EmptyLibrary onEditCategories={() => openSettings("categories")} />
+                        ) : (
+                            <NoMatches
+                                query={query.trim()}
+                                filterLabel={activeFilter === ALL ? null : activeFilter === OUTDATED ? strings.outdated : activeFilter}
+                                onSearchAll={() => setFilter(ALL)}
+                            />
+                        )
+                    }
                     editOptions={editOptions}
                     colorOf={colorOf}
                     onOpen={openTab}
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onReorder={onReorder}
+                    onEscape={focusSearch}
                 />
             </main>
         </div>
         {view === "settings" && (
-            <SettingsScreen library={library} reload={reload} onBack={closeSettings} minHeight={floorHeight} onHeight={raiseFloor} />
+            <SettingsScreen
+                library={library}
+                reload={reload}
+                onBack={closeSettings}
+                initialTab={settingsTab}
+                minHeight={floorHeight}
+                onHeight={raiseFloor}
+            />
         )}
         <Toast />
         </>

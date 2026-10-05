@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, deleteTab, editTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { addTab, deleteTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
 import { makeTab, seed, storedTabs } from "./helpers";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -111,5 +111,53 @@ describe("reorderTabs", () => {
         await reorderTabs(tabs[0].id, "missing");
         await reorderTabs(tabs[0].id, tabs[0].id);
         expect(storedTabs()).toEqual(tabs);
+    });
+});
+
+describe("refreshTab / putBackTab (Update in the save card, and its Undo)", () => {
+    it("takes the page's title, exact address and the chosen category, and counts as saved now", async () => {
+        const old = makeTab({ title: "Old title", url: "https://a.example.com/page", category: "Work", savedAt: Date.UTC(2025, 0, 1) });
+        const other = makeTab();
+        seed([other, old]);
+        const before = Date.now();
+        const previous = await refreshTab(old.id, { title: "New title", url: "https://a.example.com/page/", category: "Reading" });
+        expect(previous).toEqual(old);
+        const [, refreshed] = storedTabs();
+        expect(refreshed).toMatchObject({ id: old.id, title: "New title", url: "https://a.example.com/page/", category: "Reading" });
+        expect(refreshed.savedAt).toBeGreaterThanOrEqual(before);
+        // Stays where it was in your own order, and nothing else changes.
+        expect(storedTabs().map((t) => t.id)).toEqual([other.id, old.id]);
+        expect(storedTabs()[0]).toEqual(other);
+    });
+
+    it("can move a tab to Uncategorized", async () => {
+        const tab = makeTab({ category: "Work" });
+        seed([tab]);
+        await refreshTab(tab.id, { title: tab.title, url: tab.url, category: undefined });
+        expect(storedTabs()[0].category).toBeUndefined();
+    });
+
+    it("writes nothing for a tab that's gone", async () => {
+        const tab = makeTab();
+        seed([tab]);
+        expect(await refreshTab("missing", { title: "x", url: "https://x.example.com" })).toBeNull();
+        expect(storedTabs()).toEqual([tab]);
+    });
+
+    it("Undo puts the tab back exactly as it was, in its place", async () => {
+        const [a, b] = [makeTab({ title: "A" }), makeTab({ title: "B", savedAt: Date.UTC(2025, 5, 1) })];
+        seed([a, b]);
+        const previous = await refreshTab(b.id, { title: "B2", url: "https://b2.example.com" });
+        await putBackTab(previous!);
+        expect(storedTabs()).toEqual([a, b]);
+    });
+
+    it("Undo does nothing if the tab was deleted in the meantime", async () => {
+        const tab = makeTab();
+        seed([tab]);
+        const previous = await refreshTab(tab.id, { title: "New", url: tab.url });
+        await deleteTab(tab.id);
+        await putBackTab(previous!);
+        expect(storedTabs()).toEqual([]);
     });
 });

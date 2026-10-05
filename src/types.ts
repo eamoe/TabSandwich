@@ -7,6 +7,9 @@ export interface SavedTab {
     savedAt: number;
 }
 
+/** How the main list is ordered. "custom" is your own drag-and-drop order; the others are views of it that never rewrite it. */
+export type SortOrder = "custom" | "newest" | "oldest" | "title" | "site";
+
 /** "system" follows the OS light/dark setting; the other two pin the popup to one theme. */
 export type ThemeChoice = "system" | "light" | "dark";
 
@@ -22,4 +25,6 @@ export interface Settings {
      * the default on read (the same merge every other field relies on), so no data upgrade is needed.
      */
     theme: ThemeChoice;
+    /** Added in v3.1, filled in on read like theme. Remembered between opens. */
+    sort: SortOrder;
 }

@@ -51,6 +51,54 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`filter-${colorScheme}.png`);
         });
 
+        test("the sort menu open", async ({ popup }) => {
+            await popup.getByRole("button", { name: /^Sort:/ }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
+            await expect(popup).toHaveScreenshot(`sort-menu-${colorScheme}.png`);
+        });
+
+        test("sorted newest first", async ({ popup }) => {
+            await popup.getByRole("button", { name: /^Sort:/ }).click();
+            await popup.getByRole("menuitemradio", { name: "Newest first" }).click();
+            await expect(popup.getByRole("button", { name: "Sort: Newest first" })).toBeVisible();
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`sorted-${colorScheme}.png`);
+        });
+
+        test("a search with no results inside a filter", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Work", exact: true }).click();
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("sourdough");
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`no-matches-${colorScheme}.png`);
+        });
+
+        test("what's new after an update", async ({ popup }) => {
+            await seedLibrary(popup, LIBRARY, SETTINGS, { seenVersion: "3.0.0" });
+            await popup.mouse.move(0, 599);
+            await expect(popup.getByRole("region", { name: /^New in / })).toBeVisible();
+            // The note's wording changes every release; that's not a visual change.
+            await expect(popup).toHaveScreenshot(`whats-new-${colorScheme}.png`, { mask: [popup.getByRole("region", { name: /^New in / }).getByRole("list")] });
+        });
+
+        test("the save card on a page that's already saved", async ({ context, popup }) => {
+            const url = await openSiteTab(context, popup, "Designing calm interfaces");
+            await seedLibrary(popup, [...LIBRARY, { title: "Designing calm interfaces", url, category: "Reading", daysAgo: 12 }], SETTINGS);
+            await popup.mouse.move(0, 599);
+            await expect(popup.getByRole("button", { name: "Update" })).toBeVisible();
+            await expect(popup).toHaveScreenshot(`already-saved-${colorScheme}.png`);
+        });
+
+        test("a row reached with the keyboard", async ({ popup }) => {
+            // Into the list from the search box, the way a keyboard user gets there. The search box
+            // restyles itself once focus leaves it and its edge settled a pixel differently from run
+            // to run, so it's masked: this picture is about the focused row (the unfocused search
+            // box is in the main-list pictures).
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
+            await popup.keyboard.press("ArrowDown");
+            await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
+            await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`, { mask: [popup.getByRole("search")] });
+        });
+
         test("settings: general", async ({ popup }) => {
             await openSettings(popup);
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);
@@ -81,8 +129,12 @@ for (const colorScheme of ["light", "dark"] as const) {
     });
 }
 
-test("empty library", async ({ popup }) => {
-    await popup.setViewportSize({ width: 380, height: 600 });
-    await seedLibrary(popup, []);
-    await expect(popup).toHaveScreenshot("empty-light.png");
-});
+for (const colorScheme of ["light", "dark"] as const) {
+    test(`first run: nothing saved yet (${colorScheme})`, async ({ popup }) => {
+        await popup.setViewportSize({ width: 380, height: 600 });
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, []);
+        await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
+        await expect(popup).toHaveScreenshot(`empty-${colorScheme}.png`);
+    });
+}

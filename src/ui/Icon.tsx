@@ -7,17 +7,45 @@ import styles from "./Icon.module.css";
  * holds an icon carries the accessible name, so the svg is hidden from screen readers.
  */
 const PATHS: Record<IconName, JSX.Element> = {
-    logo: (
-        <>
-            <rect x="2" y="5" width="20" height="4" rx="2" />
-            <rect x="3" y="11" width="18" height="4" rx="2" />
-            <rect x="2" y="17" width="20" height="4" rx="2" />
-        </>
-    ),
     search: (
         <>
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </>
+    ),
+    sort: (
+        <>
+            <line x1="7" y1="5" x2="7" y2="19" />
+            <polyline points="3.5 8.5 7 5 10.5 8.5" />
+            <line x1="17" y1="5" x2="17" y2="19" />
+            <polyline points="13.5 15.5 17 19 20.5 15.5" />
+        </>
+    ),
+    download: (
+        <>
+            <line x1="12" y1="4" x2="12" y2="15" />
+            <polyline points="7 10.5 12 15.5 17 10.5" />
+            <line x1="5" y1="20" x2="19" y2="20" />
+        </>
+    ),
+    keyboard: (
+        <>
+            <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
+            <line x1="6.5" y1="10" x2="7.5" y2="10" />
+            <line x1="11.5" y1="10" x2="12.5" y2="10" />
+            <line x1="16.5" y1="10" x2="17.5" y2="10" />
+            <line x1="8" y1="14.5" x2="16" y2="14.5" />
+        </>
+    ),
+    tag: (
+        <>
+            <path d="M3.5 12.3V4.5a1 1 0 0 1 1-1h7.8l8.2 8.2a1.4 1.4 0 0 1 0 2l-6.8 6.8a1.4 1.4 0 0 1-2 0z" />
+            <circle cx="8.5" cy="8.5" r="1.3" />
+        </>
+    ),
+    sparkle: (
+        <>
+            <path d="M12 3.5l1.9 5.1a2 2 0 0 0 1.2 1.2l5.1 1.9-5.1 1.9a2 2 0 0 0-1.2 1.2L12 20l-1.9-5.2a2 2 0 0 0-1.2-1.2L3.8 11.7l5.1-1.9a2 2 0 0 0 1.2-1.2z" />
         </>
     ),
     plus: (
@@ -75,8 +103,12 @@ const PATHS: Record<IconName, JSX.Element> = {
 };
 
 export type IconName =
-    | "logo"
     | "search"
+    | "sort"
+    | "download"
+    | "keyboard"
+    | "tag"
+    | "sparkle"
     | "plus"
     | "close"
     | "settings"

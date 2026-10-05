@@ -38,6 +38,11 @@ describe("parseBackupFile", () => {
         expect(parsed?.settingsFields.theme).toBe("dark");
     });
 
+    it("reads the sort from a backup exported by v3.1 or later, ignoring one it doesn't recognize", () => {
+        expect(parseBackupFile(fileWith(buildBackupFile([], { ...DEFAULT_SETTINGS, sort: "title" })))?.settingsFields.sort).toBe("title");
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { sort: "random" } }))?.settingsFields.sort).toBeUndefined();
+    });
+
     it("ignores a theme value it doesn't recognize", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [], settings: { theme: "sepia" } }));
         expect(parsed?.settingsFields).toEqual({});
@@ -63,6 +68,12 @@ describe("mergeImport", () => {
         expect(result.addedCategoryCount).toBe(1);
         expect(result.settings.categories).toContain("Old");
         expect(result.settings.categoryColors.Old).toBe("blue");
+    });
+
+    it("keeps your current sort when merging, and takes the file's when replacing", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [], settings: { sort: "site" } }))!;
+        expect(mergeImport([], { ...DEFAULT_SETTINGS, sort: "newest" }, parsed).settings.sort).toBe("newest");
+        expect(replaceImport(parsed).settings.sort).toBe("site");
     });
 
     it("keeps your current theme — merging only ever adds tabs and categories", () => {
