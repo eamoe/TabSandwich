@@ -90,13 +90,13 @@ for (const colorScheme of ["light", "dark"] as const) {
 
         test("a row reached with the keyboard", async ({ popup }) => {
             // Into the list from the search box, the way a keyboard user gets there. The search box
-            // restyles itself once focus leaves it, and its edge settled a pixel differently from run
-            // to run, so it's given a moment before the picture is taken.
+            // restyles itself once focus leaves it and its edge settled a pixel differently from run
+            // to run, so it's masked: this picture is about the focused row (the unfocused search
+            // box is in the main-list pictures).
             await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
             await popup.keyboard.press("ArrowDown");
             await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
-            await popup.waitForTimeout(500);
-            await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`);
+            await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`, { mask: [popup.getByRole("search")] });
         });
 
         test("settings: general", async ({ popup }) => {
