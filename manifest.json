@@ -23,6 +23,9 @@
         "storage",
         "favicon"
     ],
+    "optional_permissions": [
+        "tabs"
+    ],
     "web_accessible_resources": [
         {
             "resources": [

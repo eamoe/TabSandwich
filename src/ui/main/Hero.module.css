@@ -146,3 +146,33 @@
     cursor: pointer;
     border-radius: 4px;
 }
+
+/* "Save all tabs in this window": the save card's last line, under a hairline. */
+.windowRow {
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 2px 0;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+}
+.windowNote { margin: 0; flex: 1; min-width: 0; color: var(--ink-2); line-height: 1.35; }
+.skipped { color: var(--ink-2); cursor: help; }
+.windowLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    height: 20px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.windowLink:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 2px; }
+.windowLink:disabled { color: var(--ink-2); cursor: default; }

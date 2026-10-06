@@ -53,6 +53,9 @@ Give any saved tab a color-coded category. Each row is tinted in its category's 
 NEVER LOSE TRACK OF STALE TABS
 Tabs you saved a while ago get a small moon badge with their age, and a quick filter rounds them all up so you can decide what to keep.
 
+SAVE A WHOLE WINDOW
+Forty tabs open? One click saves every page in the window into a category, skipping browser pages and anything already saved, with an exact count. Then close them all with one more click, or keep them open.
+
 EDIT, REORDER, DELETE, UNDO
 Fix a title or URL without deleting and re-adding. Drag tabs into whatever order makes sense to you. Delete what you don't need, with Undo if you change your mind.
 
@@ -63,7 +66,7 @@ BACKUP AND KEYBOARD
 Export everything to a file and import it later. Every action works from the keyboard — arrow keys, Enter to open, E to edit, Delete, Alt+arrows to reorder, / to search — and a customizable keyboard shortcut opens the popup.
 
 YOUR DATA STAYS YOURS
-Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site).
+Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site). Saving a whole window needs permission to see your open tabs; Chrome asks only when you first use it, and everything else works if you say no.
 
 NEW IN 3.1
 Sort your list by newest, oldest, title or site. Pages you've already saved say so, with one click to find or update them. Everything works from the keyboard. A friendlier first run, a short "What's new" note after updates, and a new icon.
@@ -95,6 +98,7 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
 2. **Permission justifications:**
    - `activeTab`: "Used only after the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab: the popup shows them, and saves them if the user clicks Save. No access to any other tab."
    - `storage`: "Used to persist the user's saved tabs and settings locally via chrome.storage.local. No data is transmitted off-device."
+   - `tabs` (optional permission): "Requested only when the user first clicks 'Save all tabs in this window', never at install. Used to read the titles and URLs of the tabs open in the popup's window, so they can be saved in one action and the popup can say how many are new; read only while the popup is open, stored only for pages the user chooses to save, never transmitted. Declining leaves every other feature working."
    - `favicon`: "Used to show each saved tab's icon by reading it from Chrome's own local favicon cache, instead of fetching it from the page's own site. No favicon data is stored, and no request is ever made to the saved page's site for this."
 
 3. **Data usage:**

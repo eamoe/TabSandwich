@@ -142,6 +142,15 @@ export function App(props: { whatsNew?: string | null }) {
         flash(result.tab.id);
     };
 
+    // A whole window saved: the new tabs are at the top of the list, so show all of it.
+    const afterWindowSave = async (added: SavedTab[]) => {
+        setHops((n) => n + 1);
+        await reload();
+        setFilter(ALL);
+        setQuery("");
+        if (added[0]) flash(added[0].id);
+    };
+
     // Brings a saved tab into view and flashes it, widening the list only if it's filtered out.
     const reveal = (id: string) => {
         if (!visible.tabs.some((t) => t.id === id)) {
@@ -275,6 +284,7 @@ export function App(props: { whatsNew?: string | null }) {
                         onSaved={afterSave}
                         onShow={reveal}
                         onUpdated={afterUpdate}
+                        onWindowSaved={afterWindowSave}
                     />
                 )}
             </header>

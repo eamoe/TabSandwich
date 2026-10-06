@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, deleteTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
 import { makeTab, seed, storedTabs } from "./helpers";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -30,6 +30,33 @@ describe("addTab", () => {
         const ids = storedTabs().map((t) => t.id);
         expect(ids).toHaveLength(20);
         expect(new Set(ids).size).toBe(20);
+    });
+});
+
+describe("addTabs", () => {
+    it("saves new pages at the top in the given order, in one category, skipping saved ones", async () => {
+        const existing = makeTab({ url: "https://saved.example.com/" });
+        seed([existing]);
+        const { added, duplicates } = await addTabs(
+            [
+                { title: "One", url: "https://one.example.com/" },
+                { title: "Saved", url: "https://saved.example.com" },
+                { title: "Two", url: "https://two.example.com/" },
+                { title: "One again", url: "https://one.example.com/#top" },
+            ],
+            "Reading"
+        );
+        expect(added.map((t) => t.title)).toEqual(["One", "Two"]);
+        expect(added.every((t) => t.category === "Reading" && UUID.test(t.id))).toBe(true);
+        expect(duplicates).toBe(2);
+        expect(storedTabs().map((t) => t.title)).toEqual(["One", "Two", existing.title]);
+    });
+
+    it("writes nothing when every page is already saved", async () => {
+        const existing = makeTab({ url: "https://saved.example.com/" });
+        seed([existing]);
+        expect(await addTabs([{ title: "Saved", url: "https://saved.example.com/" }])).toEqual({ added: [], duplicates: 1 });
+        expect(storedTabs()).toEqual([existing]);
     });
 });
 

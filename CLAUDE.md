@@ -7,6 +7,7 @@ Guidance for Claude Code (or any AI collaborator) working in this repo.
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
 revisiting browser tabs. Popup-only UI (no background/content scripts),
 category tagging with color coding, outdated-tab tracking, drag-to-reorder,
+saving a whole window at once,
 keyboard shortcut to open. Everything is stored locally via
 `chrome.storage.local` — there is no server, no sync, no analytics.
 
@@ -34,9 +35,11 @@ src/
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
+    TabRepository.ts      add (one or many)/edit/delete/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
+                            which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
@@ -72,6 +75,9 @@ src/
       Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
+      SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
+                             "tabs" permission the first time), what was saved and skipped, Close the saved tabs
+      useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted
       ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
@@ -92,7 +98,8 @@ src/
                             (with the "What's new" release to show, if any)
 
 popup/popup.html               just the mount point for the Preact app
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon; "tabs" only as an
+                                optional permission, asked for when you first save a whole window
 branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
                                 to its tile for 48 px), icon-32.svg and icon-16.svg (redrawn on whole pixels,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
@@ -170,7 +177,8 @@ animation smoothness, and the manual release pass at the top of
   `MIGRATIONS`, with tests (see `tests/unit/upgrade.test.ts`). Never
   reshape stored data anywhere else.
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
-  `favicon`). If a new feature needs a new permission, that's a deliberate,
+  `favicon`, plus the optional `tabs`, requested at the moment you first save
+  a whole window). If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
 - **Preact for screens, no state library.** Preact was adopted for the
   v3.0 redesign; don't add another UI or state library. Components keep

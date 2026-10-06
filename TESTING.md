@@ -341,7 +341,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
+- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `pnpm build`.
@@ -811,3 +811,24 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-228 — The logo hops on a new save (P3)** **[auto]**
 - Steps: Save the page you're on. Then add a link by hand. Then try adding a link that's already saved, and press **Update** on a saved page. Repeat the first step with the system's reduce-motion setting on.
 - Expected: The logo left of the search field hops once — up, a tilt each way, and down — for each new save (about half a second). An already-saved link and Update don't make it hop. With reduce motion on, it stays still.
+
+**TC-229 — Save all tabs in a window (P1)** **[auto]**
+- Preconditions: Several web pages open in one window, one of them already saved, plus a browser page (e.g. `chrome://settings`).
+- Steps: Open the popup on a page that isn't saved, pick a category, and click **Save all N tabs in this window** under Save. The first time, Chrome asks to let Tab Sandwich read your open tabs: allow it.
+- Expected: Every unsaved web page in the window is saved, at the top of the list in the window's order, in the picked category, and the logo hops. The line says "✓ Saved N tabs · M skipped"; hovering "M skipped" (or a screen reader) says why: how many were already saved and how many were browser pages. Chrome asked only this once. Started from a page that's already saved (the picker shows its category), the window's pages go to Uncategorized instead.
+
+**TC-230 — Close the saved tabs (P1)** **[auto]**
+- Steps: After TC-229, click **Close N tabs**.
+- Expected: Nothing closed before the click. Then every saved web page in the window closes, except the tab you're on; browser pages and anything not saved stay open. The line says "✓ Closed N tabs".
+
+**TC-231 — Saying no to the permission (P1, release gate)** **[auto]**
+- Steps: On a fresh install, click **Save all N tabs in this window** and choose **Deny** in Chrome's prompt.
+- Expected: Nothing is saved; the line says "Nothing saved. Saving a window needs your OK to see its tabs." with **Try again**. Save, search, editing and everything else work as before.
+
+**TC-232 — Counting new tabs once allowed (P2)** **[auto]**
+- Steps: After allowing once, close and reopen the popup; open a page you haven't saved.
+- Expected: No second prompt. The line counts only what's new ("Save 1 new tab from this window"), and disappears when every page in the window is already saved. Without the permission it counts every open tab ("Save all 7 tabs in this window").
+
+**TC-233 — The real permission prompt (P1, release gate)**
+- Steps: In a normal Chrome with the release build, on a fresh install, open the popup from the toolbar in a window with several tabs and click **Save all N tabs in this window**. Allow Chrome's prompt. Repeat on another profile choosing **Deny**. Afterwards, in `chrome://extensions` › Tab Sandwich › Details, remove the "Read your browsing history" permission and reopen the popup.
+- Expected: The prompt explains what's asked ("Read your browsing history"). Allowing saves the window, either straight away or, if Chrome closed the popup while asking, on the next click after reopening it, with no second prompt. Denying saves nothing and the popup keeps working. With the permission removed, the line counts every open tab again and asks again on click.

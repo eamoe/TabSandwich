@@ -120,3 +120,37 @@ export async function manualEntryCategories(popup: Page): Promise<string[]> {
     await popup.getByRole("button", { name: "Cancel" }).click();
     return options;
 }
+
+/**
+ * Stands in for Chrome's permission prompt, which a test can't click: from now on, asking for
+ * the optional "tabs" permission is answered `answer` straight away, and remembered like Chrome
+ * would. Only the prompt is fake: the test copy of the extension can already read the fake
+ * site's tabs (see fixtures.ts), the same access the real permission gives on every site.
+ * Reloads the popup so it starts with the stand-in. `promptsShown` counts how often it was asked.
+ */
+export async function answerPermissionPrompt(context: BrowserContext, popup: Page, answer: "grant" | "deny"): Promise<void> {
+    await context.addInitScript((answer) => {
+        if (!location.href.startsWith("chrome-extension://") || typeof chrome === "undefined" || !chrome.permissions) return;
+        const GRANTED = "test.tabsPermission";
+        const asksTabs = (p: chrome.permissions.Permissions) => p.permissions?.includes("tabs") ?? false;
+        const replace = (name: string, value: unknown) => Object.defineProperty(chrome.permissions, name, { value, configurable: true });
+        replace("contains", async (p: chrome.permissions.Permissions) => asksTabs(p) && localStorage.getItem(GRANTED) === "yes");
+        replace("request", async (p: chrome.permissions.Permissions) => {
+            if (!asksTabs(p)) return false;
+            localStorage.setItem("test.promptsShown", String(Number(localStorage.getItem("test.promptsShown") ?? 0) + 1));
+            if (answer === "grant") localStorage.setItem(GRANTED, "yes");
+            return answer === "grant";
+        });
+    }, answer);
+    await popup.reload();
+    await waitUntilReady(popup);
+}
+
+export async function promptsShown(popup: Page): Promise<number> {
+    return popup.evaluate(() => Number(localStorage.getItem("test.promptsShown") ?? 0));
+}
+
+/** The addresses of every tab open in the browser. */
+export async function openTabUrls(popup: Page): Promise<string[]> {
+    return popup.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.url ?? t.pendingUrl ?? ""));
+}

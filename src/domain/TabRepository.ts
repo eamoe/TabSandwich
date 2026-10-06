@@ -39,6 +39,32 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
     });
 }
 
+export interface AddTabsResult {
+    /** What was written, in the order given — now at the top of the list. */
+    added: SavedTab[];
+    /** Inputs skipped because their page was saved meanwhile (or given twice). */
+    duplicates: number;
+}
+
+/**
+ * Saves several pages in one write (a whole window): the same duplicate rule as addTab, checked
+ * again under the lock in case something was saved since the caller looked. The new tabs go to
+ * the top of the list, keeping the order they were given in, all into one category.
+ */
+export async function addTabs(inputs: { title: string; url: string }[], category?: string): Promise<AddTabsResult> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const added: SavedTab[] = [];
+        const savedAt = Date.now();
+        for (const input of inputs) {
+            if (tabs.some((t) => urlsMatch(t.url, input.url)) || added.some((t) => urlsMatch(t.url, input.url))) continue;
+            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category, savedAt });
+        }
+        if (added.length > 0) await setTabs([...added, ...tabs]);
+        return { added, duplicates: inputs.length - added.length };
+    });
+}
+
 export interface EditTabResult {
     /** The other saved tab the new URL would have duplicated — set means nothing was written. */
     duplicateOf: SavedTab | null;

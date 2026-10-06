@@ -32,6 +32,25 @@ export const strings = {
     open: "Open",
     openSavedTooltip: "Open the saved link in a new tab",
     onlyWebPages: "Only web pages can be saved",
+    // Saving a whole window, under the save card.
+    saveWindowAll: (count: number) => `Save all ${count} tabs in this window`,
+    saveWindowNew: (count: number) => `Save ${count} new tab${count === 1 ? "" : "s"} from this window`,
+    saveWindowTooltip: "Saves every web page open in this window into the category picked above (Uncategorized when the page you're on is already saved). Pages you've already saved are skipped.",
+    savingWindow: "Saving…",
+    windowSaved: (count: number) => (count === 0 ? "Nothing new to save" : `Saved ${count} tab${count === 1 ? "" : "s"}`),
+    windowSkippedCount: (count: number) => `${count} skipped`,
+    windowSkipped: (alreadySaved: number, browserPages: number) =>
+        [
+            alreadySaved > 0 && `${alreadySaved} already saved`,
+            browserPages > 0 && `${browserPages} browser page${browserPages === 1 ? "" : "s"}`,
+        ]
+            .filter(Boolean)
+            .join(", "),
+    closeTabs: (count: number) => `Close ${count} tab${count === 1 ? "" : "s"}`,
+    closeTabsTooltip: "Close the saved tabs in this window. The tab you're on stays open.",
+    closedTabs: (count: number) => `Closed ${count} tab${count === 1 ? "" : "s"}`,
+    windowDenied: "Nothing saved. Saving a window needs your OK to see its tabs.",
+    tryAgain: "Try again",
     saveToCategory: "Save to category",
 
     addLinkTitle: "Add a link by hand",

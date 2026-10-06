@@ -88,6 +88,14 @@ const PATHS: Record<IconName, JSX.Element> = {
             <circle cx="15" cy="18" r="1" />
         </>
     ),
+    // Two browser windows, one behind the other: a whole window of tabs.
+    tabs: (
+        <>
+            <rect x="3" y="7" width="14" height="13" rx="2" />
+            <path d="M7 4h11a3 3 0 0 1 3 3v9" />
+            <line x1="3" y1="11" x2="17" y2="11" />
+        </>
+    ),
     moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
     check: <polyline points="5 12 10 17 19 7" />,
     chevronDown: <polyline points="6 9 12 15 18 9" />,
@@ -115,6 +123,7 @@ export type IconName =
     | "edit"
     | "trash"
     | "grip"
+    | "tabs"
     | "moon"
     | "check"
     | "chevronDown"

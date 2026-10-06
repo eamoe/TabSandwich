@@ -9,6 +9,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 ## Features
 
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
+- **Save a whole window** — "Save all tabs in this window", under Save, saves every web page open in the window into the picked category (Uncategorized when the page you're on is already saved, since its category is that one page's), skipping browser pages and pages already saved, and says exactly how many it saved and skipped. It then offers to close the saved tabs (never on its own; the tab you're on stays open). Chrome asks for permission to see your open tabs the first time; saying no leaves everything else working.
 - **A friendly start** — with nothing saved yet, the list shows three tips: saving, the keyboard shortcut, and categories. A search that finds nothing says so and, inside a filter, offers to search everything.
 - **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
