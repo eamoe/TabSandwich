@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { test, expect, TEST_SITE } from "./fixtures";
 import { openSiteTab, row, seedLibrary, storedTabs, tabList } from "./helpers";
 
@@ -114,5 +115,48 @@ test.describe("Saving tabs", () => {
         // Typing again clears the message and its Open.
         await popup.getByLabel("URL").fill("https://b.example.com");
         await expect(popup.getByRole("button", { name: "Open", exact: true })).toHaveCount(0);
+    });
+    test.describe("TC-228: the logo hops on a new save", () => {
+        // The logo is decorative (hidden from screen readers), so there's no role to find it by.
+        const logo = (popup: Page) => popup.locator("[data-hops]");
+        const animation = (popup: Page) => logo(popup).evaluate((el) => getComputedStyle(el).animationName);
+
+        test("saving the page you're on and adding a link by hand each make it hop", async ({ context, popup }) => {
+            await openSiteTab(context, popup, "Example Article");
+            await expect(logo(popup)).toHaveAttribute("data-hops", "0");
+            expect(await animation(popup)).toBe("none");
+
+            await popup.getByRole("button", { name: "Save Tab" }).click();
+            await expect(logo(popup)).toHaveAttribute("data-hops", "1");
+            expect(await animation(popup)).toMatch(/hop/);
+
+            await popup.getByRole("button", { name: "Add link manually" }).click();
+            await popup.getByLabel("URL").fill("docs.example.com/guide");
+            await popup.getByRole("button", { name: "Add", exact: true }).click();
+            await expect(logo(popup)).toHaveAttribute("data-hops", "2");
+        });
+
+        test("an already-saved link and Update don't make it hop", async ({ context, popup }) => {
+            await seedLibrary(popup, [{ title: "Existing", url: "https://a.example.com/" }]);
+            await popup.getByRole("button", { name: "Add link manually" }).click();
+            await popup.getByLabel("URL").fill("https://a.example.com");
+            await popup.getByRole("button", { name: "Add", exact: true }).click();
+            await expect(popup.getByRole("alert")).toHaveText("Already saved as “Existing”.");
+            await popup.getByRole("button", { name: "Cancel" }).click();
+
+            await openSiteTab(context, popup, "Example Article");
+            await popup.getByRole("button", { name: "Save Tab" }).click();
+            await popup.getByRole("button", { name: "Update" }).click();
+            await expect(popup.getByRole("button", { name: "Updated" })).toBeVisible();
+            await expect(logo(popup)).toHaveAttribute("data-hops", "1");
+        });
+
+        test("with reduce motion on, it stays still", async ({ context, popup }) => {
+            await popup.emulateMedia({ reducedMotion: "reduce" });
+            await openSiteTab(context, popup, "Example Article");
+            await popup.getByRole("button", { name: "Save Tab" }).click();
+            await expect(logo(popup)).toHaveAttribute("data-hops", "1");
+            expect(await animation(popup)).toBe("none");
+        });
     });
 });

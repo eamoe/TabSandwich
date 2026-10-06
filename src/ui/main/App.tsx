@@ -37,6 +37,8 @@ export function App(props: { whatsNew?: string | null }) {
     const [filter, setFilter] = useState(ALL);
     const [query, setQuery] = useState("");
     const [manualOpen, setManualOpen] = useState(false);
+    /** New saves so far; the header logo hops on each. */
+    const [hops, setHops] = useState(0);
     const [highlight, setHighlight] = useState<Highlight | null>(null);
     const [entered, setEntered] = useState(false);
     // The sort just picked, shown straight away while it's being saved; cleared once the
@@ -132,6 +134,7 @@ export function App(props: { whatsNew?: string | null }) {
     const searching = query.trim().length > 0;
 
     const afterSave = async (result: AddTabResult) => {
+        if (!result.duplicate) setHops((n) => n + 1);
         setManualOpen(false);
         await reload();
         setFilter(ALL);
@@ -254,6 +257,7 @@ export function App(props: { whatsNew?: string | null }) {
                     onToggleManual={() => setManualOpen((open) => !open)}
                     onOpenSettings={() => openSettings()}
                     settingsButtonRef={settingsButton}
+                    hops={hops}
                 />
                 {manualOpen ? (
                     <ManualForm

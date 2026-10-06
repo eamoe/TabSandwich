@@ -11,6 +11,9 @@
 
 .header { height: 32px; display: flex; align-items: center; gap: 4px; color: var(--on-hero); }
 .mark { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 4px; }
+/* A new save makes the logo hop: up, a tilt each way, and down again. */
+.hop { animation: hop 0.6s ease; }
+@keyframes hop { 0%, 100% { transform: none; } 30% { transform: translateY(-4px) rotate(-8deg); } 60% { transform: translateY(0) rotate(5deg); } }
 .spacer { flex: 1; }
 
 .heroBtn {

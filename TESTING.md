@@ -21,7 +21,7 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
 2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); confirm drag is off while searching (TC-119).
-3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops; all of it stops with the system's reduce-motion setting (TC-049, TC-192).
+3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
@@ -661,7 +661,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-192 — Motion, and reduce-motion (P3)**
 - Steps: Open the popup; save a tab; delete one; hover a row. Then turn on the system's reduce-motion setting and repeat.
-- Expected: Rows rise in quickly on open, a saved row drops in and flashes, a deleted row slides away, Save presses down and pops "✓ Saved!", "Already saved" gives a small shake, hovered rows lift slightly. With reduce motion on, all of it is instant.
+- Expected: Rows rise in quickly on open, a saved row drops in and flashes, a deleted row slides away, Save presses down and pops "✓ Saved!" while the logo hops (TC-228), "Already saved" gives a small shake, hovered rows lift slightly. With reduce motion on, all of it is instant.
 
 **TC-193 — Dark mode follows the system (P1)** **[auto]**
 - Steps: Switch the computer between light and dark mode with the popup open.
@@ -805,3 +805,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-227 — The keys are listed in Settings (P3)**
 - Steps: Settings → **General**, under **Keyboard shortcut**.
 - Expected: A short list of the list's keys, named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
+
+## 20. Save Everything (v3.2)
+
+**TC-228 — The logo hops on a new save (P3)** **[auto]**
+- Steps: Save the page you're on. Then add a link by hand. Then try adding a link that's already saved, and press **Update** on a saved page. Repeat the first step with the system's reduce-motion setting on.
+- Expected: The logo left of the search field hops once — up, a tilt each way, and down — for each new save (about half a second). An already-saved link and Update don't make it hop. With reduce motion on, it stays still.

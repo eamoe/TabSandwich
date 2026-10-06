@@ -69,7 +69,7 @@ src/
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
-      Header.tsx            logo, search, + (add link manually), gear
+      Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
       ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
