@@ -882,3 +882,13 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window and past it.
 - Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list, and never lands a tab inside or outside a window by accident. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
 
+**TC-246 — A window's menu always fits (P1)** **[auto]**
+- Preconditions: Nothing saved but one saved window (so the popup is short).
+- Steps: Open the window's ⋯ menu. Then, with many tabs saved, open a window's ⋯ menu and scroll the list.
+- Expected: The whole menu shows, opening upward over the filter row when there's no room below, on top of everything; it works from there. Scrolling the list closes it rather than leaving it floating away from its row.
+
+**TC-247 — The sort menu always fits (P2)** **[auto]**
+- Preconditions: One saved tab (so the popup is short).
+- Steps: Open the sort menu.
+- Expected: All five choices show (opening upward when there's no room below) and work. (Before 3.2 the bottom of the menu could be cut off here.)
+

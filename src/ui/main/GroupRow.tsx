@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, TabGroup } from "../../types";
 import { Icon, type IconName } from "../Icon";
 import { SiteIcon } from "../SiteIcon";
+import { useMenuPlacement } from "../useMenuPlacement";
 import { strings } from "../strings";
 import controls from "../controls.module.css";
 import styles from "./TabList.module.css";
@@ -47,12 +48,15 @@ export function GroupRow(props: {
     const [renaming, setRenaming] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);
     const menu = useRef<HTMLDivElement>(null);
+    const head = useRef<HTMLDivElement>(null);
+    useMenuPlacement(menuOpen, head, menu, 6, () => setMenuOpen(false));
     const tabIndex = props.current ? 0 : -1;
     const expanded = !group.collapsed;
 
     useLayoutEffect(() => {
         if (!menuOpen) return;
-        menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+        // Without scrolling: the menu floats over the list, and a scroll would close it.
+        menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
         const outside = (e: PointerEvent) => {
             const target = e.target as Node;
             if (!menu.current?.contains(target) && !menuButton.current?.contains(target)) setMenuOpen(false);
@@ -64,7 +68,7 @@ export function GroupRow(props: {
     const onMenuKey = (e: KeyboardEvent) => {
         const items = [...(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
         const index = items.indexOf(document.activeElement as HTMLElement);
-        const go = (i: number) => items[(i + items.length) % items.length]?.focus();
+        const go = (i: number) => items[(i + items.length) % items.length]?.focus({ preventScroll: true });
         if (e.key === "ArrowDown") go(index + 1);
         else if (e.key === "ArrowUp") go(index - 1);
         else if (e.key === "Home") go(0);
@@ -92,7 +96,8 @@ export function GroupRow(props: {
     return (
         <li class={styles.group} data-group-id={group.id}>
             <div
-                class={`${styles.groupHead} ${entranceClass} ${expanded ? styles.groupOpen : ""} ${props.dragOver ? styles.dragOver : ""}`}
+                ref={head}
+                class={`${styles.groupHead} ${entranceClass} ${expanded ? styles.groupOpen : ""} ${props.dragOver ? styles.dragOver : ""} ${menuOpen ? styles.menuOpen : ""}`}
                 style={{ animationDelay: entrance === "rise" ? `${props.entranceDelayMs}ms` : undefined }}
                 onDragOver={props.dragHandlers.onDragOver}
                 onDragLeave={props.dragHandlers.onDragLeave}

@@ -25,12 +25,12 @@
 .active { padding: 0 10px 0 8px; border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
 .active:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
 
-/* Floats over the list: opening it never moves anything. */
+/* Floats over the list: opening it never moves anything. Placed against the window (below the
+   button, or above it when the popup is short) by useMenuPlacement. */
 .menu {
-    position: absolute;
-    top: calc(100% - 4px);
-    right: 12px;
+    position: fixed;
     z-index: 5;
+    overflow-y: auto;
     min-width: 168px;
     display: flex;
     flex-direction: column;

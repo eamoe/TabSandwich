@@ -174,3 +174,27 @@ export async function promptsShown(popup: Page): Promise<number> {
 export async function openTabUrls(popup: Page): Promise<string[]> {
     return popup.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.url ?? t.pendingUrl ?? ""));
 }
+
+/**
+ * Shrinks the test window to the popup's own height. A real popup is only as tall as what it
+ * shows (the test window is always 580px), which is what a floating menu has to fit inside.
+ */
+export async function fitWindowToPopup(popup: Page): Promise<void> {
+    const height = await popup.evaluate(() => Math.ceil(document.getElementById("main-view")!.getBoundingClientRect().bottom));
+    await popup.setViewportSize({ width: 380, height });
+}
+
+/** Every item of the open menu is fully inside the window, and on top: nothing else covers it. */
+export async function expectMenuFullyVisible(popup: Page): Promise<void> {
+    const items = popup.getByRole("menu").locator("[role^='menuitem']");
+    for (const item of await items.all()) {
+        await expect(item).toBeInViewport({ ratio: 1 });
+        // What's actually drawn at the item's corners and middle is the item itself.
+        const covered = await item.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const points = [[r.left + 4, r.top + 4], [r.right - 4, r.bottom - 4], [r.left + r.width / 2, r.top + r.height / 2]];
+            return points.some(([x, y]) => !el.contains(document.elementFromPoint(x, y)));
+        });
+        expect(covered).toBe(false);
+    }
+}

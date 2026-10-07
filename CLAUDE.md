@@ -64,6 +64,8 @@ src/
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
+    useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
+                            when the popup is too short, never clipped by the list
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile

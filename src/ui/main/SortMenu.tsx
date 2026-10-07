@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SortOrder } from "../../types";
 import { Icon } from "../Icon";
+import { useMenuPlacement } from "../useMenuPlacement";
 import { strings } from "../strings";
 import styles from "./SortMenu.module.css";
 
@@ -15,6 +16,8 @@ export function SortMenu(props: { value: SortOrder; onChange: (sort: SortOrder) 
     const [open, setOpen] = useState(false);
     const button = useRef<HTMLButtonElement>(null);
     const menu = useRef<HTMLDivElement>(null);
+    const wrap = useRef<HTMLDivElement>(null);
+    useMenuPlacement(open, wrap, menu, 12, () => setOpen(false));
 
     const close = (refocus: boolean) => {
         setOpen(false);
@@ -25,7 +28,8 @@ export function SortMenu(props: { value: SortOrder; onChange: (sort: SortOrder) 
     // appears (a key pressed right after opening must already land in the menu).
     useLayoutEffect(() => {
         if (!open) return;
-        menu.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+        // Without scrolling: the menu floats over the list, and a scroll would close it.
+        menu.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus({ preventScroll: true });
         const outside = (e: PointerEvent) => {
             const target = e.target as Node;
             if (!menu.current?.contains(target) && !button.current?.contains(target)) setOpen(false);
@@ -37,7 +41,7 @@ export function SortMenu(props: { value: SortOrder; onChange: (sort: SortOrder) 
     const onMenuKey = (e: KeyboardEvent) => {
         const items = [...(menu.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') ?? [])];
         const index = items.indexOf(document.activeElement as HTMLElement);
-        const go = (i: number) => items[(i + items.length) % items.length]?.focus();
+        const go = (i: number) => items[(i + items.length) % items.length]?.focus({ preventScroll: true });
         if (e.key === "ArrowDown") go(index + 1);
         else if (e.key === "ArrowUp") go(index - 1);
         else if (e.key === "Home") go(0);
@@ -51,7 +55,7 @@ export function SortMenu(props: { value: SortOrder; onChange: (sort: SortOrder) 
 
     const custom = props.value === "custom";
     return (
-        <div class={styles.wrap}>
+        <div ref={wrap} class={styles.wrap}>
             <button
                 ref={button}
                 type="button"

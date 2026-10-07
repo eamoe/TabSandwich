@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect, TEST_SITE } from "./fixtures";
-import { answerPermissionPrompt, openSiteTab, rowTitles, seedLibrary, storedTabs, tabList, windowRow } from "./helpers";
+import { answerPermissionPrompt, expectMenuFullyVisible, fitWindowToPopup, openSiteTab, rowTitles, seedLibrary, storedTabs, tabList, windowRow } from "./helpers";
 
 /** Alpha, then the saved window "Research" (Gamma, Delta, Epsilon), then Omega. */
 async function seedWindow(popup: Page, { collapsed = true }: { collapsed?: boolean } = {}) {
@@ -226,5 +226,37 @@ test.describe("Saved windows", () => {
             { groups: [{ id: "g", name: "Research" }] }
         );
         expect(await rowTitles(popup)).toEqual(["Only one left", "Loose"]);
+    });
+
+    test("TC-246: with the window as the only row, its whole menu still shows", async ({ popup }) => {
+        await seedLibrary(
+            popup,
+            [
+                { title: "A", url: "https://a.example.com/", groupId: "g" },
+                { title: "B", url: "https://b.example.com/", groupId: "g" },
+            ],
+            {},
+            { groups: [{ id: "g", name: "Warm Avocado" }] }
+        );
+        await fitWindowToPopup(popup);
+        await actions(popup, "Warm Avocado").click();
+        await expectMenuFullyVisible(popup);
+        // And it still works from there.
+        await popup.getByRole("menuitem", { name: "Break apart" }).click();
+        await expect.poll(() => rowTitles(popup)).toEqual(["A", "B"]);
+    });
+
+    test("TC-246: scrolling the list under an open window menu closes it", async ({ popup }) => {
+        const loose = Array.from({ length: 14 }, (_, i) => ({ title: `Loose ${i + 1}`, url: `https://loose${i + 1}.example.com/` }));
+        await seedLibrary(
+            popup,
+            [{ title: "A", url: "https://a.example.com/", groupId: "g" }, { title: "B", url: "https://b.example.com/", groupId: "g" }, ...loose],
+            {},
+            { groups: [{ id: "g", name: "Warm Avocado" }] }
+        );
+        await actions(popup, "Warm Avocado").click();
+        await expect(popup.getByRole("menu")).toBeVisible();
+        await popup.locator("#main-view").evaluate((el) => el.scrollBy(0, 120));
+        await expect(popup.getByRole("menu")).toHaveCount(0);
     });
 });

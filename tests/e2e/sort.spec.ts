@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { row, rowTitles, seedLibrary, storedSettings, storedTabs } from "./helpers";
+import { expectMenuFullyVisible, fitWindowToPopup, row, rowTitles, seedLibrary, storedSettings, storedTabs } from "./helpers";
 
 // Your own order is the order below; each sort would put them differently.
 const LIBRARY = [
@@ -93,5 +93,14 @@ test.describe("Sorting", () => {
         await expect(popup.getByRole("menu")).toBeVisible();
         await popup.mouse.click(5, 595);
         await expect(popup.getByRole("menu")).toBeHidden();
+    });
+
+    test("TC-247: with only one saved tab, the whole sort menu still shows", async ({ popup }) => {
+        await seedLibrary(popup, [{ title: "Only", url: "https://only.example.com/" }]);
+        await fitWindowToPopup(popup);
+        await popup.getByRole("button", { name: /^Sort:/ }).click();
+        await expectMenuFullyVisible(popup);
+        await popup.getByRole("menuitemradio", { name: "Title (A–Z)" }).click();
+        await expect(popup.getByRole("button", { name: "Sort: Title (A–Z)" })).toBeVisible();
     });
 });

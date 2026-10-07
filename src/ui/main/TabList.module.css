@@ -177,12 +177,15 @@
     gap: var(--row-gap);
 }
 
-/* The window's actions: float over the list, so opening them never moves anything. */
+/* The window's actions: float over the list, so opening them never moves anything. Placed
+   against the window (below the row, or above it when the popup is short) by useMenuPlacement;
+   the row holds still meanwhile, as a moving row would carry a fixed menu with it. */
+.menuOpen, .menuOpen:hover { transform: none; animation: none; z-index: 3; }
+/* (3: above the filter row, which the menu may open over.) */
 .groupMenu {
-    position: absolute;
-    top: calc(100% - 4px);
-    right: 6px;
+    position: fixed;
     z-index: 5;
+    overflow-y: auto;
     min-width: 220px;
     display: flex;
     flex-direction: column;
