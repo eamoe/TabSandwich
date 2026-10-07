@@ -1,5 +1,7 @@
-/* Pinned at the right end of the filter row, outside the part that scrolls sideways. */
-.wrap { position: relative; flex-shrink: 0; padding: 4px 12px 8px 0; }
+/* Pinned at the right end of the filter row, outside the part that scrolls sideways (with the
+   Select button after it, which keeps the row's right margin). */
+.wrap { position: relative; flex-shrink: 0; padding: 4px 6px 8px 0; }
+.wrap:last-child { padding-right: 12px; }
 
 .button {
     height: 26px;

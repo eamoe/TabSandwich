@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, restoreTabs, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -94,6 +94,56 @@ describe("addTabs", () => {
         seed([existing]);
         expect(await addTabs([{ title: "Saved", url: "https://saved.example.com/" }], undefined, () => "Window")).toEqual({ added: [], duplicates: 1, group: null });
         expect(storedTabs()).toEqual([existing]);
+    });
+});
+
+describe("setCategoryOf / restoreCategories", () => {
+    it("moves several tabs into one category in one write, and Undo puts each back", async () => {
+        const tabs = [makeTab({ category: "Work" }), makeTab(), makeTab({ category: "Reading" })];
+        seed(tabs);
+        const previous = await setCategoryOf([tabs[0].id, tabs[1].id, "gone"], "Reading");
+        expect(previous).toEqual([
+            { id: tabs[0].id, category: "Work" },
+            { id: tabs[1].id, category: undefined },
+        ]);
+        expect(storedTabs().map((t) => t.category)).toEqual(["Reading", "Reading", "Reading"]);
+        await restoreCategories(previous);
+        expect(storedTabs().map((t) => t.category)).toEqual(["Work", undefined, "Reading"]);
+    });
+
+    it("moves to Uncategorized", async () => {
+        const tab = makeTab({ category: "Work" });
+        seed([tab]);
+        await setCategoryOf([tab.id], undefined);
+        expect(storedTabs()[0].category).toBeUndefined();
+    });
+});
+
+describe("moveTab / undoMoveTab", () => {
+    it("moves a tab into a saved window, and out of one, and Undo puts it back exactly", async () => {
+        const tabs = [makeTab(), makeTab({ groupId: "g" }), makeTab({ groupId: "g" }), makeTab()];
+        seed(tabs);
+        const into = await moveTab(tabs[3].id, tabs[2].id, "g");
+        expect(storedTabs().map((t) => [t.id, t.groupId])).toEqual([
+            [tabs[0].id, undefined],
+            [tabs[1].id, "g"],
+            [tabs[3].id, "g"],
+            [tabs[2].id, "g"],
+        ]);
+        await undoMoveTab(into!);
+        expect(storedTabs()).toEqual(tabs);
+
+        // Out, staying in place (Alt+arrow past the window's edge).
+        const out = await moveTab(tabs[1].id, tabs[1].id, null);
+        expect(storedTabs()[1]).not.toHaveProperty("groupId");
+        expect(storedTabs().map((t) => t.id)).toEqual(tabs.map((t) => t.id));
+        await undoMoveTab(out!);
+        expect(storedTabs()).toEqual(tabs);
+    });
+
+    it("does nothing when either tab is gone", async () => {
+        seed([makeTab()]);
+        expect(await moveTab("nope", "nope", null)).toBeNull();
     });
 });
 

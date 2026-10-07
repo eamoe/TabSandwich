@@ -107,6 +107,23 @@ export const strings = {
     categoryForScreenReaders: (category: string) => `Category: ${category}`,
     savedDaysAgo: (days: number) => `Saved ${days} day${days === 1 ? "" : "s"} ago`,
     ageBadge: (days: number) => `${days}d`,
+    // Choosing several tabs at once.
+    selectTabs: "Select tabs",
+    selectTooltip: "Select several tabs, to move or delete them together",
+    selectedCount: (count: number) => (count === 0 ? "None selected" : `${count} selected`),
+    selectAll: "Select all",
+    selectAllTooltip: "Select every tab shown, including the tabs in saved windows",
+    moveTo: "Move to…",
+    moveToLabel: "Move the selected tabs to a category",
+    deleteSelectedLabel: (count: number) => `Delete ${count} selected tab${count === 1 ? "" : "s"}`,
+    stopSelecting: "Stop selecting",
+    stopSelectingTooltip: "Stop selecting (Esc)",
+    selectionBarLabel: "Selected tabs",
+    selectWindow: (name: string) => `Select every tab in ${name}`,
+    toggleWindow: "Open or close this saved window",
+    movedTabs: (count: number, category: string) => `Moved ${count} tab${count === 1 ? "" : "s"} to ${category}`,
+    deletedTabs: (count: number) => `Deleted ${count} tab${count === 1 ? "" : "s"}`,
+
     // Saved windows (groups) in the list.
     /**
      * A saved window is named at random from these, sandwich-style ("Toasted Rye"): a name that
@@ -135,8 +152,9 @@ export const strings = {
     renameGroup: "Rename",
     groupNameLabel: "Saved window name",
     ungroup: "Break apart",
-    deleteGroup: "Delete window and its tabs",
-    groupDeleted: (count: number) => `Deleted ${count} tabs`,
+    // "Remove", not "Delete": it's about the list, and closes nothing in the browser.
+    deleteGroup: "Remove from list",
+    groupDeleted: (count: number) => `Removed ${count} tabs`,
     groupBrokenApart: "Broken apart",
     groupOpened: (count: number) => `Opened ${count} tabs and removed them`,
     editTab: (title: string) => `Edit ${title}`,
@@ -153,6 +171,10 @@ export const strings = {
 
     // Keyboard control of the list (stage 4 of v3.1).
     movedTo: (title: string, position: number, total: number) => `Moved “${title}” to position ${position} of ${total}`,
+    movedOutOf: (name: string) => `Moved out of ${name}`,
+    movedInto: (name: string) => `Moved into ${name}`,
+    /** Read out after Alt+arrows steps a tab out of its saved window. */
+    steppedOutOf: (title: string, name: string) => `Moved “${title}” out of ${name}`,
     cantMoveSorted: "Tabs can only be moved in your own order. Switch the sort to Your order first.",
     cantMoveSearching: "Clear the search to move tabs.",
     keyboardKeys: "Keys in the list",
@@ -161,6 +183,7 @@ export const strings = {
         move: "Move through your saved tabs",
         open: "Open the tab",
         window: "Open or close a saved window",
+        select: "Select or unselect, while selecting",
         edit: "Edit it",
         delete: "Delete it",
         undo: "Undo, while Undo is showing",

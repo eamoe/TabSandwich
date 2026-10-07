@@ -36,7 +36,8 @@ src/
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
+    TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
     GroupRepository.ts    saved windows: rename, open/closed, break apart, delete with its tabs (+ Undo for both)
@@ -86,12 +87,15 @@ src/
       ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
+      SelectionBar.tsx      the Select button after it, and the bar that takes the filter row's place while selecting
+                             (count, Select all, Move to…, Delete, ✕) at the same height, so the popup never resizes
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
-                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, → ← for windows, Escape), one Tab stop
+                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, → ← for windows, Space to pick
+                             while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering, sorting, site names, saved windows
-                             in the list, random window names, moves that keep a window together) — logic-tested
+                             in the list, random window names, where a move or drop takes a tab: into or out of a window) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize

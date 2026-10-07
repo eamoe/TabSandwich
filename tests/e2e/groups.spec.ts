@@ -97,11 +97,11 @@ test.describe("Saved windows", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▸ Research", "Omega"]);
     });
 
-    test("TC-238: delete a saved window with its tabs, and Undo", async ({ popup }) => {
+    test("TC-238: remove a saved window and its tabs from the list, and Undo", async ({ popup }) => {
         await seedWindow(popup);
         await actions(popup, "Research").click();
-        await popup.getByRole("menuitem", { name: "Delete window and its tabs" }).click();
-        await expect(popup.getByText("Deleted 3 tabs")).toBeVisible();
+        await popup.getByRole("menuitem", { name: "Remove from list", exact: true }).click();
+        await expect(popup.getByText("Removed 3 tabs")).toBeVisible();
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Omega"]);
         expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Omega"]);
 
@@ -137,7 +137,7 @@ test.describe("Saved windows", () => {
         await popup.keyboard.press("Enter");
         await expect(popup.getByRole("menuitem", { name: "Open all in a new window" })).toBeFocused();
         await popup.keyboard.press("End");
-        await expect(popup.getByRole("menuitem", { name: "Delete window and its tabs" })).toBeFocused();
+        await expect(popup.getByRole("menuitem", { name: "Remove from list", exact: true })).toBeFocused();
         await popup.keyboard.press("ArrowDown");
         await expect(popup.getByRole("menuitem", { name: "Open all in a new window" })).toBeFocused();
         await popup.keyboard.press("Escape");
@@ -177,9 +177,10 @@ test.describe("Saved windows", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▸ Research", "Omega"]);
     });
 
-    test("TC-242: moving tabs keeps a saved window together", async ({ popup }) => {
+    test("TC-242: Alt+arrows move a tab within a window, and step it out past the window's edge", async ({ popup }) => {
         await seedWindow(popup, { collapsed: false });
         const order = async () => (await storedTabs(popup)).map((t) => t.title);
+        const groupOf = async (title: string) => (await storedTabs(popup)).find((t) => t.title === title) as { groupId?: string };
 
         // A loose tab steps past the whole window at once, both ways.
         await titleOf(popup, "Alpha").focus();
@@ -189,14 +190,41 @@ test.describe("Saved windows", () => {
         await popup.keyboard.press("Alt+ArrowUp");
         await expect.poll(order).toEqual(["Alpha", "Gamma", "Delta", "Epsilon", "Omega"]);
 
-        // A tab in the window moves within it, and stops at its edge.
+        // A tab in the window moves within it...
         await titleOf(popup, "Gamma").focus();
         await popup.keyboard.press("Alt+ArrowDown");
         await expect.poll(order).toEqual(["Alpha", "Delta", "Gamma", "Epsilon", "Omega"]);
         await expect(popup.getByRole("status").filter({ hasText: "Moved “Gamma” to position 2 of 3" })).toBeAttached();
         await popup.keyboard.press("Alt+ArrowDown");
-        await popup.keyboard.press("Alt+ArrowDown");
         await expect.poll(order).toEqual(["Alpha", "Delta", "Epsilon", "Gamma", "Omega"]);
+        // ...and past its last tab, out of it, staying where it is.
+        await popup.keyboard.press("Alt+ArrowDown");
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Delta", "Epsilon", "Gamma", "Omega"]);
+        expect((await groupOf("Gamma")).groupId).toBeUndefined();
+        await expect(popup.getByRole("status").filter({ hasText: "Moved “Gamma” out of Research" })).toBeAttached();
+        await expect(titleOf(popup, "Gamma")).toBeFocused();
+        // Undo puts it back in the window.
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Delta", "Epsilon", "Gamma", "Omega"]);
+        await expect.poll(async () => (await groupOf("Gamma")).groupId).toBe("g");
+    });
+
+    test("TC-248: drag a tab out of a window, and a loose tab into one, with Undo", async ({ popup }) => {
+        await seedWindow(popup, { collapsed: false });
+        const groupOf = async (title: string) => ((await storedTabs(popup)).find((t) => t.title === title) as { groupId?: string }).groupId;
+        const rowOf = (title: string) => tabList(popup).locator("li[data-tab-id]").filter({ hasText: title });
+        // Out: Delta dropped on Omega, a loose tab.
+        await rowOf("Delta").dragTo(rowOf("Omega"), { sourcePosition: { x: 22, y: 23 } });
+        await expect(popup.getByText("Moved out of Research")).toBeVisible();
+        await expect.poll(() => groupOf("Delta")).toBeUndefined();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Gamma", "Epsilon", "Omega", "Delta"]);
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(() => groupOf("Delta")).toBe("g");
+        // In: Alpha dropped on Epsilon, inside the window.
+        await rowOf("Alpha").dragTo(rowOf("Epsilon"), { sourcePosition: { x: 22, y: 23 } });
+        await expect(popup.getByText("Moved into Research")).toBeVisible();
+        await expect.poll(() => groupOf("Alpha")).toBe("g");
+        await expect.poll(() => rowTitles(popup)).toEqual(["▾ Research", "Gamma", "Delta", "Epsilon", "Alpha", "Omega"]);
     });
 
     test("TC-243: Show on a page saved inside a closed window opens the window to point at it", async ({ context, popup }) => {

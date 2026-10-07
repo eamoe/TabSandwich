@@ -125,6 +125,16 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`window-menu-${colorScheme}.png`);
         });
 
+        test("choosing several tabs", async ({ popup }) => {
+            await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [{ ...WINDOW, collapsed: false }] });
+            await popup.getByRole("button", { name: "Select tabs" }).click();
+            await popup.getByRole("checkbox", { name: "Vite 8 release notes" }).click();
+            await popup.getByRole("checkbox", { name: "Q3 Roadmap" }).click();
+            await popup.mouse.move(0, 599);
+            await expect(popup.getByRole("navigation", { name: "Selected tabs" })).toContainText("2 selected");
+            await expect(popup).toHaveScreenshot(`selecting-${colorScheme}.png`);
+        });
+
         test("settings: general", async ({ popup }) => {
             await openSettings(popup);
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);

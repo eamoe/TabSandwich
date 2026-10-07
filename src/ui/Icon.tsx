@@ -102,6 +102,13 @@ const PATHS: Record<IconName, JSX.Element> = {
     chevronUp: <polyline points="18 15 12 9 6 15" />,
     chevronLeft: <polyline points="15 18 9 12 15 6" />,
     chevronRight: <polyline points="9 18 15 12 9 6" />,
+    // A ticked box: choosing several at once.
+    select: (
+        <>
+            <rect x="4" y="4" width="16" height="16" rx="4" />
+            <polyline points="8.5 12 11 14.5 15.5 9.5" />
+        </>
+    ),
     more: (
         <>
             <circle cx="5" cy="12" r="1.2" />
@@ -153,6 +160,7 @@ export type IconName =
     | "chevronUp"
     | "chevronLeft"
     | "chevronRight"
+    | "select"
     | "more"
     | "external"
     | "unlink"

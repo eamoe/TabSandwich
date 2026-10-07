@@ -1,6 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { SavedTab, SortOrder, TabGroup } from "../../types";
-import { editTab, deleteTab, putBackTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
+import {
+    editTab,
+    deleteTab,
+    deleteTabs,
+    putBackTab,
+    moveTab,
+    undoMoveTab,
+    restoreCategories,
+    restoreTab,
+    restoreTabs,
+    reorderTabs,
+    setCategoryOf,
+    type AddTabResult,
+} from "../../domain/TabRepository";
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { deleteGroup, renameGroup, restoreGroup, setGroupCollapsed, ungroup, type RemovedGroup } from "../../domain/GroupRepository";
 import { searchTabs } from "../../domain/search";
@@ -16,11 +29,12 @@ import { SaveCard } from "./SaveCard";
 import { ManualForm } from "./ManualForm";
 import { FilterPills, StorageWarning } from "./FilterPills";
 import { SortMenu } from "./SortMenu";
+import { SelectButton, SelectionBar } from "./SelectionBar";
 import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, sortTabs } from "./listModel";
+import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, sortTabs, type Move } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -41,6 +55,15 @@ export function App(props: { whatsNew?: string | null }) {
     const [manualOpen, setManualOpen] = useState(false);
     /** New saves so far; the header logo hops on each. */
     const [hops, setHops] = useState(0);
+    // Choosing several tabs: on or off, what's picked, and the last one picked (where a
+    // Shift-click range starts).
+    const [selecting, setSelecting] = useState(false);
+    const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+    const rangeStart = useRef<string | null>(null);
+    // Read by the page-wide key handler, which must see a change the moment it renders (a quick
+    // Escape right after starting to select), not once the handler is next replaced.
+    const selectingNow = useRef(false);
+    selectingNow.current = selecting;
     const [highlight, setHighlight] = useState<Highlight | null>(null);
     const [entered, setEntered] = useState(false);
     // The sort just picked, shown straight away while it's being saved; cleared once the
@@ -85,6 +108,30 @@ export function App(props: { whatsNew?: string | null }) {
 
     const flash = useCallback((id: string) => setHighlight({ id, seq: ++highlightSeq.current }), []);
 
+    const stopSelecting = useCallback(() => {
+        setSelecting(false);
+        setPicked(new Set());
+        rangeStart.current = null;
+    }, []);
+
+    // The filter row and the selection bar swap places, taking the button just pressed with them:
+    // focus moves to its counterpart in the row that replaced it (unless it's somewhere else now).
+    const firstSelectRender = useRef(true);
+    useLayoutEffect(() => {
+        if (firstSelectRender.current) {
+            firstSelectRender.current = false;
+            return;
+        }
+        if (document.activeElement && document.activeElement !== document.body) return;
+        mainScreen.current?.querySelector<HTMLElement>(`button[aria-pressed][aria-label="${selecting ? strings.stopSelecting : strings.selectTabs}"]`)?.focus();
+    }, [selecting]);
+
+    // Picks are about the tabs on screen: a new filter or search starts over.
+    useEffect(() => {
+        setPicked(new Set());
+        rangeStart.current = null;
+    }, [filter, query]);
+
     // Keys that work anywhere on the main screen (but never while typing in a field):
     // "/" jumps to search, Ctrl+Z / ⌘Z undoes whatever the toast offers to undo.
     useEffect(() => {
@@ -96,6 +143,10 @@ export function App(props: { whatsNew?: string | null }) {
                 if (!search) return;
                 e.preventDefault();
                 search.focus();
+            } else if (e.key === "Escape" && selectingNow.current) {
+                // Escape leaves selecting first (and doesn't close the popup on the way).
+                e.preventDefault();
+                stopSelecting();
             } else if (e.key.toLowerCase() === "z" && (e.ctrlKey || e.metaKey) && !e.shiftKey && hasPendingUndo()) {
                 e.preventDefault();
                 undoFromToast();
@@ -103,7 +154,7 @@ export function App(props: { whatsNew?: string | null }) {
         };
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
-    }, [view]);
+    }, [view, stopSelecting]);
 
     const focusSearch = () => document.getElementById("search-input")?.focus();
     const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view li[data-tab-id] [data-row-title]")?.focus();
@@ -291,9 +342,30 @@ export function App(props: { whatsNew?: string | null }) {
         }
     };
 
-    const onReorder = async (draggedId: string, targetId: string) => {
+    const onReorder = async (draggedId: string, move: Move) => {
+        const dragged = library.tabs.find((t) => t.id === draggedId);
+        const groupOf = (id: string | null | undefined) => library.groups.find((g) => g.id === id);
+        const fromGroup = groupOf(dragged?.groupId);
+        const toGroup = groupOf(move.group);
         try {
-            await reorderTabs(draggedId, targetId);
+            if (fromGroup?.id === toGroup?.id) {
+                // Within your own order (or within one window): a plain move, as always.
+                if (move.to !== draggedId) await reorderTabs(draggedId, move.to);
+            } else {
+                // Into or out of a saved window: said so, with Undo.
+                const previous = await moveTab(draggedId, move.to, move.group);
+                if (previous) {
+                    showUndoToast(toGroup ? strings.movedInto(toGroup.name) : strings.movedOutOf(fromGroup!.name), async () => {
+                        try {
+                            await undoMoveTab(previous);
+                        } catch (err) {
+                            showErrorToast(writeErrorMessage(err));
+                        }
+                        await reload();
+                        flash(draggedId);
+                    });
+                }
+            }
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
         }
@@ -320,6 +392,77 @@ export function App(props: { whatsNew?: string | null }) {
     };
 
     const openTab = (tab: SavedTab) => void chrome.tabs.create({ url: tab.url });
+
+    // Only tabs still saved count as picked (one may have been deleted meanwhile).
+    const pickedIds = library.tabs.filter((t) => picked.has(t.id)).map((t) => t.id);
+
+    const togglePick = (tab: SavedTab, range: boolean) => {
+        const order = visible.tabs.map((t) => t.id);
+        const from = rangeStart.current ? order.indexOf(rangeStart.current) : -1;
+        const to = order.indexOf(tab.id);
+        const next = new Set(picked);
+        if (range && from !== -1 && to !== -1) {
+            // Shift-click: everything between the last pick and this one takes this one's new state.
+            const on = !picked.has(tab.id);
+            for (const id of order.slice(Math.min(from, to), Math.max(from, to) + 1)) {
+                if (on) next.add(id);
+                else next.delete(id);
+            }
+        } else if (next.has(tab.id)) next.delete(tab.id);
+        else next.add(tab.id);
+        rangeStart.current = tab.id;
+        setPicked(next);
+    };
+
+    const togglePickWindow = (tabs: SavedTab[]) => {
+        const next = new Set(picked);
+        const all = tabs.every((t) => next.has(t.id));
+        for (const t of tabs) {
+            if (all) next.delete(t.id);
+            else next.add(t.id);
+        }
+        setPicked(next);
+    };
+
+    const moveSelected = async (category: string) => {
+        const ids = pickedIds;
+        stopSelecting();
+        try {
+            const previous = await setCategoryOf(ids, category === UNCATEGORIZED ? undefined : category);
+            await reload();
+            showUndoToast(strings.movedTabs(previous.length, category), async () => {
+                try {
+                    await restoreCategories(previous);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await reload();
+            });
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
+    };
+
+    const deleteSelected = async () => {
+        const ids = pickedIds;
+        stopSelecting();
+        try {
+            const removed = await deleteTabs(ids);
+            await reload();
+            showUndoToast(strings.deletedTabs(removed.length), async () => {
+                try {
+                    await restoreTabs(removed);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await reload();
+            });
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
+    };
 
     return (
         <>
@@ -366,10 +509,21 @@ export function App(props: { whatsNew?: string | null }) {
                     />
                 )}
             </header>
-            {hasTabs && (
+            {hasTabs && selecting && (
+                <SelectionBar
+                    count={pickedIds.length}
+                    moveOptions={saveOptions}
+                    onSelectAll={() => setPicked(new Set(visible.tabs.map((t) => t.id)))}
+                    onMove={moveSelected}
+                    onDelete={deleteSelected}
+                    onStop={stopSelecting}
+                />
+            )}
+            {hasTabs && !selecting && (
                 <nav class={styles.filterBar} aria-label={strings.filterBarLabel}>
                     <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />
                     <SortMenu value={sort} onChange={onSort} />
+                    <SelectButton active={false} onToggle={() => setSelecting(true)} />
                 </nav>
             )}
             <main id="main-view" class={listStyles.wrap}>
@@ -390,7 +544,7 @@ export function App(props: { whatsNew?: string | null }) {
                     searchActive={searching}
                     // Your own order is the only one dragging can change: search results are in
                     // match order and the other sorts are views, so a drag there would mean nothing.
-                    canReorder={!searching && sort === "custom"}
+                    canReorder={!searching && sort === "custom" && !selecting}
                     // Under a category filter every row shares that category, so rows leave it out.
                     showCategory={activeFilter === ALL || activeFilter === OUTDATED}
                     entered={entered}
@@ -415,9 +569,14 @@ export function App(props: { whatsNew?: string | null }) {
                     onToggleGroup={onToggleGroup}
                     onGroupAction={onGroupAction}
                     onRenameGroup={onRenameGroup}
-                    onEscape={focusSearch}
+                    selecting={selecting}
+                    selected={picked}
+                    onToggleSelect={togglePick}
+                    onToggleSelectGroup={togglePickWindow}
+                    onEscape={selecting ? stopSelecting : focusSearch}
                 />
             </main>
+
         </div>
         {view === "settings" && (
             <SettingsScreen

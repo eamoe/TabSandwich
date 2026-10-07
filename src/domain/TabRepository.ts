@@ -168,6 +168,35 @@ export async function restoreTab(tab: SavedTab, index: number): Promise<void> {
     });
 }
 
+/** A tab's category before a bulk move — what Undo puts back. */
+export interface PreviousCategory {
+    id: string;
+    category?: string;
+}
+
+/**
+ * Moves several tabs into one category (undefined: Uncategorized) in one write, and hands back
+ * what each had before, for one Undo (restoreCategories). Ids no longer saved are skipped.
+ */
+export async function setCategoryOf(ids: string[], category: string | undefined): Promise<PreviousCategory[]> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const wanted = new Set(ids);
+        const previous = tabs.filter((t) => wanted.has(t.id)).map((t) => ({ id: t.id, category: t.category }));
+        if (previous.length > 0) await setTabs(tabs.map((t) => (wanted.has(t.id) ? { ...t, category } : t)));
+        return previous;
+    });
+}
+
+/** Undo for setCategoryOf: each tab back in the category it had (tabs deleted since are skipped). */
+export async function restoreCategories(previous: PreviousCategory[]): Promise<void> {
+    return withStorageLock(async () => {
+        const before = new Map(previous.map((p) => [p.id, p.category]));
+        const tabs = await getTabs();
+        await setTabs(tabs.map((t) => (before.has(t.id) ? { ...t, category: before.get(t.id) } : t)));
+    });
+}
+
 /**
  * Deletes several tabs in one write and hands back each with its position, for one Undo that
  * puts them all back where they were (restoreTabs). Ids no longer saved are skipped.
@@ -194,6 +223,41 @@ export async function restoreTabs(removed: DeleteTabResult[]): Promise<void> {
             if (tabs.some((t) => t.id === tab.id)) continue;
             tabs.splice(Math.max(0, Math.min(index, tabs.length)), 0, tab);
         }
+        await setTabs(tabs);
+    });
+}
+
+/**
+ * Moves a tab to where `targetId` is (itself: it stays put), into the saved window `groupId`, or
+ * out of any window (null), in one write: dragging a tab into or out of a window, or stepping it
+ * out with Alt+arrows. Hands back the tab as it was, and where, for Undo (undoMoveTab); null if
+ * either tab is gone.
+ */
+export async function moveTab(draggedId: string, targetId: string, groupId: string | null): Promise<DeleteTabResult | null> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const fromIndex = tabs.findIndex((t) => t.id === draggedId);
+        const toIndex = tabs.findIndex((t) => t.id === targetId);
+        if (fromIndex === -1 || toIndex === -1) return null;
+        const previous = tabs[fromIndex];
+        const { groupId: _old, ...rest } = previous;
+        const moved: SavedTab = groupId ? { ...rest, groupId } : rest;
+        const next = [...tabs];
+        next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        await setTabs(next);
+        return { tab: previous, index: fromIndex };
+    });
+}
+
+/** Undo for moveTab: the tab back exactly as it was, in its old place (unless it's been deleted since). */
+export async function undoMoveTab(previous: DeleteTabResult): Promise<void> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const at = tabs.findIndex((t) => t.id === previous.tab.id);
+        if (at === -1) return;
+        tabs.splice(at, 1);
+        tabs.splice(Math.max(0, Math.min(previous.index, tabs.length)), 0, previous.tab);
         await setTabs(tabs);
     });
 }

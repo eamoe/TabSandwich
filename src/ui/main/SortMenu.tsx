@@ -17,7 +17,8 @@ export function SortMenu(props: { value: SortOrder; onChange: (sort: SortOrder) 
     const button = useRef<HTMLButtonElement>(null);
     const menu = useRef<HTMLDivElement>(null);
     const wrap = useRef<HTMLDivElement>(null);
-    useMenuPlacement(open, wrap, menu, 12, () => setOpen(false));
+    // The menu's right edge lines up with the button's (the wrap's right padding).
+    useMenuPlacement(open, wrap, menu, 6, () => setOpen(false));
 
     const close = (refocus: boolean) => {
         setOpen(false);

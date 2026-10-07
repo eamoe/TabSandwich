@@ -144,41 +144,53 @@ function locate(items: ListItem[], tabId: string): { index: number; group: Extra
 }
 
 /**
- * Which tab a move puts this one next to, in your own order (reorderTabs moves it to that tab's
- * place) — or null when it can't move that way. One rule for Alt+arrows and drag-and-drop, so a
- * saved window's tabs always stay together: a tab in a window moves only within it, and a loose
- * tab steps past a whole window at once (to its first tab going up, its last going down).
+ * Where a move takes a tab: next to which tab in your own order (reorderTabs moves it to that
+ * tab's place; itself = it stays put), and which saved window it's then in (null: none).
  */
-export function reorderTarget(items: ListItem[], tabId: string, direction: "up" | "down"): string | null {
+export interface Move {
+    to: string;
+    group: string | null;
+}
+
+/**
+ * Alt+arrows. A tab in a window moves within it, and steps out of it past its first or last
+ * tab, staying where it is but no longer in the window; a loose tab steps past a whole window
+ * at once (to its first tab going up, its last going down). Null: it can't move that way.
+ */
+export function reorderTarget(items: ListItem[], tabId: string, direction: "up" | "down"): Move | null {
     const { index, group } = locate(items, tabId);
     if (index === -1) return null;
     const step = direction === "down" ? 1 : -1;
     if (group) {
-        const at = group.tabs.findIndex((t) => t.id === tabId);
-        return group.tabs[at + step]?.id ?? null;
+        const neighbor = group.tabs[group.tabs.findIndex((t) => t.id === tabId) + step];
+        return neighbor ? { to: neighbor.id, group: group.group.id } : { to: tabId, group: null };
     }
     const neighbor = items[index + step];
     if (!neighbor) return null;
-    if (neighbor.kind === "tab") return neighbor.tab.id;
-    return (direction === "down" ? neighbor.tabs.at(-1) : neighbor.tabs[0])?.id ?? null;
+    if (neighbor.kind === "tab") return { to: neighbor.tab.id, group: null };
+    const edge = direction === "down" ? neighbor.tabs.at(-1) : neighbor.tabs[0];
+    return edge ? { to: edge.id, group: null } : null;
 }
 
 /**
- * Where dropping a dragged tab on a row puts it (see reorderTarget), or null if it can't go
- * there: into or out of a saved window. Dropped on a window's own row, a loose tab lands just
- * past the window, on the side it came from.
+ * Drag and drop. Dropped on a tab, the dragged tab takes its place and joins whatever window
+ * that tab is in (or leaves its own, onto a loose tab). Dropped on a window's own row, it lands
+ * just past the window, outside it, on the side it came from (before it, for one of its own
+ * tabs). Null: nowhere to go (dropped on itself).
  */
-export function dropTarget(items: ListItem[], draggedId: string, target: { tabId?: string; groupId?: string }): string | null {
+export function dropTarget(items: ListItem[], draggedId: string, target: { tabId?: string; groupId?: string }): Move | null {
     const from = locate(items, draggedId);
     if (from.index === -1) return null;
     if (target.groupId) {
         const at = items.findIndex((i) => i.kind === "group" && i.group.id === target.groupId);
         const item = items[at];
-        if (from.group || !item || item.kind !== "group") return null;
-        return (from.index < at ? item.tabs.at(-1) : item.tabs[0])?.id ?? null;
+        if (!item || item.kind !== "group") return null;
+        const own = from.group?.group.id === target.groupId;
+        const edge = own || from.index > at ? item.tabs[0] : item.tabs.at(-1);
+        return edge ? { to: edge.id, group: null } : null;
     }
     if (!target.tabId || target.tabId === draggedId) return null;
     const to = locate(items, target.tabId);
-    if (to.index === -1 || from.group?.group.id !== to.group?.group.id) return null;
-    return target.tabId;
+    if (to.index === -1) return null;
+    return { to: target.tabId, group: to.group?.group.id ?? null };
 }

@@ -57,7 +57,7 @@ SAVE A WHOLE WINDOW
 Forty tabs open? One click saves every page in the window into a category, skipping browser pages and anything already saved, with an exact count. Then close them all with one more click, or keep them open. A saved window stays together in your list under a name like "Toasted Rye": open it, rename it, reopen all its tabs in a new window, or break it apart.
 
 EDIT, REORDER, DELETE, UNDO
-Fix a title or URL without deleting and re-adding. Drag tabs into whatever order makes sense to you. Delete what you don't need, with Undo if you change your mind.
+Fix a title or URL without deleting and re-adding. Drag tabs into whatever order makes sense to you. Select several at once to move them to a category or delete them in one go. Delete what you don't need, with Undo if you change your mind.
 
 LIGHT AND DARK
 Follows your computer's light or dark mode, even while open, or pick one in Settings.

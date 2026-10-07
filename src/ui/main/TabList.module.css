@@ -218,3 +218,24 @@
 .menuDanger, .menuDanger > svg { color: var(--danger); }
 .renameForm { flex: 1; display: flex; padding: 0 0 0 8px; }
 .renameForm input { flex: 1; }
+
+/* Choosing several tabs: each row is a checkbox; picked rows wear the accent. */
+.check {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1.5px var(--ink-3);
+    color: var(--on-accent);
+}
+.selected .check, .checkSome, .checkAll { background: var(--accent); box-shadow: none; }
+.selecting .title { cursor: default; }
+/* The checkbox is only a picture: a click on it falls through to the row, which selects. */
+.selecting .lead { pointer-events: none; }
+.selected, .selected:hover { box-shadow: inset 0 0 0 2px var(--accent), var(--row-shadow); }
+.dash { width: 9px; height: 2px; border-radius: 1px; background: var(--on-accent); }
+/* The chevron that opens a window while selecting: points down when the window is open. */
+.chevronBtn > svg { transition: transform 0.15s ease; }
+.chevronBtn[aria-expanded="true"] > svg { transform: rotate(90deg); }

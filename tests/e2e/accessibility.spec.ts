@@ -92,6 +92,24 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("choosing several tabs, a saved window among them", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" },
+                    { title: "A", url: "https://a.example.com/", groupId: "w" },
+                    { title: "B", url: "https://b.example.com/", groupId: "w" },
+                ],
+                {},
+                { groups: [{ id: "w", name: "Toasted Rye", collapsed: false }] }
+            );
+            await popup.getByRole("button", { name: "Select tabs" }).click();
+            await popup.getByRole("checkbox", { name: "A", exact: true }).click();
+            await popup.getByRole("checkbox", { name: "Q3 Roadmap" }).click();
+            await expect(popup.getByRole("navigation", { name: "Selected tabs" })).toContainText("2 selected");
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("renaming a saved window", async ({ popup }) => {
             await seedLibrary(
                 popup,

@@ -5,7 +5,7 @@ import type { MatchRange } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
-import { dropTarget, groupItems, isTabOutdated, reorderTarget, type ListItem } from "./listModel";
+import { dropTarget, groupItems, isTabOutdated, reorderTarget, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
 import { TabRow, type EditOutcome } from "./TabRow";
 import styles from "./TabList.module.css";
@@ -60,10 +60,18 @@ export function TabList(props: {
     onOpen: (tab: SavedTab) => void;
     onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
     onDelete: (tab: SavedTab) => Promise<boolean>;
-    onReorder: (draggedId: string, targetId: string) => void;
+    /** A tab moved in your own order, maybe into or out of a saved window. */
+    onReorder: (draggedId: string, move: Move) => void | Promise<void>;
     onToggleGroup: (group: TabGroup) => void;
     onGroupAction: (group: TabGroup, tabs: SavedTab[], action: Exclude<GroupAction, "rename">) => void;
     onRenameGroup: (group: TabGroup, name: string) => Promise<void>;
+    /** Choosing several tabs: rows select instead of opening, and their own actions step aside. */
+    selecting: boolean;
+    selected: ReadonlySet<string>;
+    /** One tab picked or unpicked; `range`: Shift was held. */
+    onToggleSelect: (tab: SavedTab, range: boolean) => void;
+    /** A saved window's row: all its tabs picked, or unpicked if they all were. */
+    onToggleSelectGroup: (tabs: SavedTab[]) => void;
     /** Escape on a row: back to the search box. */
     onEscape: () => void;
 }) {
@@ -121,13 +129,23 @@ export function TabList(props: {
 
         if ((e.key === "ArrowDown" || e.key === "ArrowUp") && e.altKey) {
             if (!row.tab) return;
-            const neighbor = reorderTarget(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up");
+            const move = reorderTarget(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up");
             if (!props.canReorder) announce(props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
-            else if (neighbor) {
-                pendingFocus.current = row.tab.id;
-                props.onReorder(row.tab.id, neighbor);
-                const { at, of } = placeAmong(row.tab.id);
-                announce(strings.movedTo(row.tab.title, at + (e.key === "ArrowDown" ? 1 : -1), of));
+            else if (move) {
+                const id = row.tab.id;
+                pendingFocus.current = id;
+                // Into or out of a window, the row is rebuilt in its new place: focus it again
+                // once the move has landed.
+                void Promise.resolve(props.onReorder(id, move)).then(() =>
+                    requestAnimationFrame(() => {
+                        if (!rowElement(id)?.contains(document.activeElement)) focusRow(id);
+                    })
+                );
+                if (row.parent && move.group === null) announce(strings.steppedOutOf(row.tab.title, row.parent.name));
+                else {
+                    const { at, of } = placeAmong(row.tab.id);
+                    announce(strings.movedTo(row.tab.title, at + (e.key === "ArrowDown" ? 1 : -1), of));
+                }
             }
         } else if (e.altKey || e.shiftKey) {
             return;
@@ -141,6 +159,9 @@ export function TabList(props: {
         } else if (e.key === "ArrowLeft" && (row.group || row.parent)) {
             if (row.parent) focusRow(groupKey(row.parent.id));
             else if (!row.group!.collapsed) props.onToggleGroup(row.group!);
+        } else if (props.selecting && (e.key === "e" || e.key === "E" || e.key === "Delete" || e.key === "Backspace")) {
+            // While selecting, a row's own edit and delete step aside (the bar acts on the selection).
+            return;
         } else if ((e.key === "e" || e.key === "E") && row.tab) li.querySelector<HTMLElement>('[data-row-action="edit"]')?.click();
         else if (e.key === "Delete" || e.key === "Backspace") {
             // Focus moves on to the next row (or the one before, at the end) once this one is gone;
@@ -185,7 +206,7 @@ export function TabList(props: {
         setDragOverKey(null);
     };
     /** Drag handlers for a row, given where a drop on it would put the dragged tab. */
-    const dragHandlersFor = (key: string, dragOwnId: string | null, targetFor: (dragged: string) => string | null) => ({
+    const dragHandlersFor = (key: string, dragOwnId: string | null, targetFor: (dragged: string) => Move | null) => ({
         onDragStart: (e: DragEvent) => {
             if (!dragOwnId) return;
             setDragId(dragOwnId);
@@ -225,8 +246,11 @@ export function TabList(props: {
                 entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
                 entranceDelayMs={Math.min(index, STAGGER_CAP) * STAGGER_MS}
                 flashSeq={props.highlight?.id === tab.id ? props.highlight.seq : null}
-                draggable={props.canReorder}
+                draggable={props.canReorder && !props.selecting}
                 current={tab.id === current}
+                selecting={props.selecting}
+                selected={props.selected.has(tab.id)}
+                onToggleSelect={(range) => props.onToggleSelect(tab, range)}
                 dragging={dragId === tab.id}
                 dragOver={dragOverKey === tab.id}
                 editOptions={props.editOptions}
@@ -268,6 +292,11 @@ export function TabList(props: {
                             flashSeq={props.highlight?.id === group.id ? props.highlight.seq : null}
                             entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
                             entranceDelayMs={Math.min(order++, STAGGER_CAP) * STAGGER_MS}
+                            selecting={props.selecting}
+                            selection={
+                                tabs.every((t) => props.selected.has(t.id)) ? "all" : tabs.some((t) => props.selected.has(t.id)) ? "some" : "none"
+                            }
+                            onToggleSelect={() => props.onToggleSelectGroup(tabs)}
                             onToggle={() => props.onToggleGroup(group)}
                             onAction={(action) => {
                                 if (action !== "rename") props.onGroupAction(group, tabs, action);

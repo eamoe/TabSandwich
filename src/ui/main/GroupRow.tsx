@@ -37,6 +37,11 @@ export function GroupRow(props: {
     dragHandlers: { onDragOver: (e: DragEvent) => void; onDragLeave: () => void; onDrop: (e: DragEvent) => void };
     entrance: "rise" | "drop" | "none";
     entranceDelayMs: number;
+    /** Choosing several tabs: the row selects all its tabs; a chevron beside it opens and closes it. */
+    selecting: boolean;
+    /** How many of its tabs are selected. */
+    selection: "none" | "some" | "all";
+    onToggleSelect: () => void;
     onToggle: () => void;
     onAction: (action: GroupAction) => void;
     onRename: (name: string) => Promise<void>;
@@ -116,14 +121,23 @@ export function GroupRow(props: {
                         <button
                             type="button"
                             class={styles.groupToggle}
-                            aria-expanded={expanded}
+                            role={props.selecting ? "checkbox" : undefined}
+                            aria-checked={props.selecting ? (props.selection === "some" ? "mixed" : props.selection === "all") : undefined}
+                            aria-expanded={props.selecting ? undefined : expanded}
                             tabIndex={tabIndex}
                             data-row-title
                             data-group-name={group.name}
-                            onClick={props.onToggle}
+                            onClick={props.selecting ? props.onToggleSelect : props.onToggle}
                         >
                             <span class={styles.lead}>
-                                <Icon name="chevronRight" size={16} />
+                                {props.selecting ? (
+                                    <span class={`${styles.check} ${props.selection === "some" ? styles.checkSome : props.selection === "all" ? styles.checkAll : ""}`}>
+                                        {props.selection === "all" && <Icon name="check" size={13} />}
+                                        {props.selection === "some" && <span class={styles.dash} />}
+                                    </span>
+                                ) : (
+                                    <Icon name="chevronRight" size={16} />
+                                )}
                             </span>
                             <span class={styles.text}>
                                 <span class={styles.groupName}>{group.name}</span>
@@ -145,20 +159,34 @@ export function GroupRow(props: {
                                 </span>
                             </span>
                         </button>
-                        <button
-                            ref={menuButton}
-                            type="button"
-                            class={`${controls.iconBtn} ${controls.small} ${styles.groupMenuBtn}`}
-                            aria-label={strings.groupActions(group.name)}
-                            title={strings.groupActionsTooltip}
-                            aria-haspopup="menu"
-                            aria-expanded={menuOpen}
-                            tabIndex={tabIndex}
-                            data-row-action="menu"
-                            onClick={() => setMenuOpen((open) => !open)}
-                        >
-                            <Icon name="more" size={16} />
-                        </button>
+                        {props.selecting ? (
+                            <button
+                                type="button"
+                                class={`${controls.iconBtn} ${controls.small} ${styles.groupMenuBtn} ${styles.chevronBtn}`}
+                                aria-label={strings.toggleWindow}
+                                title={strings.toggleWindow}
+                                aria-expanded={expanded}
+                                tabIndex={tabIndex}
+                                onClick={props.onToggle}
+                            >
+                                <Icon name="chevronRight" size={16} />
+                            </button>
+                        ) : (
+                            <button
+                                ref={menuButton}
+                                type="button"
+                                class={`${controls.iconBtn} ${controls.small} ${styles.groupMenuBtn}`}
+                                aria-label={strings.groupActions(group.name)}
+                                title={strings.groupActionsTooltip}
+                                aria-haspopup="menu"
+                                aria-expanded={menuOpen}
+                                tabIndex={tabIndex}
+                                data-row-action="menu"
+                                onClick={() => setMenuOpen((open) => !open)}
+                            >
+                                <Icon name="more" size={16} />
+                            </button>
+                        )}
                     </>
                 )}
                 {menuOpen && (

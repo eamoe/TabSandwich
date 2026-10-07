@@ -34,6 +34,14 @@ export interface RowProps {
     current: boolean;
     dragging: boolean;
     dragOver: boolean;
+    /**
+     * Choosing several tabs: the row becomes a checkbox (clicking it, or Space, selects it
+     * rather than opening the tab), and its own edit and delete step aside.
+     */
+    selecting: boolean;
+    selected: boolean;
+    /** `range`: Shift was held, selecting everything from the last row picked. */
+    onToggleSelect: (range: boolean) => void;
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: () => void;
@@ -112,18 +120,36 @@ export function TabRow(props: RowProps) {
         props.dragging ? styles.dragging : "",
         props.dragOver ? styles.dragOver : "",
         leaving ? styles.leaving : "",
+        props.selecting ? styles.selecting : "",
+        props.selected ? styles.selected : "",
     ].join(" ");
 
     return (
         <li class={classes} style={rowStyle} data-tab-id={tab.id} draggable={props.draggable} {...(props.draggable ? props.dragHandlers : {})}>
             <span class={styles.lead} aria-hidden="true">
-                <SiteIcon url={tab.url} />
-                <span class={styles.grip}>
-                    <Icon name="grip" size={14} />
-                </span>
+                {props.selecting ? (
+                    <span class={styles.check}>{props.selected && <Icon name="check" size={13} />}</span>
+                ) : (
+                    <>
+                        <SiteIcon url={tab.url} />
+                        <span class={styles.grip}>
+                            <Icon name="grip" size={14} />
+                        </span>
+                    </>
+                )}
             </span>
             <div class={styles.text}>
-                <button ref={titleButton} type="button" class={styles.title} title={tab.title} tabIndex={tabIndex} data-row-title onClick={props.onOpen}>
+                <button
+                    ref={titleButton}
+                    type="button"
+                    class={styles.title}
+                    title={tab.title}
+                    tabIndex={tabIndex}
+                    data-row-title
+                    role={props.selecting ? "checkbox" : undefined}
+                    aria-checked={props.selecting ? props.selected : undefined}
+                    onClick={(e) => (props.selecting ? props.onToggleSelect(e.shiftKey) : props.onOpen())}
+                >
                     {highlighted(tab.title, props.titleRanges)}
                 </button>
                 <span class={styles.meta}>
@@ -149,30 +175,32 @@ export function TabRow(props: RowProps) {
                     {strings.ageBadge(days)}
                 </span>
             )}
-            <span class={styles.actions}>
-                <button
-                    type="button"
-                    class={`${controls.iconBtn} ${controls.small}`}
-                    aria-label={strings.editTab(tab.title)}
-                    title={strings.editTooltip}
-                    tabIndex={tabIndex}
-                    data-row-action="edit"
-                    onClick={() => setEditing(true)}
-                >
-                    <Icon name="edit" size={14} />
-                </button>
-                <button
-                    type="button"
-                    class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
-                    aria-label={strings.deleteTab(tab.title)}
-                    title={strings.deleteTooltip}
-                    tabIndex={tabIndex}
-                    data-row-action="delete"
-                    onClick={() => void startDelete()}
-                >
-                    <Icon name="trash" size={14} />
-                </button>
-            </span>
+            {!props.selecting && (
+                <span class={styles.actions}>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small}`}
+                        aria-label={strings.editTab(tab.title)}
+                        title={strings.editTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="edit"
+                        onClick={() => setEditing(true)}
+                    >
+                        <Icon name="edit" size={14} />
+                    </button>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
+                        aria-label={strings.deleteTab(tab.title)}
+                        title={strings.deleteTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="delete"
+                        onClick={() => void startDelete()}
+                    >
+                        <Icon name="trash" size={14} />
+                    </button>
+                </span>
+            )}
             {props.flashSeq !== null && <span key={props.flashSeq} class={styles.flash} />}
         </li>
     );

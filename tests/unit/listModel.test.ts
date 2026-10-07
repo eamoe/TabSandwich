@@ -125,24 +125,28 @@ describe("saved windows in the list", () => {
         expect(newGroupName(["Toasted Rye", "Toasted Rye 2"], first)).toBe("Toasted Rye 3");
     });
 
-    it("moves a window's tab only within it, and a loose tab past a whole window at once", () => {
-        expect(reorderTarget(items, "m1", "down")).toBe("m2");
-        expect(reorderTarget(items, "m1", "up")).toBeNull();
-        expect(reorderTarget(items, "m3", "down")).toBeNull();
-        expect(reorderTarget(items, "a", "down")).toBe("m3");
-        expect(reorderTarget(items, "z", "up")).toBe("m1");
+    it("Alt+arrows: a window's tab moves within it and steps out past its edge; a loose tab skips a whole window", () => {
+        expect(reorderTarget(items, "m1", "down")).toEqual({ to: "m2", group: "g" });
+        // Out of the window, staying where it is.
+        expect(reorderTarget(items, "m1", "up")).toEqual({ to: "m1", group: null });
+        expect(reorderTarget(items, "m3", "down")).toEqual({ to: "m3", group: null });
+        expect(reorderTarget(items, "a", "down")).toEqual({ to: "m3", group: null });
+        expect(reorderTarget(items, "z", "up")).toEqual({ to: "m1", group: null });
         expect(reorderTarget(items, "a", "up")).toBeNull();
         expect(reorderTarget(items, "nope", "down")).toBeNull();
     });
 
-    it("drops a tab only where it can go: never into or out of a window", () => {
-        expect(dropTarget(items, "a", { tabId: "z" })).toBe("z");
-        expect(dropTarget(items, "m1", { tabId: "m3" })).toBe("m3");
-        expect(dropTarget(items, "a", { tabId: "m2" })).toBeNull();
-        expect(dropTarget(items, "m1", { tabId: "z" })).toBeNull();
-        // On the window's own row: just past it, on the side the tab came from.
-        expect(dropTarget(items, "a", { groupId: "g" })).toBe("m3");
-        expect(dropTarget(items, "z", { groupId: "g" })).toBe("m1");
-        expect(dropTarget(items, "m2", { groupId: "g" })).toBeNull();
+    it("drag and drop: a tab joins the window of the tab it's dropped on, or leaves its own", () => {
+        expect(dropTarget(items, "a", { tabId: "z" })).toEqual({ to: "z", group: null });
+        expect(dropTarget(items, "m1", { tabId: "m3" })).toEqual({ to: "m3", group: "g" });
+        // Into the window, and out of it.
+        expect(dropTarget(items, "a", { tabId: "m2" })).toEqual({ to: "m2", group: "g" });
+        expect(dropTarget(items, "m1", { tabId: "z" })).toEqual({ to: "z", group: null });
+        expect(dropTarget(items, "a", { tabId: "a" })).toBeNull();
+        // On the window's own row: just past it, outside, on the side the tab came from
+        // (before it, for one of its own tabs).
+        expect(dropTarget(items, "a", { groupId: "g" })).toEqual({ to: "m3", group: null });
+        expect(dropTarget(items, "z", { groupId: "g" })).toEqual({ to: "m1", group: null });
+        expect(dropTarget(items, "m2", { groupId: "g" })).toEqual({ to: "m1", group: null });
     });
 });

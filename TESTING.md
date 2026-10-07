@@ -804,7 +804,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-227 — The keys are listed in Settings (P3)**
 - Steps: Settings → **General**, under **Keyboard shortcut**.
-- Expected: A short list of the list's keys (including → and ← for saved windows), named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
+- Expected: A short list of the list's keys (including → and ← for saved windows, and Space while selecting), named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
 
 ## 20. Save Everything (v3.2)
 
@@ -850,9 +850,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: ⋯ → **Break apart**; then **Undo** in the toast.
 - Expected: The window goes, its tabs stay saved, in place, as ordinary rows. Undo brings the window back with the same tabs.
 
-**TC-238 — Delete a window with its tabs (P1)** **[auto]**
-- Steps: ⋯ → **Delete window and its tabs**; then **Undo**.
-- Expected: The toast says "Deleted N tabs" and they're gone. Undo puts the window and every tab back where they were.
+**TC-238 — Remove a window and its tabs from the list (P1)** **[auto]**
+- Steps: ⋯ → **Remove from list**; then **Undo**.
+- Expected: The toast says "Removed N tabs" and they're gone. Undo puts the window and every tab back where they were.
 
 **TC-239 — Open a window's tabs (P1)** **[auto]**
 - Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and remove from list**.
@@ -866,9 +866,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Arrow onto a window's row; press →, → again, ←, ← again; Enter twice; ↓; then Delete on the window's row and Ctrl+Z (⌘Z).
 - Expected: → opens the window, then moves onto its first tab; ← from a tab goes back to the window's row, then closes it; Enter opens and closes it; ↓ past a closed window skips its tabs. Delete on the window's row deletes the window with its tabs, focus moves on, and Ctrl+Z brings it all back.
 
-**TC-242 — Moving tabs keeps a window together (P2)** **[auto]**
-- Steps: In your own order, with a window open: Alt+↓ on a loose tab just above it; Alt+↑ back. Then Alt+↓ on a tab inside the window, to the bottom of the window and once more. Try dragging a tab into and out of the window.
-- Expected: A loose tab steps past the whole window in one move. A tab inside the window moves only within it ("position 2 of 3" counts within the window) and stops at its edge. Dragging a tab into or out of a window isn't offered; dropping a loose tab on the window's row puts it just past the window.
+**TC-242 — Moving tabs with Alt+arrows around windows (P2)** **[auto]**
+- Steps: In your own order, with a window open: Alt+↓ on a loose tab just above it; Alt+↑ back. Then Alt+↓ on a tab inside the window, to the bottom of the window, and once more; then **Undo**.
+- Expected: A loose tab steps past the whole window in one move. A tab inside the window moves within it ("position 2 of 3" counts within the window); past the window's last (or first) tab it steps out of the window, staying where it is, with "Moved “…” out of …" read out, a toast with Undo, and focus still on it. Undo puts it back in the window.
 
 **TC-243 — Show finds a tab inside a closed window (P2)** **[auto]**
 - Steps: Open the popup on a page that's saved inside a closed saved window; click **Show**.
@@ -879,8 +879,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: The last tab shows as an ordinary row; no window row with a single tab.
 
 **TC-245 — Saved windows in real Chrome (P1, release gate)**
-- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window and past it.
-- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list, and never lands a tab inside or outside a window by accident. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
+- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window, out of it, and into it.
+- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list: a tab dropped on a loose tab leaves its window, one dropped on a window's tab joins it, each with a toast and Undo. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
 
 **TC-246 — A window's menu always fits (P1)** **[auto]**
 - Preconditions: Nothing saved but one saved window (so the popup is short).
@@ -891,4 +891,36 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: One saved tab (so the popup is short).
 - Steps: Open the sort menu.
 - Expected: All five choices show (opening upward when there's no room below) and work. (Before 3.2 the bottom of the menu could be cut off here.)
+
+**TC-248 — Drag into and out of a window (P1)** **[auto]**
+- Steps: With a window open, drag one of its tabs onto a loose tab; **Undo**. Drag a loose tab onto one of the window's tabs. Drag a tab onto a window's own row.
+- Expected: Out: the tab leaves the window, lands where dropped, and the toast says "Moved out of …". In: it joins the window at that spot ("Moved into …"). On the window's row: it lands just outside the window, on the side it came from. Undo puts the tab back exactly as it was.
+
+**TC-249 — Selecting starts and stops without moving anything (P1)** **[auto]**
+- Steps: Click the ☑ button at the end of the filter row. Pick a row by clicking it, another by clicking its checkbox. Click ✕. Start again and press Escape.
+- Expected: The popup doesn't change size or jump: the bar ("N selected · Select all · Move to… · 🗑 · ✕") takes the filter row's place at the same height, and focus moves to ✕. Rows become checkboxes; clicking anywhere on a row (checkbox included) picks it without opening the tab; rows' own edit and delete step aside, and dragging is off. Move to… and 🗑 wait until something is picked. ✕ or Escape stops (Escape doesn't close the popup) and forgets the picks.
+
+**TC-250 — Pick a range (P2)** **[auto]**
+- Steps: Pick one row, then Shift-click another further down. Then Shift-click a picked row in between.
+- Expected: Everything between is picked; the second Shift-click unpicks from the last row picked back to the clicked one.
+
+**TC-251 — Pick a whole saved window (P2)** **[auto]**
+- Steps: While selecting, click a closed window's row; open it with its chevron; unpick one of its tabs; click the window's row twice.
+- Expected: The window's row picks all its tabs (its checkbox ticked), shows a dash when only some are picked, and picks them all again, then none. The chevron opens and closes the window while selecting.
+
+**TC-252 — Select all, and filters (P2)** **[auto]**
+- Steps: While selecting, click **Select all**. Stop; pick a category filter; start again and **Select all**.
+- Expected: Every tab shown is picked, including tabs in closed windows; under a filter, only that filter's tabs. Changing the filter or search forgets earlier picks, so nothing hidden is moved or deleted.
+
+**TC-253 — Move picked tabs to a category (P1)** **[auto]**
+- Steps: Pick a few tabs (and a window); choose a category in **Move to…**; then **Undo**.
+- Expected: All of them move in one step ("Moved N tabs to …") and selecting ends. Undo puts each back in the category it had.
+
+**TC-254 — Delete picked tabs (P1)** **[auto]**
+- Steps: Pick a few tabs (and a window); click 🗑; then **Undo**.
+- Expected: All of them are deleted in one step ("Deleted N tabs") and selecting ends. Undo puts every one back where it was, the window included.
+
+**TC-255 — Selecting from the keyboard (P1)** **[auto]**
+- Steps: Start selecting; Tab into the list; Space; ↓; Space; press E and Delete; → on a window.
+- Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
