@@ -220,8 +220,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
-- Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position.
-- Expected: Order updates immediately and is preserved after closing/reopening the popup.
+- Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position: once onto a row's upper half, once onto the last row's lower half.
+- Expected: While dragging, a line in the gap shows where the tab will land: above the row under the pointer's upper half, below it on the lower half. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
 - Preconditions: tabs across 2+ categories, filtered to one category.
@@ -894,7 +894,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-248 — Drag into and out of a window (P1)** **[auto]**
 - Steps: With a window open, drag one of its tabs onto a loose tab; **Undo**. Drag a loose tab onto one of the window's tabs. Drag a tab onto a window's own row.
-- Expected: Out: the tab leaves the window, lands where dropped, and the toast says "Moved out of …". In: it joins the window at that spot ("Moved into …"). On the window's row: it lands just outside the window, on the side it came from. Undo puts the tab back exactly as it was.
+- Expected: A line in the gap shows where the tab will land: above the row on its upper half (that row and the rest move down), below it on its lower half. Out: the tab leaves the window and lands at the line ("Moved out of …"). In: it joins the window at the line ("Moved into …"). On the window's own row: its upper half puts the tab just above the window, outside it; its lower half just below a closed window, or into an open one as its first tab. Undo puts the tab back exactly as it was.
 
 **TC-249 — Selecting starts and stops without moving anything (P1)** **[auto]**
 - Steps: Click the ☑ button at the end of the filter row. Pick a row by clicking it, another by clicking its checkbox. Click ✕. Start again and press Escape.

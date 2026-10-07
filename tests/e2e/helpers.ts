@@ -109,16 +109,17 @@ export const row = (popup: Page, title: string): Locator => tabList(popup).getBy
  * its tabs while it's open.
  */
 export async function rowTitles(popup: Page): Promise<string[]> {
-    const rows = tabList(popup).getByRole("listitem");
-    const titles: string[] = [];
-    for (const item of await rows.all()) {
-        const title = item.getByRole("button").first();
-        if (!(await title.count())) continue;
-        const groupName = await title.getAttribute("data-group-name");
-        if (groupName !== null) titles.push(`${(await title.getAttribute("aria-expanded")) === "true" ? "▾" : "▸"} ${groupName}`);
-        else titles.push((await title.textContent()) ?? "");
-    }
-    return titles;
+    // Read in one step inside the page: row by row from here, a row sliding away (deleted) between
+    // two reads would leave a read waiting for a row that's gone.
+    return tabList(popup).evaluate((list) =>
+        [...list.querySelectorAll("li")].flatMap((item) => {
+            const title = [...item.querySelectorAll("button")].find((b) => (b.getAttribute("role") ?? "button") === "button");
+            if (!title) return [];
+            const groupName = title.getAttribute("data-group-name");
+            if (groupName !== null) return [`${title.getAttribute("aria-expanded") === "true" ? "▾" : "▸"} ${groupName}`];
+            return [title.textContent ?? ""];
+        })
+    );
 }
 
 /** A saved window's own row (the button that opens and closes it), by its name. */

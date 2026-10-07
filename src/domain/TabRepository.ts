@@ -250,7 +250,30 @@ export async function moveTab(draggedId: string, targetId: string, groupId: stri
     });
 }
 
-/** Undo for moveTab: the tab back exactly as it was, in its old place (unless it's been deleted since). */
+/**
+ * Drag and drop: puts a tab just before or just after `targetId`, into the saved window `groupId`
+ * or out of any (null), in one write. Placed next to itself (a window's first tab dropped above
+ * its window), it stays where it is and only changes window. Hands back the tab as it was, and
+ * where, for Undo (undoMoveTab); null if either tab is gone.
+ */
+export async function placeTab(draggedId: string, targetId: string, side: "before" | "after", groupId: string | null): Promise<DeleteTabResult | null> {
+    if (draggedId === targetId) return moveTab(draggedId, targetId, groupId);
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const fromIndex = tabs.findIndex((t) => t.id === draggedId);
+        if (fromIndex === -1) return null;
+        const previous = tabs[fromIndex];
+        const rest = tabs.filter((t) => t.id !== draggedId);
+        const at = rest.findIndex((t) => t.id === targetId);
+        if (at === -1) return null;
+        const { groupId: _old, ...plain } = previous;
+        rest.splice(side === "before" ? at : at + 1, 0, groupId ? { ...plain, groupId } : plain);
+        await setTabs(rest);
+        return { tab: previous, index: fromIndex };
+    });
+}
+
+/** Undo for moveTab and placeTab: the tab back exactly as it was, in its old place (unless it's been deleted since). */
 export async function undoMoveTab(previous: DeleteTabResult): Promise<void> {
     return withStorageLock(async () => {
         const tabs = await getTabs();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -144,6 +144,32 @@ describe("moveTab / undoMoveTab", () => {
     it("does nothing when either tab is gone", async () => {
         seed([makeTab()]);
         expect(await moveTab("nope", "nope", null)).toBeNull();
+    });
+
+    it("placeTab puts a tab just above or below another, wherever it came from, with Undo", async () => {
+        const tabs = [makeTab({ groupId: "g" }), makeTab({ groupId: "g" }), makeTab(), makeTab()];
+        seed(tabs);
+        // Out of the window, onto a loose tab's upper half: it takes that tab's place, the rest move down.
+        const out = await placeTab(tabs[0].id, tabs[3].id, "before", null);
+        expect(storedTabs().map((t) => t.id)).toEqual([tabs[1].id, tabs[2].id, tabs[0].id, tabs[3].id]);
+        expect(storedTabs()[2]).not.toHaveProperty("groupId");
+        await undoMoveTab(out!);
+        expect(storedTabs()).toEqual(tabs);
+        // Below the last tab: the very end is reachable.
+        await placeTab(tabs[0].id, tabs[3].id, "after", null);
+        expect(storedTabs().at(-1)!.id).toBe(tabs[0].id);
+        // Into the window, above its first tab.
+        await placeTab(tabs[2].id, tabs[1].id, "before", "g");
+        expect(storedTabs().map((t) => [t.id, t.groupId])).toEqual([
+            [tabs[2].id, "g"],
+            [tabs[1].id, "g"],
+            [tabs[3].id, undefined],
+            [tabs[0].id, undefined],
+        ]);
+        // Next to itself: stays put, only its window changes.
+        await placeTab(tabs[2].id, tabs[2].id, "before", null);
+        expect(storedTabs()[0]).toEqual(expect.objectContaining({ id: tabs[2].id }));
+        expect(storedTabs()[0]).not.toHaveProperty("groupId");
     });
 });
 

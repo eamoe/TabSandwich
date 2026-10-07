@@ -6,6 +6,7 @@ import {
     deleteTabs,
     putBackTab,
     moveTab,
+    placeTab,
     undoMoveTab,
     restoreCategories,
     restoreTab,
@@ -350,10 +351,11 @@ export function App(props: { whatsNew?: string | null }) {
         try {
             if (fromGroup?.id === toGroup?.id) {
                 // Within your own order (or within one window): a plain move, as always.
-                if (move.to !== draggedId) await reorderTabs(draggedId, move.to);
+                if (move.side) await placeTab(draggedId, move.to, move.side, move.group);
+                else if (move.to !== draggedId) await reorderTabs(draggedId, move.to);
             } else {
                 // Into or out of a saved window: said so, with Undo.
-                const previous = await moveTab(draggedId, move.to, move.group);
+                const previous = move.side ? await placeTab(draggedId, move.to, move.side, move.group) : await moveTab(draggedId, move.to, move.group);
                 if (previous) {
                     showUndoToast(toGroup ? strings.movedInto(toGroup.name) : strings.movedOutOf(fromGroup!.name), async () => {
                         try {

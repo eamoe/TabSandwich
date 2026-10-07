@@ -5,7 +5,7 @@ import type { MatchRange } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
-import { dropTarget, groupItems, isTabOutdated, reorderTarget, type ListItem, type Move } from "./listModel";
+import { dropTarget, groupItems, isTabOutdated, reorderTarget, type DropSide, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
 import { TabRow, type EditOutcome } from "./TabRow";
 import styles from "./TabList.module.css";
@@ -77,7 +77,8 @@ export function TabList(props: {
 }) {
     const listRef = useRef<HTMLUListElement>(null);
     const [dragId, setDragId] = useState<string | null>(null);
-    const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+    // The row a dragged tab is over, and which half: where the insertion line shows.
+    const [dropAt, setDropAt] = useState<{ key: string; side: DropSide } | null>(null);
     // The row the keyboard is on (the first one until focus lands somewhere), and a row to move
     // focus to once the list has re-rendered: the neighbor of a deleted row, or a moved row
     // (moving a focused element in the page drops its focus).
@@ -203,10 +204,15 @@ export function TabList(props: {
 
     const endDrag = () => {
         setDragId(null);
-        setDragOverKey(null);
+        setDropAt(null);
     };
-    /** Drag handlers for a row, given where a drop on it would put the dragged tab. */
-    const dragHandlersFor = (key: string, dragOwnId: string | null, targetFor: (dragged: string) => Move | null) => ({
+    /** The half of the row under the pointer: the tab lands above the row, or below it. */
+    const sideOf = (e: DragEvent): DropSide => {
+        const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        return e.clientY < box.top + box.height / 2 ? "before" : "after";
+    };
+    /** Drag handlers for a row, given where a drop on it (on which half) would put the dragged tab. */
+    const dragHandlersFor = (key: string, dragOwnId: string | null, targetFor: (dragged: string, side: DropSide) => Move | null) => ({
         onDragStart: (e: DragEvent) => {
             if (!dragOwnId) return;
             setDragId(dragOwnId);
@@ -214,17 +220,19 @@ export function TabList(props: {
         },
         onDragEnd: endDrag,
         onDragOver: (e: DragEvent) => {
-            if (!dragId || !targetFor(dragId)) return;
+            const side = sideOf(e);
+            if (!dragId || !targetFor(dragId, side)) return;
             e.preventDefault();
             if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-            setDragOverKey(key);
+            setDropAt((at) => (at?.key === key && at.side === side ? at : { key, side }));
         },
-        onDragLeave: () => setDragOverKey((k) => (k === key ? null : k)),
+        onDragLeave: () => setDropAt((at) => (at?.key === key ? null : at)),
         onDrop: (e: DragEvent) => {
             e.preventDefault();
             const dragged = dragId;
+            const side = sideOf(e);
             endDrag();
-            const to = dragged ? targetFor(dragged) : null;
+            const to = dragged ? targetFor(dragged, side) : null;
             if (dragged && to) props.onReorder(dragged, to);
         },
     });
@@ -252,13 +260,13 @@ export function TabList(props: {
                 selected={props.selected.has(tab.id)}
                 onToggleSelect={(range) => props.onToggleSelect(tab, range)}
                 dragging={dragId === tab.id}
-                dragOver={dragOverKey === tab.id}
+                dropSide={dropAt?.key === tab.id ? dropAt.side : null}
                 editOptions={props.editOptions}
                 colorOf={props.colorOf}
                 onOpen={() => props.onOpen(tab)}
                 onEdit={(updates) => props.onEdit(tab, updates)}
                 onDelete={() => props.onDelete(tab)}
-                dragHandlers={dragHandlersFor(tab.id, tab.id, (dragged) => dropTarget(items, dragged, { tabId: tab.id }))}
+                dragHandlers={dragHandlersFor(tab.id, tab.id, (dragged, side) => dropTarget(items, dragged, { tabId: tab.id }, side))}
             />
         );
     };
@@ -280,14 +288,14 @@ export function TabList(props: {
                     if (item.kind === "tab") return tabRow(item.tab);
                     const { group, tabs } = item;
                     const key = groupKey(group.id);
-                    const drag = dragHandlersFor(key, null, (dragged) => dropTarget(items, dragged, { groupId: group.id }));
+                    const drag = dragHandlersFor(key, null, (dragged, side) => dropTarget(items, dragged, { groupId: group.id }, side));
                     return (
                         <GroupRow
                             key={key}
                             group={group}
                             tabs={tabs}
                             current={key === current}
-                            dragOver={dragOverKey === key}
+                            dropSide={dropAt?.key === key ? dropAt.side : null}
                             dragHandlers={drag}
                             flashSeq={props.highlight?.id === group.id ? props.highlight.seq : null}
                             entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}

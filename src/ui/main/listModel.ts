@@ -150,7 +150,15 @@ function locate(items: ListItem[], tabId: string): { index: number; group: Extra
 export interface Move {
     to: string;
     group: string | null;
+    /**
+     * Drag and drop only: lands just before or just after `to`, wherever the dragged tab came
+     * from. Without it (Alt+arrows), the tab takes `to`'s place in your own order.
+     */
+    side?: DropSide;
 }
+
+/** Which half of a row a dragged tab is over: it lands above the row, or below it. */
+export type DropSide = "before" | "after";
 
 /**
  * Alt+arrows. A tab in a window moves within it, and steps out of it past its first or last
@@ -173,24 +181,30 @@ export function reorderTarget(items: ListItem[], tabId: string, direction: "up" 
 }
 
 /**
- * Drag and drop. Dropped on a tab, the dragged tab takes its place and joins whatever window
- * that tab is in (or leaves its own, onto a loose tab). Dropped on a window's own row, it lands
- * just past the window, outside it, on the side it came from (before it, for one of its own
- * tabs). Null: nowhere to go (dropped on itself).
+ * Drag and drop. Dropped on a tab's upper half, the dragged tab lands just above it, on its lower
+ * half just below it, and joins whatever window that tab is in (leaving its own, onto a loose
+ * tab). On a window's own row: its upper half puts the tab just before the window, outside it;
+ * its lower half just after a closed window, or into an open one as its first tab. Null: nowhere
+ * to go (dropped on itself).
  */
-export function dropTarget(items: ListItem[], draggedId: string, target: { tabId?: string; groupId?: string }): Move | null {
-    const from = locate(items, draggedId);
-    if (from.index === -1) return null;
+export function dropTarget(
+    items: ListItem[],
+    draggedId: string,
+    target: { tabId?: string; groupId?: string },
+    side: DropSide
+): Move | null {
+    if (locate(items, draggedId).index === -1) return null;
     if (target.groupId) {
-        const at = items.findIndex((i) => i.kind === "group" && i.group.id === target.groupId);
-        const item = items[at];
+        const item = items.find((i) => i.kind === "group" && i.group.id === target.groupId);
         if (!item || item.kind !== "group") return null;
-        const own = from.group?.group.id === target.groupId;
-        const edge = own || from.index > at ? item.tabs[0] : item.tabs.at(-1);
-        return edge ? { to: edge.id, group: null } : null;
+        const first = item.tabs[0];
+        const last = item.tabs.at(-1);
+        if (!first || !last) return null;
+        if (side === "before") return { to: first.id, group: null, side: "before" };
+        return item.group.collapsed ? { to: last.id, group: null, side: "after" } : { to: first.id, group: item.group.id, side: "before" };
     }
     if (!target.tabId || target.tabId === draggedId) return null;
     const to = locate(items, target.tabId);
     if (to.index === -1) return null;
-    return { to: target.tabId, group: to.group?.group.id ?? null };
+    return { to: target.tabId, group: to.group?.group.id ?? null, side };
 }

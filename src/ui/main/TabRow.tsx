@@ -33,7 +33,8 @@ export interface RowProps {
      */
     current: boolean;
     dragging: boolean;
-    dragOver: boolean;
+    /** A tab is being dragged over this row: the line shows where it would land, above or below. */
+    dropSide: "before" | "after" | null;
     /**
      * Choosing several tabs: the row becomes a checkbox (clicking it, or Space, selects it
      * rather than opening the tab), and its own edit and delete step aside.
@@ -118,7 +119,7 @@ export function TabRow(props: RowProps) {
         entrance === "rise" ? styles.rise : entrance === "drop" ? styles.drop : "",
         props.draggable ? styles.draggable : "",
         props.dragging ? styles.dragging : "",
-        props.dragOver ? styles.dragOver : "",
+        props.dropSide === "before" ? styles.dropBefore : props.dropSide === "after" ? styles.dropAfter : "",
         leaving ? styles.leaving : "",
         props.selecting ? styles.selecting : "",
         props.selected ? styles.selected : "",

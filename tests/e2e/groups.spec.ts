@@ -213,18 +213,24 @@ test.describe("Saved windows", () => {
         await seedWindow(popup, { collapsed: false });
         const groupOf = async (title: string) => ((await storedTabs(popup)).find((t) => t.title === title) as { groupId?: string }).groupId;
         const rowOf = (title: string) => tabList(popup).locator("li[data-tab-id]").filter({ hasText: title });
-        // Out: Delta dropped on Omega, a loose tab.
-        await rowOf("Delta").dragTo(rowOf("Omega"), { sourcePosition: { x: 22, y: 23 } });
+        const upper = { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 6 } };
+        const lower = { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 40 } };
+        // Out: Delta dropped on Omega's upper half takes Omega's place; Omega moves down.
+        await rowOf("Delta").dragTo(rowOf("Omega"), upper);
         await expect(popup.getByText("Moved out of Research")).toBeVisible();
         await expect.poll(() => groupOf("Delta")).toBeUndefined();
-        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Gamma", "Epsilon", "Omega", "Delta"]);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Gamma", "Epsilon", "Delta", "Omega"]);
         await popup.getByRole("button", { name: "Undo" }).click();
         await expect.poll(() => groupOf("Delta")).toBe("g");
-        // In: Alpha dropped on Epsilon, inside the window.
-        await rowOf("Alpha").dragTo(rowOf("Epsilon"), { sourcePosition: { x: 22, y: 23 } });
+        // In: Alpha dropped on Epsilon's lower half, the window's last tab: it becomes the last tab.
+        await rowOf("Alpha").dragTo(rowOf("Epsilon"), lower);
         await expect(popup.getByText("Moved into Research")).toBeVisible();
         await expect.poll(() => groupOf("Alpha")).toBe("g");
         await expect.poll(() => rowTitles(popup)).toEqual(["▾ Research", "Gamma", "Delta", "Epsilon", "Alpha", "Omega"]);
+        // Out above the window: Gamma dropped on the window's own row (upper half).
+        await rowOf("Gamma").dragTo(windowRow(popup, "Research"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 4 } });
+        await expect(popup.getByText("Moved out of Research")).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Gamma", "▾ Research", "Delta", "Epsilon", "Alpha", "Omega"]);
     });
 
     test("TC-243: Show on a page saved inside a closed window opens the window to point at it", async ({ context, popup }) => {

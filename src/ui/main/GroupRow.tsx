@@ -32,8 +32,8 @@ export function GroupRow(props: {
     /** The keyboard is on this row: only its buttons are in the Tab order (see TabList). */
     current: boolean;
     flashSeq: number | null;
-    /** A loose tab is being dragged over this row: dropping puts it just past the window. */
-    dragOver: boolean;
+    /** A tab is being dragged over this row: the line shows where it would land (see dropTarget). */
+    dropSide: "before" | "after" | null;
     dragHandlers: { onDragOver: (e: DragEvent) => void; onDragLeave: () => void; onDrop: (e: DragEvent) => void };
     entrance: "rise" | "drop" | "none";
     entranceDelayMs: number;
@@ -102,7 +102,7 @@ export function GroupRow(props: {
         <li class={styles.group} data-group-id={group.id}>
             <div
                 ref={head}
-                class={`${styles.groupHead} ${entranceClass} ${expanded ? styles.groupOpen : ""} ${props.dragOver ? styles.dragOver : ""} ${menuOpen ? styles.menuOpen : ""}`}
+                class={`${styles.groupHead} ${entranceClass} ${expanded ? styles.groupOpen : ""} ${props.dropSide === "before" ? styles.dropBefore : props.dropSide === "after" ? styles.dropAfter : ""} ${menuOpen ? styles.menuOpen : ""}`}
                 style={{ animationDelay: entrance === "rise" ? `${props.entranceDelayMs}ms` : undefined }}
                 onDragOver={props.dragHandlers.onDragOver}
                 onDragLeave={props.dragHandlers.onDragLeave}
