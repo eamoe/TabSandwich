@@ -7,7 +7,7 @@ import { withStorageLock } from "./writeQueue";
  * Version 1 is the data shape v2.2.0 shipped with. Everything stored before this module
  * existed has no version number and is, by definition, version 1.
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 export const SCHEMA_VERSION_KEY = "tabSandwich.schemaVersion";
 /** The data as it was right before the most recent upgrade — kept (only the latest) as a recovery copy. */
 export const UPGRADE_BACKUP_KEY = "tabSandwich.upgradeBackup";
@@ -26,8 +26,16 @@ export interface Migration {
     migrate: (data: StoredData) => StoredData;
 }
 
-/** Ordered steps from each version to the next. Empty until a release first changes the stored shape. */
-export const MIGRATIONS: Migration[] = [];
+/** Ordered steps from each version to the next. */
+export const MIGRATIONS: Migration[] = [
+    {
+        // v3.2: saved windows. Adds the (empty) list of groups; tabs gain an optional groupId,
+        // so every existing tab is simply not in a group and needs no change.
+        from: 1,
+        to: 2,
+        migrate: (data) => ({ ...data, "tabSandwich.groups": Array.isArray(data["tabSandwich.groups"]) ? data["tabSandwich.groups"] : [] }),
+    },
+];
 
 export type UpgradeResult =
     | { status: "current" }

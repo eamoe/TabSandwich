@@ -16,6 +16,17 @@ const LIBRARY = [
     { title: "Standing desk comparison", url: "https://rtings.com/desk", daysAgo: 1 },
     { title: "Hacker News", url: "https://news.ycombinator.com/" },
 ];
+/** A saved window (with a fixed name: a new one gets a random name) among a few loose tabs. */
+const WINDOW_LIBRARY = [
+    { title: "Pull requests · eamoe/TabSandwich", url: "https://github.com/eamoe/TabSandwich/pulls", category: "Work", groupId: "w" },
+    { title: "Vite 8 release notes", url: "https://vite.dev/blog/announcing-vite8", category: "Work", groupId: "w" },
+    { title: "Preact Guide: Hooks", url: "https://preactjs.com/guide/v10/hooks", category: "Work", groupId: "w" },
+    { title: "chrome.permissions – Chrome for Developers", url: "https://developer.chrome.com/docs/extensions/reference/api/permissions", groupId: "w" },
+    { title: "Array.prototype.toSorted() – MDN", url: "https://developer.mozilla.org/docs/toSorted", groupId: "w" },
+    ...LIBRARY.slice(1, 5),
+];
+const WINDOW = { id: "w", name: "Toasted Rye" };
+const TODAY = new Date("2026-10-06T12:00:00Z");
 const SETTINGS = {
     categories: ["Work", "Reading", "Travel", "Recipes"],
     categoryColors: { Work: "blue", Reading: "purple", Travel: "teal", Recipes: "coral" },
@@ -24,6 +35,8 @@ const SETTINGS = {
 for (const colorScheme of ["light", "dark"] as const) {
     test.describe(`Screens (${colorScheme})`, () => {
         test.beforeEach(async ({ context, popup }) => {
+            // A fixed "today", so dates shown (a saved window's) never change the picture.
+            await popup.clock.setFixedTime(TODAY);
             await popup.setViewportSize({ width: 380, height: 600 });
             await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
             await seedLibrary(popup, LIBRARY, SETTINGS);
@@ -97,6 +110,19 @@ for (const colorScheme of ["light", "dark"] as const) {
             await popup.keyboard.press("ArrowDown");
             await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
             await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`, { mask: [popup.getByRole("search")] });
+        });
+
+        test("a saved window, closed", async ({ popup }) => {
+            await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`window-closed-${colorScheme}.png`);
+        });
+
+        test("a saved window, open, with its menu", async ({ popup }) => {
+            await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [{ ...WINDOW, collapsed: false }] });
+            await popup.getByRole("button", { name: `Actions for ${WINDOW.name}` }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
+            await expect(popup).toHaveScreenshot(`window-menu-${colorScheme}.png`);
         });
 
         test("settings: general", async ({ popup }) => {

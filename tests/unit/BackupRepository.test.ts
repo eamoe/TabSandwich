@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { importMerge, importReplace, restoreSnapshot } from "../../src/domain/BackupRepository";
 import { parseBackupFile } from "../../src/domain/backup";
-import { getSettings, getTabs } from "../../src/storage/chromeStorage";
-import { makeTab, seed } from "./helpers";
+import { getGroups, getSettings, getTabs } from "../../src/storage/chromeStorage";
+import { makeGroup, makeTab, seed, seedGroups } from "./helpers";
 
 const file = (data: unknown) => parseBackupFile(JSON.stringify(data))!;
 
@@ -32,5 +32,16 @@ describe("BackupRepository", () => {
         await restoreSnapshot(outcome.before);
         expect((await getTabs()).map((t) => t.title)).toEqual(["Kept"]);
         expect((await getSettings()).theme).toBe("light");
+    });
+
+    it("Undo of a Replace brings back saved windows too", async () => {
+        const group = makeGroup();
+        seed([makeTab({ groupId: group.id }), makeTab({ groupId: group.id })]);
+        seedGroups([group]);
+        const outcome = await importReplace(file({ tabs: [{ title: "Only", url: "https://only.example.com" }] }));
+        expect(await getGroups()).toEqual([]);
+        await restoreSnapshot(outcome.before);
+        expect(await getGroups()).toEqual([group]);
+        expect((await getTabs()).every((t) => t.groupId === group.id)).toBe(true);
     });
 });

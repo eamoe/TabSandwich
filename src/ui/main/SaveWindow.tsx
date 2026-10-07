@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { SavedTab } from "../../types";
+import type { SavedTab, TabGroup } from "../../types";
 import { addTabs } from "../../domain/TabRepository";
 import { closableTabIds, planWindowSave } from "../../domain/windowSave";
 import { writeErrorMessage } from "../errors";
@@ -7,6 +7,7 @@ import { Icon } from "../Icon";
 import { showErrorToast } from "../toastStore";
 import { strings } from "../strings";
 import { ALL_TABS_PERMISSION, useWindowTabs } from "./useWindowTabs";
+import { newGroupName } from "./listModel";
 import styles from "./Hero.module.css";
 
 type Phase =
@@ -23,7 +24,11 @@ type Phase =
  * exactly what was saved and skipped, and offers to close the saved tabs — it never closes
  * anything by itself.
  */
-export function SaveWindow(props: { tabs: SavedTab[]; category: string | undefined; onSaved: (added: SavedTab[]) => void }) {
+export function SaveWindow(props: {
+    tabs: SavedTab[];
+    category: string | undefined;
+    onSaved: (added: SavedTab[], group: TabGroup | null) => void;
+}) {
     const windowTabs = useWindowTabs();
     const [phase, setPhase] = useState<Phase>({ kind: "idle" });
 
@@ -38,9 +43,10 @@ export function SaveWindow(props: { tabs: SavedTab[]; category: string | undefin
                 // Read again now that every tab can be seen, so the save matches the window right now.
                 const open = await chrome.tabs.query({ currentWindow: true });
                 const plan = planWindowSave(open, props.tabs);
-                const result = await addTabs(plan.toSave, props.category);
+                // Two or more new pages stay together as one saved window, named at random.
+                const result = await addTabs(plan.toSave, props.category, (taken) => newGroupName(taken));
                 setPhase({ kind: "saved", count: result.added.length, alreadySaved: plan.alreadySaved + result.duplicates, browserPages: plan.browserPages });
-                if (result.added.length > 0) props.onSaved(result.added);
+                if (result.added.length > 0) props.onSaved(result.added, result.group);
             } catch (err) {
                 setPhase({ kind: "idle" });
                 showErrorToast(writeErrorMessage(err));

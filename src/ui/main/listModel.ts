@@ -1,6 +1,7 @@
-import type { SavedTab, Settings, SortOrder } from "../../types";
+import type { SavedTab, Settings, SortOrder, TabGroup } from "../../types";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isOutdated } from "../../util/time";
+import { strings } from "../strings";
 
 /**
  * The main list's rules, kept free of Preact and the DOM so the logic tests can check them
@@ -76,6 +77,53 @@ export function sortTabs(tabs: SavedTab[], sort: SortOrder): SavedTab[] {
     return [...tabs].sort(compare);
 }
 
+/** One entry in the list as shown: a saved tab, or a saved window with its tabs. */
+export type ListItem = { kind: "tab"; tab: SavedTab } | { kind: "group"; group: TabGroup; tabs: SavedTab[] };
+
+/**
+ * The list with saved windows put together: each group stands where its first tab falls in the
+ * given order, holding its tabs in that same order. A group only shows as one while it has two
+ * or more of the given tabs (one left over is just a tab); a tab naming a group that's gone is
+ * just a tab.
+ */
+export function groupItems(tabs: SavedTab[], groups: TabGroup[]): ListItem[] {
+    const byId = new Map(groups.map((g) => [g.id, g]));
+    const members = new Map<string, SavedTab[]>();
+    for (const tab of tabs) {
+        if (tab.groupId && byId.has(tab.groupId)) members.set(tab.groupId, [...(members.get(tab.groupId) ?? []), tab]);
+    }
+    const items: ListItem[] = [];
+    const placed = new Set<string>();
+    for (const tab of tabs) {
+        const inGroup = tab.groupId ? members.get(tab.groupId) : undefined;
+        if (!inGroup || inGroup.length < 2) items.push({ kind: "tab", tab });
+        else if (!placed.has(tab.groupId!)) {
+            placed.add(tab.groupId!);
+            items.push({ kind: "group", group: byId.get(tab.groupId!)!, tabs: inGroup });
+        }
+    }
+    return items;
+}
+
+/**
+ * A name for a newly saved window, picked at random, sandwich-style ("Toasted Rye"), and not one
+ * already in use (a number is added in the unlikely case every pairing is taken). `random` is
+ * there for the logic tests.
+ */
+export function newGroupName(taken: string[], random: () => number = Math.random): string {
+    const { adjectives, nouns } = strings.groupNameWords;
+    const pick = (words: readonly string[]) => words[Math.floor(random() * words.length)];
+    const used = new Set(taken);
+    for (let attempt = 0; attempt < 50; attempt++) {
+        const name = `${pick(adjectives)} ${pick(nouns)}`;
+        if (!used.has(name)) return name;
+    }
+    const base = `${pick(adjectives)} ${pick(nouns)}`;
+    let n = 2;
+    while (used.has(`${base} ${n}`)) n++;
+    return `${base} ${n}`;
+}
+
 /** "github.com" for "https://www.github.com/x" — what a row shows under its title. */
 export function siteName(url: string): string {
     try {
@@ -83,4 +131,54 @@ export function siteName(url: string): string {
     } catch {
         return url;
     }
+}
+
+/** The item a tab is in: its saved window, or none (a loose tab). */
+function locate(items: ListItem[], tabId: string): { index: number; group: Extract<ListItem, { kind: "group" }> | null } {
+    for (let index = 0; index < items.length; index++) {
+        const item = items[index];
+        if (item.kind === "tab" && item.tab.id === tabId) return { index, group: null };
+        if (item.kind === "group" && item.tabs.some((t) => t.id === tabId)) return { index, group: item };
+    }
+    return { index: -1, group: null };
+}
+
+/**
+ * Which tab a move puts this one next to, in your own order (reorderTabs moves it to that tab's
+ * place) — or null when it can't move that way. One rule for Alt+arrows and drag-and-drop, so a
+ * saved window's tabs always stay together: a tab in a window moves only within it, and a loose
+ * tab steps past a whole window at once (to its first tab going up, its last going down).
+ */
+export function reorderTarget(items: ListItem[], tabId: string, direction: "up" | "down"): string | null {
+    const { index, group } = locate(items, tabId);
+    if (index === -1) return null;
+    const step = direction === "down" ? 1 : -1;
+    if (group) {
+        const at = group.tabs.findIndex((t) => t.id === tabId);
+        return group.tabs[at + step]?.id ?? null;
+    }
+    const neighbor = items[index + step];
+    if (!neighbor) return null;
+    if (neighbor.kind === "tab") return neighbor.tab.id;
+    return (direction === "down" ? neighbor.tabs.at(-1) : neighbor.tabs[0])?.id ?? null;
+}
+
+/**
+ * Where dropping a dragged tab on a row puts it (see reorderTarget), or null if it can't go
+ * there: into or out of a saved window. Dropped on a window's own row, a loose tab lands just
+ * past the window, on the side it came from.
+ */
+export function dropTarget(items: ListItem[], draggedId: string, target: { tabId?: string; groupId?: string }): string | null {
+    const from = locate(items, draggedId);
+    if (from.index === -1) return null;
+    if (target.groupId) {
+        const at = items.findIndex((i) => i.kind === "group" && i.group.id === target.groupId);
+        const item = items[at];
+        if (from.group || !item || item.kind !== "group") return null;
+        return (from.index < at ? item.tabs.at(-1) : item.tabs[0])?.id ?? null;
+    }
+    if (!target.tabId || target.tabId === draggedId) return null;
+    const to = locate(items, target.tabId);
+    if (to.index === -1 || from.group?.group.id !== to.group?.group.id) return null;
+    return target.tabId;
 }

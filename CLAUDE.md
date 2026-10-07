@@ -25,26 +25,29 @@ one the release zip is made from.
 
 ```
 src/
-  types.ts              SavedTab, Settings, ThemeChoice, SortOrder
+  types.ts              SavedTab, TabGroup (a saved window), Settings, ThemeChoice, SortOrder
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
+                            tabs and saved windows written together in one write when a change touches both;
                             the last "What's new" version seen, kept apart from Settings so backups can't revive it
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
-                            backup before writing, original restored if anything fails
+                            backup before writing, original restored if anything fails (version 2 = v3.2: saved windows)
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add (one or many)/edit/delete/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
+    TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    GroupRepository.ts    saved windows: rename, open/closed, break apart, delete with its tabs (+ Undo for both)
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
-                            merge (additive, dedupes by URL) vs. replace (full overwrite) — pure
+                            merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
+                            with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
     SettingsRepository.ts  theme, sort and outdated-tab settings writes; clamps the day count to 1–365
   util/
@@ -83,8 +86,10 @@ src/
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
-                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, Escape), one Tab stop
-      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names) — logic-tested
+                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, → ← for windows, Escape), one Tab stop
+      GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
+      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names, saved windows
+                             in the list, random window names, moves that keep a window together) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize

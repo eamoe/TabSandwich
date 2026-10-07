@@ -77,6 +77,37 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("a saved window, closed and open, with its menu", async ({ popup }) => {
+            const tabs = [
+                { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", groupId: "w" },
+                { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20, groupId: "w" },
+                { title: "Loose", url: "https://loose.example.com/" },
+            ];
+            await seedLibrary(popup, tabs, {}, { groups: [{ id: "w", name: "Toasted Rye" }] });
+            expect(await scan(popup)).toEqual([]);
+            await popup.getByRole("button", { name: /^Toasted Rye/ }).click();
+            await expect(popup.getByRole("list", { name: "Toasted Rye" })).toBeVisible();
+            await popup.getByRole("button", { name: /^Actions for/ }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("renaming a saved window", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "A", url: "https://a.example.com/", groupId: "w" },
+                    { title: "B", url: "https://b.example.com/", groupId: "w" },
+                ],
+                {},
+                { groups: [{ id: "w", name: "Research" }] }
+            );
+            await popup.getByRole("button", { name: "Actions for Research" }).click();
+            await popup.getByRole("menuitem", { name: "Rename" }).click();
+            await expect(popup.getByRole("textbox", { name: "Saved window name" })).toBeFocused();
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("manual entry open", async ({ popup }) => {
             await popup.getByRole("button", { name: "Add link manually" }).click();
             await expect(popup.getByLabel("URL")).toBeVisible();

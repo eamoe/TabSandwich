@@ -16,11 +16,11 @@ function tileColor(site: string): string {
  * A site's icon from Chrome's own local cache (never the site itself), on a tinted tile that
  * shows the site's first letter if Chrome has nothing for it.
  */
-export function SiteIcon({ url, large = false }: { url: string; large?: boolean }) {
+export function SiteIcon({ url, large = false, mini = false }: { url: string; large?: boolean; mini?: boolean }) {
     const [failed, setFailed] = useState(false);
     const site = siteName(url);
     return (
-        <span class={large ? `${styles.tile} ${styles.large}` : styles.tile} style={{ background: tileColor(site) }} data-testid="favicon" aria-hidden="true">
+        <span class={`${styles.tile} ${large ? styles.large : ""} ${mini ? styles.mini : ""}`} style={{ background: tileColor(site) }} data-testid="favicon" aria-hidden="true">
             {failed ? site.charAt(0) : <img class={styles.img} src={localFaviconUrl(url)} alt="" onError={() => setFailed(true)} />}
         </span>
     );

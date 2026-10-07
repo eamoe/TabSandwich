@@ -804,7 +804,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-227 — The keys are listed in Settings (P3)**
 - Steps: Settings → **General**, under **Keyboard shortcut**.
-- Expected: A short list of the list's keys, named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
+- Expected: A short list of the list's keys (including → and ← for saved windows), named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
 
 ## 20. Save Everything (v3.2)
 
@@ -815,7 +815,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-229 — Save all tabs in a window (P1)** **[auto]**
 - Preconditions: Several web pages open in one window, one of them already saved, plus a browser page (e.g. `chrome://settings`).
 - Steps: Open the popup on a page that isn't saved, pick a category, and click **Save all N tabs in this window** under Save. The first time, Chrome asks to let Tab Sandwich read your open tabs: allow it.
-- Expected: Every unsaved web page in the window is saved, at the top of the list in the window's order, in the picked category, and the logo hops. The line says "✓ Saved N tabs · M skipped"; hovering "M skipped" (or a screen reader) says why: how many were already saved and how many were browser pages. Chrome asked only this once. Started from a page that's already saved (the picker shows its category), the window's pages go to Uncategorized instead.
+- Expected: Every unsaved web page in the window is saved, in the window's order, in the picked category, and the logo hops. Two or more of them land at the top as one closed saved window with a random sandwich name (e.g. "Toasted Rye"), "N tabs" and today's date, which flashes; open it to see them (TC-234). The line says "✓ Saved N tabs · M skipped"; hovering "M skipped" (or a screen reader) says why: how many were already saved and how many were browser pages. Chrome asked only this once. Started from a page that's already saved (the picker shows its category), the window's pages go to Uncategorized instead.
 
 **TC-230 — Close the saved tabs (P1)** **[auto]**
 - Steps: After TC-229, click **Close N tabs**.
@@ -832,3 +832,53 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-233 — The real permission prompt (P1, release gate)**
 - Steps: In a normal Chrome with the release build, on a fresh install, open the popup from the toolbar in a window with several tabs and click **Save all N tabs in this window**. Allow Chrome's prompt. Repeat on another profile choosing **Deny**. Afterwards, in `chrome://extensions` › Tab Sandwich › Details, remove the "Read your browsing history" permission and reopen the popup.
 - Expected: The prompt explains what's asked ("Read your browsing history"). Allowing saves the window, either straight away or, if Chrome closed the popup while asking, on the next click after reopening it, with no second prompt. Denying saves nothing and the popup keeps working. With the permission removed, the line counts every open tab again and asks again on click.
+
+**TC-234 — A saved window opens and closes (P1)** **[auto]**
+- Preconditions: A saved window (from TC-229) among loose tabs.
+- Steps: Click the window's row. Close and reopen the popup. Click it again.
+- Expected: Closed, it's one row drawn as a small stack: its name, a few site icons, "N tabs" and the date it was saved. Open, its tabs show underneath, indented along a rail, working like any other row. It stays open or closed as you left it.
+
+**TC-235 — Filters and search look inside windows (P1)** **[auto]**
+- Steps: With a closed saved window, search for one of its tabs; then pick a category filter; then **All**.
+- Expected: Searching or filtering shows every matching tab as its own row, including ones in a closed window. **All** with no search shows the window again.
+
+**TC-236 — Rename a saved window (P2)** **[auto]**
+- Steps: ⋯ → **Rename**; type a name and press Enter. Again, but press Escape.
+- Expected: The name changes in place and is kept; Escape (or clicking away) leaves it as it was. A blank name is not accepted.
+
+**TC-237 — Break a window apart (P2)** **[auto]**
+- Steps: ⋯ → **Break apart**; then **Undo** in the toast.
+- Expected: The window goes, its tabs stay saved, in place, as ordinary rows. Undo brings the window back with the same tabs.
+
+**TC-238 — Delete a window with its tabs (P1)** **[auto]**
+- Steps: ⋯ → **Delete window and its tabs**; then **Undo**.
+- Expected: The toast says "Deleted N tabs" and they're gone. Undo puts the window and every tab back where they were.
+
+**TC-239 — Open a window's tabs (P1)** **[auto]**
+- Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and remove from list**.
+- Expected: Each opens the window's tabs in one new browser window. The first keeps them saved; the second removes them (and the window) from the list, with Undo while the popup is open.
+
+**TC-240 — The ⋯ menu from the keyboard (P2)** **[auto]**
+- Steps: Tab to a window's ⋯ button and press Enter; use the arrow keys, Home and End; press Escape.
+- Expected: Focus lands on the first item and moves with the keys (wrapping around); Escape closes the menu and returns focus to ⋯.
+
+**TC-241 — The list's keys on saved windows (P1)** **[auto]**
+- Steps: Arrow onto a window's row; press →, → again, ←, ← again; Enter twice; ↓; then Delete on the window's row and Ctrl+Z (⌘Z).
+- Expected: → opens the window, then moves onto its first tab; ← from a tab goes back to the window's row, then closes it; Enter opens and closes it; ↓ past a closed window skips its tabs. Delete on the window's row deletes the window with its tabs, focus moves on, and Ctrl+Z brings it all back.
+
+**TC-242 — Moving tabs keeps a window together (P2)** **[auto]**
+- Steps: In your own order, with a window open: Alt+↓ on a loose tab just above it; Alt+↑ back. Then Alt+↓ on a tab inside the window, to the bottom of the window and once more. Try dragging a tab into and out of the window.
+- Expected: A loose tab steps past the whole window in one move. A tab inside the window moves only within it ("position 2 of 3" counts within the window) and stops at its edge. Dragging a tab into or out of a window isn't offered; dropping a loose tab on the window's row puts it just past the window.
+
+**TC-243 — Show finds a tab inside a closed window (P2)** **[auto]**
+- Steps: Open the popup on a page that's saved inside a closed saved window; click **Show**.
+- Expected: The window opens and the tab flashes. Undoing a delete of a tab inside a closed window opens the window the same way.
+
+**TC-244 — A window down to one tab (P3)** **[auto]**
+- Steps: Delete all but one tab of a saved window.
+- Expected: The last tab shows as an ordinary row; no window row with a single tab.
+
+**TC-245 — Saved windows in real Chrome (P1, release gate)**
+- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window and past it.
+- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list, and never lands a tab inside or outside a window by accident. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
+

@@ -1,7 +1,9 @@
-import { SavedTab, Settings } from "../types";
+import { SavedTab, Settings, TabGroup } from "../types";
 
 const TABS_KEY = "tabSandwich.tabs";
 const SETTINGS_KEY = "tabSandwich.settings";
+/** Saved windows (v3.2). Data from before has no such key: read as no groups. */
+export const GROUPS_KEY = "tabSandwich.groups";
 /**
  * The last version whose "What's new" note you've seen (or that was installed fresh). Kept apart
  * from Settings on purpose: backups carry Settings, and restoring an old backup must not bring
@@ -48,6 +50,31 @@ function writeFailure(err: unknown): StorageWriteError {
 export async function setTabs(tabs: SavedTab[]): Promise<void> {
     try {
         await chrome.storage.local.set({ [TABS_KEY]: tabs });
+    } catch (err) {
+        throw writeFailure(err);
+    }
+}
+
+export async function getGroups(): Promise<TabGroup[]> {
+    const result = await chrome.storage.local.get(GROUPS_KEY);
+    return Array.isArray(result[GROUPS_KEY]) ? result[GROUPS_KEY] : [];
+}
+
+export async function setGroups(groups: TabGroup[]): Promise<void> {
+    try {
+        await chrome.storage.local.set({ [GROUPS_KEY]: groups });
+    } catch (err) {
+        throw writeFailure(err);
+    }
+}
+
+/**
+ * Tabs and groups in one write, for a change that touches both (saving a window, deleting a
+ * group): either both land or neither does, so a tab never points at a group that wasn't saved.
+ */
+export async function setTabsAndGroups(tabs: SavedTab[], groups: TabGroup[]): Promise<void> {
+    try {
+        await chrome.storage.local.set({ [TABS_KEY]: tabs, [GROUPS_KEY]: groups });
     } catch (err) {
         throw writeFailure(err);
     }

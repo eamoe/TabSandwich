@@ -101,6 +101,29 @@ const PATHS: Record<IconName, JSX.Element> = {
     chevronDown: <polyline points="6 9 12 15 18 9" />,
     chevronUp: <polyline points="18 15 12 9 6 15" />,
     chevronLeft: <polyline points="15 18 9 12 15 6" />,
+    chevronRight: <polyline points="9 18 15 12 9 6" />,
+    more: (
+        <>
+            <circle cx="5" cy="12" r="1.2" />
+            <circle cx="12" cy="12" r="1.2" />
+            <circle cx="19" cy="12" r="1.2" />
+        </>
+    ),
+    external: (
+        <>
+            <path d="M14 4h6v6" />
+            <line x1="20" y1="4" x2="11" y2="13" />
+            <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        </>
+    ),
+    unlink: (
+        <>
+            <rect x="3" y="4" width="8" height="7" rx="2" />
+            <rect x="13" y="13" width="8" height="7" rx="2" />
+            <path d="M15 4h4a2 2 0 0 1 2 2v3" />
+            <path d="M9 20H5a2 2 0 0 1-2-2v-3" />
+        </>
+    ),
     warning: (
         <>
             <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
@@ -129,6 +152,10 @@ export type IconName =
     | "chevronDown"
     | "chevronUp"
     | "chevronLeft"
+    | "chevronRight"
+    | "more"
+    | "external"
+    | "unlink"
     | "warning";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {

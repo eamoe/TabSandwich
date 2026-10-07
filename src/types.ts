@@ -5,6 +5,17 @@ export interface SavedTab {
     /** References a name in Settings.categories, or is absent/unrecognized — both display as "Uncategorized". */
     category?: string;
     savedAt: number;
+    /** The saved window this tab belongs to (v3.2). Absent, or naming a group that no longer exists: not in a group. */
+    groupId?: string;
+}
+
+/** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */
+export interface TabGroup {
+    id: string;
+    /** "github.com + 12 others, 6 Oct" when saved; the user can rename it. */
+    name: string;
+    createdAt: number;
+    collapsed: boolean;
 }
 
 /** How the main list is ordered. "custom" is your own drag-and-drop order; the others are views of it that never rewrite it. */

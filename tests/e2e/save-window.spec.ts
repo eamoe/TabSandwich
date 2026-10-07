@@ -23,7 +23,11 @@ test.describe("Saving a whole window", () => {
             expect.objectContaining({ title: "Beta", url: `${TEST_SITE}/Beta`, category: "Reading" }),
         ]);
         expect(stored).toHaveLength(3);
-        expect((await rowTitles(popup)).slice(0, 3)).toEqual(["Alpha", "Beta", "Saved Before"]);
+        // Together as one saved window, closed, at the top.
+        const titles = await rowTitles(popup);
+        expect(titles).toHaveLength(2);
+        expect(titles[0]).toMatch(/^▸ [A-Z][a-z]+ [A-Z][a-z]+$/);
+        expect(titles[1]).toBe("Saved Before");
         await expect(popup.locator("[data-hops]")).toHaveAttribute("data-hops", "1");
     });
 

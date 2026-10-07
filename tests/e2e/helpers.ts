@@ -7,6 +7,14 @@ export interface SeedTab {
     category?: string;
     /** How long ago it was saved; defaults to now. */
     daysAgo?: number;
+    /** The id of a saved window in `groups` (seedLibrary's last argument). */
+    groupId?: string;
+}
+
+export interface SeedGroup {
+    id: string;
+    name: string;
+    collapsed?: boolean;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -20,10 +28,10 @@ export async function seedLibrary(
     popup: Page,
     tabs: SeedTab[],
     settings: Record<string, unknown> = {},
-    { seenVersion = "current" }: { seenVersion?: string | null } = {}
+    { seenVersion = "current", groups = [] }: { seenVersion?: string | null; groups?: SeedGroup[] } = {}
 ): Promise<void> {
     await popup.evaluate(
-        async ({ tabs, settings, day, seenVersion }) => {
+        async ({ tabs, settings, day, seenVersion, groups }) => {
             await chrome.storage.local.clear();
             if (seenVersion !== null) {
                 await chrome.storage.local.set({
@@ -40,7 +48,9 @@ export async function seedLibrary(
                     url: t.url,
                     category: t.category,
                     savedAt: now - (t.daysAgo ?? 0) * day,
+                    ...(t.groupId ? { groupId: t.groupId } : {}),
                 })),
+                "tabSandwich.groups": groups.map((g) => ({ id: g.id, name: g.name, createdAt: now, collapsed: g.collapsed ?? true })),
                 "tabSandwich.settings": {
                     outdatedEnabled: true,
                     outdatedDays: 7,
@@ -50,7 +60,7 @@ export async function seedLibrary(
                 },
             });
         },
-        { tabs, settings, day: DAY, seenVersion }
+        { tabs, settings, day: DAY, seenVersion, groups }
     );
     await popup.reload();
     await waitUntilReady(popup);
@@ -93,16 +103,26 @@ export const tabList = (popup: Page): Locator => popup.getByRole("list", { name:
 
 export const row = (popup: Page, title: string): Locator => tabList(popup).getByRole("listitem").filter({ hasText: title });
 
-/** The titles of the rows on screen, top to bottom — each row's first button is its title, which opens the tab. */
+/**
+ * The titles of the rows on screen, top to bottom — each row's first button is its title, which
+ * opens the tab. A saved window's row shows as "▸ name" (closed) or "▾ name" (open), followed by
+ * its tabs while it's open.
+ */
 export async function rowTitles(popup: Page): Promise<string[]> {
     const rows = tabList(popup).getByRole("listitem");
     const titles: string[] = [];
     for (const item of await rows.all()) {
         const title = item.getByRole("button").first();
-        if (await title.count()) titles.push((await title.textContent()) ?? "");
+        if (!(await title.count())) continue;
+        const groupName = await title.getAttribute("data-group-name");
+        if (groupName !== null) titles.push(`${(await title.getAttribute("aria-expanded")) === "true" ? "▾" : "▸"} ${groupName}`);
+        else titles.push((await title.textContent()) ?? "");
     }
     return titles;
 }
+
+/** A saved window's own row (the button that opens and closes it), by its name. */
+export const windowRow = (popup: Page, name: string): Locator => tabList(popup).locator(`button[data-group-name="${name}"]`);
 
 export async function openSettings(popup: Page, tab?: "General" | "Categories" | "Backup" | "About"): Promise<void> {
     await popup.getByRole("button", { name: "Open settings" }).click();

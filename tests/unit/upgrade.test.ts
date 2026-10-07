@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     CURRENT_SCHEMA_VERSION,
     SCHEMA_VERSION_KEY,
+    MIGRATIONS,
     UPGRADE_BACKUP_KEY,
     upgradeStoredData,
     type Migration,
@@ -37,11 +38,30 @@ const throwing: Migration = {
 const snapshot = () => structuredClone(storage.data);
 
 describe("upgradeStoredData", () => {
-    it("stamps data from before versioning (v2.2 and earlier) as the current version, without changing it", async () => {
+    it("stamps data from before versioning (v2.2 and earlier) as version 1, without changing it", async () => {
         seed([makeTab()]);
         const before = snapshot();
-        expect(await upgradeStoredData()).toEqual({ status: "current" });
-        expect(storage.data).toEqual({ ...before, [SCHEMA_VERSION_KEY]: CURRENT_SCHEMA_VERSION });
+        expect(await upgradeStoredData([], 1)).toEqual({ status: "current" });
+        expect(storage.data).toEqual({ ...before, [SCHEMA_VERSION_KEY]: 1 });
+    });
+
+    it("v3.2 (version 2): data from before gets an empty list of saved windows, tabs untouched, with a backup", async () => {
+        const tab = makeTab();
+        seed([tab]);
+        const before = snapshot();
+        expect(CURRENT_SCHEMA_VERSION).toBe(2);
+        expect(await upgradeStoredData()).toEqual({ status: "upgraded", from: 1, to: 2 });
+        expect(storage.data[TABS_KEY]).toEqual([tab]);
+        expect(storage.data["tabSandwich.groups"]).toEqual([]);
+        expect(storage.data[SCHEMA_VERSION_KEY]).toBe(2);
+        expect(storage.data[UPGRADE_BACKUP_KEY]).toMatchObject({ fromVersion: 1, data: before });
+    });
+
+    it("the version 2 step keeps saved windows that are somehow already there, and copes with no data", () => {
+        const step = MIGRATIONS.find((m) => m.from === 1)!;
+        const groups = [{ id: "g", name: "Window", createdAt: 1, collapsed: true }];
+        expect(step.migrate({ "tabSandwich.groups": groups })["tabSandwich.groups"]).toEqual(groups);
+        expect(step.migrate({})).toEqual({ "tabSandwich.groups": [] });
     });
 
     it("does nothing at all when data is already current", async () => {

@@ -114,3 +114,104 @@
 .editing:hover { transform: none; }
 .editForm { display: flex; flex-direction: column; gap: 6px; }
 .editActions { display: flex; align-items: center; gap: 6px; }
+
+/* A saved window: a row drawn as a small stack of cards, which opens to show its tabs. */
+.group { display: flex; flex-direction: column; gap: var(--row-gap); flex-shrink: 0; }
+.groupHead {
+    position: relative;
+    height: var(--row-h);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px 0 0;
+    border-radius: 12px;
+    background: var(--surface);
+    /* The card peeking out underneath (narrower, 5px lower): this row stands for several tabs. */
+    --stack: 0 11px 0 -6px var(--surface-2), 0 11px 0 -5px var(--line);
+    box-shadow: inset 0 0 0 1px var(--line), var(--row-shadow), var(--stack);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.groupHead:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--line), var(--row-lift), var(--stack); z-index: 1; }
+.groupOpen { --stack: 0 0 transparent; margin-bottom: 0; }
+.groupToggle {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0 0 10px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.groupToggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.groupToggle .lead { color: var(--ink-2); transition: transform 0.15s ease; }
+.groupToggle[aria-expanded="true"] .lead { transform: rotate(90deg); }
+.groupName {
+    max-width: 100%;
+    font-weight: 700;
+    line-height: 17px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.groupIcons { display: inline-flex; padding-left: 3px; }
+.groupIcons > span { margin-left: -3px; }
+.groupMenuBtn { flex-shrink: 0; }
+
+/* The window's tabs, while it's open: indented under it, along a rail. */
+.members {
+    list-style: none;
+    margin: 0 0 4px 14px;
+    padding: 0 0 0 10px;
+    border-left: 2px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: var(--row-gap);
+}
+
+/* The window's actions: float over the list, so opening them never moves anything. */
+.groupMenu {
+    position: absolute;
+    top: calc(100% - 4px);
+    right: 6px;
+    z-index: 5;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    animation: menuPop 0.14s ease-out;
+}
+@keyframes menuPop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+.menuItem {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.menuItem:hover, .menuItem:focus-visible { background: var(--hover); outline: none; }
+.menuItem > svg { color: var(--ink-2); }
+.menuDanger, .menuDanger > svg { color: var(--danger); }
+.renameForm { flex: 1; display: flex; padding: 0 0 0 8px; }
+.renameForm input { flex: 1; }

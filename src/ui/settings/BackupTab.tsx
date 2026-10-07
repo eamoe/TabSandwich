@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { getSettings, getTabs } from "../../storage/chromeStorage";
+import { getGroups, getSettings, getTabs } from "../../storage/chromeStorage";
 import { backupFileName, buildBackupFile, parseBackupFile, type ParsedImport } from "../../domain/backup";
 import { importMerge, importReplace, restoreSnapshot, type Snapshot } from "../../domain/BackupRepository";
 import { writeErrorMessage } from "../errors";
@@ -12,8 +12,8 @@ const STATUS_MS = 4000;
 
 /** A plain link download: no `downloads` permission needed, nothing leaves the device. */
 async function downloadBackup(): Promise<number> {
-    const [tabs, settings] = await Promise.all([getTabs(), getSettings()]);
-    const blob = new Blob([JSON.stringify(buildBackupFile(tabs, settings), null, 2)], { type: "application/json" });
+    const [tabs, settings, groups] = await Promise.all([getTabs(), getSettings(), getGroups()]);
+    const blob = new Blob([JSON.stringify(buildBackupFile(tabs, settings, groups), null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

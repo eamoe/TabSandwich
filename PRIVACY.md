@@ -12,6 +12,9 @@ When you save a tab, Tab Sandwich stores:
 - The page's URL
 - A category you assign (optional)
 - The date and time you saved it
+- Which saved window it belongs to, if you saved it as part of a whole window
+
+For each saved window, Tab Sandwich stores its name (a random one like "Toasted Rye", which you can change), when it was saved, and whether you've left it open or closed in the list.
 
 Tab Sandwich also stores your settings: your categories and their colors, the outdated-tab setting, your light/dark theme choice, and how you sort the list.
 
@@ -31,7 +34,7 @@ No favicon data is stored at all. To show a saved tab's icon, the popup asks Chr
 
 ## Export & import
 
-Settings includes an optional Export/Import feature. Export writes everything listed above, including your settings, to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
+Settings includes an optional Export/Import feature. Export writes everything listed above, including your settings and saved windows, to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
 
 ## What Tab Sandwich does not do
 

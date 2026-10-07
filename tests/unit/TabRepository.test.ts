@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
-import { makeTab, seed, storedTabs } from "./helpers";
+import { addTab, addTabs, deleteTab, deleteTabs, restoreTabs, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
+import { storage } from "./setup";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -52,11 +53,65 @@ describe("addTabs", () => {
         expect(storedTabs().map((t) => t.title)).toEqual(["One", "Two", existing.title]);
     });
 
+    it("puts two or more new tabs in one collapsed saved window, written in the same write", async () => {
+        seed([makeTab()]);
+        seedGroups([makeGroup({ name: "Crispy Bagel" })]);
+        const writes: string[][] = [];
+        let offered: string[] = [];
+        storage.rejectSet = (items) => {
+            writes.push(Object.keys(items).sort());
+            return null;
+        };
+        const { added, group } = await addTabs(
+            [
+                { title: "One", url: "https://one.example.com/" },
+                { title: "Two", url: "https://two.example.com/" },
+            ],
+            undefined,
+            (taken) => {
+                offered = taken;
+                return "Toasted Rye";
+            }
+        );
+        // Named knowing which names are taken, so it can pick another.
+        expect(offered).toEqual(["Crispy Bagel"]);
+        expect(group).toEqual(expect.objectContaining({ name: "Toasted Rye", collapsed: true }));
+        expect(added.every((t) => t.groupId === group!.id)).toBe(true);
+        expect(storedGroups().map((g) => g.name)).toEqual(["Toasted Rye", "Crispy Bagel"]);
+        expect(writes).toEqual([["tabSandwich.groups", "tabSandwich.tabs"]]);
+    });
+
+    it("makes no saved window for a single new tab", async () => {
+        seed([]);
+        const { added, group } = await addTabs([{ title: "One", url: "https://one.example.com/" }], undefined, () => "Window");
+        expect(group).toBeNull();
+        expect(added[0].groupId).toBeUndefined();
+        expect(storedGroups()).toEqual([]);
+    });
+
     it("writes nothing when every page is already saved", async () => {
         const existing = makeTab({ url: "https://saved.example.com/" });
         seed([existing]);
-        expect(await addTabs([{ title: "Saved", url: "https://saved.example.com/" }])).toEqual({ added: [], duplicates: 1 });
+        expect(await addTabs([{ title: "Saved", url: "https://saved.example.com/" }], undefined, () => "Window")).toEqual({ added: [], duplicates: 1, group: null });
         expect(storedTabs()).toEqual([existing]);
+    });
+});
+
+describe("deleteTabs / restoreTabs", () => {
+    it("deletes several tabs in one write, and Undo puts each back in its place", async () => {
+        const tabs = [makeTab(), makeTab(), makeTab(), makeTab(), makeTab()];
+        seed(tabs);
+        const removed = await deleteTabs([tabs[3].id, tabs[0].id, "gone"]);
+        expect(removed.map((r) => [r.tab.id, r.index])).toEqual([
+            [tabs[0].id, 0],
+            [tabs[3].id, 3],
+        ]);
+        expect(storedTabs().map((t) => t.id)).toEqual([tabs[1].id, tabs[2].id, tabs[4].id]);
+        await restoreTabs(removed);
+        expect(storedTabs()).toEqual(tabs);
+        // A second Undo doesn't duplicate anything.
+        await restoreTabs(removed);
+        expect(storedTabs()).toEqual(tabs);
     });
 });
 

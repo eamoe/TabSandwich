@@ -10,6 +10,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
 - **Save a whole window** — "Save all tabs in this window", under Save, saves every web page open in the window into the picked category (Uncategorized when the page you're on is already saved, since its category is that one page's), skipping browser pages and pages already saved, and says exactly how many it saved and skipped. It then offers to close the saved tabs (never on its own; the tab you're on stays open). Chrome asks for permission to see your open tabs the first time; saying no leaves everything else working.
+- **Saved windows** — a window saved in one go stays together in the list as one row with a random sandwich name ("Toasted Rye"), its tab count and the date; click it (or press →) to open it and see its tabs. Its ⋯ menu opens all its tabs in a new window (keeping or removing them), renames it, breaks it apart, or deletes it with its tabs (all undoable). Filtering or searching shows every tab as its own row, so nothing stays hidden in a closed window.
 - **A friendly start** — with nothing saved yet, the list shows three tips: saving, the keyboard shortcut, and categories. A search that finds nothing says so and, inside a filter, offers to search everything.
 - **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
@@ -27,7 +28,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
-- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, / jumps to search. The keys are listed in Settings › General.
+- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, → and ← open and close a saved window, / jumps to search. The keys are listed in Settings › General.
 
 ## Installation
 

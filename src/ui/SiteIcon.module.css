@@ -14,4 +14,7 @@
     text-transform: uppercase;
 }
 .large { width: 28px; height: 28px; font-size: 13px; }
+/* A saved window's row shows a few of its sites at this size, overlapping. */
+.mini { width: 16px; height: 16px; border-radius: 5px; font-size: 9px; box-shadow: 0 0 0 1.5px var(--surface); }
+.mini .img { width: 12px; height: 12px; }
 .img { width: 16px; height: 16px; }

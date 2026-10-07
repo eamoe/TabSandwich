@@ -107,6 +107,38 @@ export const strings = {
     categoryForScreenReaders: (category: string) => `Category: ${category}`,
     savedDaysAgo: (days: number) => `Saved ${days} day${days === 1 ? "" : "s"} ago`,
     ageBadge: (days: number) => `${days}d`,
+    // Saved windows (groups) in the list.
+    /**
+     * A saved window is named at random from these, sandwich-style ("Toasted Rye"): a name that
+     * belongs to no one tab in it. Its count and date are shown beside it, worked out live.
+     */
+    groupNameWords: {
+        adjectives: ["Toasted", "Crispy", "Golden", "Buttery", "Warm", "Crusty", "Fluffy", "Grilled", "Melty", "Savory", "Zesty", "Tangy",
+            "Smoky", "Honeyed", "Peppery", "Herby", "Sunny", "Rustic", "Hearty", "Flaky", "Spicy", "Fresh", "Cozy", "Seeded"],
+        nouns: ["Rye", "Bagel", "Panini", "Baguette", "Ciabatta", "Brioche", "Croissant", "Focaccia", "Pretzel", "Sourdough", "Muffin", "Pita",
+            "Wrap", "Club", "Reuben", "Toastie", "Melt", "Hoagie", "Bun", "Crumpet", "Biscuit", "Flatbread", "Roll", "Loaf", "Pickle",
+            "Cheddar", "Pesto", "Avocado", "Tomato", "Mustard"],
+    },
+    groupTabCount: (count: number) => `${count} tabs`,
+    /** When a window was saved: "6 Oct", with the year once it isn't this year's. */
+    groupSavedOn: (date: Date) =>
+        new Intl.DateTimeFormat(undefined, {
+            day: "numeric",
+            month: "short",
+            year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+        }).format(date),
+    groupMore: (count: number) => `+${count}`,
+    groupActions: (name: string) => `Actions for ${name}`,
+    groupActionsTooltip: "Open, rename, break apart or delete",
+    openGroup: "Open all in a new window",
+    openGroupAndRemove: "Open all and remove from list",
+    renameGroup: "Rename",
+    groupNameLabel: "Saved window name",
+    ungroup: "Break apart",
+    deleteGroup: "Delete window and its tabs",
+    groupDeleted: (count: number) => `Deleted ${count} tabs`,
+    groupBrokenApart: "Broken apart",
+    groupOpened: (count: number) => `Opened ${count} tabs and removed them`,
     editTab: (title: string) => `Edit ${title}`,
     deleteTab: (title: string) => `Delete ${title}`,
     editTooltip: "Edit",
@@ -128,6 +160,7 @@ export const strings = {
         search: "Jump to search",
         move: "Move through your saved tabs",
         open: "Open the tab",
+        window: "Open or close a saved window",
         edit: "Edit it",
         delete: "Delete it",
         undo: "Undo, while Undo is showing",

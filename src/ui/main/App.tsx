@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { SavedTab, SortOrder } from "../../types";
+import type { SavedTab, SortOrder, TabGroup } from "../../types";
 import { editTab, deleteTab, putBackTab, restoreTab, reorderTabs, type AddTabResult } from "../../domain/TabRepository";
 import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
+import { deleteGroup, renameGroup, restoreGroup, setGroupCollapsed, ungroup, type RemovedGroup } from "../../domain/GroupRepository";
 import { searchTabs } from "../../domain/search";
 import { setSort } from "../../domain/SettingsRepository";
-import { setLastSeenVersion } from "../../storage/chromeStorage";
+import { getGroups, getTabs, setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
@@ -17,8 +18,9 @@ import { FilterPills, StorageWarning } from "./FilterPills";
 import { SortMenu } from "./SortMenu";
 import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
+import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, sortTabs } from "./listModel";
+import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, sortTabs } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -142,21 +144,39 @@ export function App(props: { whatsNew?: string | null }) {
         flash(result.tab.id);
     };
 
-    // A whole window saved: the new tabs are at the top of the list, so show all of it.
-    const afterWindowSave = async (added: SavedTab[]) => {
+    // A whole window saved: it's at the top of the list (as one saved window), so show all of it.
+    const afterWindowSave = async (added: SavedTab[], group: TabGroup | null) => {
         setHops((n) => n + 1);
         await reload();
         setFilter(ALL);
         setQuery("");
-        if (added[0]) flash(added[0].id);
+        if (group) flash(group.id);
+        else if (added[0]) flash(added[0].id);
+    };
+
+    /**
+     * A tab inside a closed saved window can't be seen or flashed: open the window first. Only
+     * matters where windows show as windows (All, no search); elsewhere every tab is its own row.
+     */
+    const openWindowHolding = async (id: string, grouped: boolean) => {
+        if (!grouped) return;
+        // Read fresh: this runs right after a save or Undo, before the screen has caught up.
+        const [tabs, groups] = await Promise.all([getTabs(), getGroups()]);
+        const item = groupItems(tabs, groups).find((i) => i.kind === "group" && i.tabs.some((t) => t.id === id));
+        if (item?.kind === "group" && item.group.collapsed) {
+            await setGroupCollapsed(item.group.id, false).catch(() => undefined);
+            await reload();
+        }
     };
 
     // Brings a saved tab into view and flashes it, widening the list only if it's filtered out.
-    const reveal = (id: string) => {
-        if (!visible.tabs.some((t) => t.id === id)) {
+    const reveal = async (id: string) => {
+        const widen = !visible.tabs.some((t) => t.id === id);
+        if (widen) {
             setFilter(ALL);
             setQuery("");
         }
+        await openWindowHolding(id, widen || (activeFilter === ALL && !searching));
         flash(id);
     };
 
@@ -208,9 +228,67 @@ export function App(props: { whatsNew?: string | null }) {
                 showErrorToast(writeErrorMessage(err));
             }
             await reload();
+            await openWindowHolding(deleted.id, activeFilter === ALL && !searching);
             flash(deleted.id);
         });
         return true;
+    };
+
+    const onToggleGroup = async (group: TabGroup) => {
+        try {
+            await setGroupCollapsed(group.id, !group.collapsed);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
+    };
+
+    const onRenameGroup = async (group: TabGroup, name: string) => {
+        try {
+            await renameGroup(group.id, name);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
+    };
+
+    /** Undo for deleting a saved window or breaking it apart: everything back, the window flashing. */
+    const offerGroupUndo = (message: string, snapshot: RemovedGroup) =>
+        showUndoToast(message, async () => {
+            try {
+                await restoreGroup(snapshot);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
+            flash(snapshot.group.id);
+        });
+
+    const onGroupAction = async (group: TabGroup, tabs: SavedTab[], action: Exclude<GroupAction, "rename">) => {
+        const urls = tabs.map((t) => t.url);
+        try {
+            if (action === "open") {
+                // Opening a window usually closes the popup, so there's nothing to wait for here.
+                void chrome.windows.create({ url: urls, focused: true });
+            } else if (action === "openAndRemove") {
+                // Removed first: the new window may close the popup before anything after it runs.
+                const snapshot = await deleteGroup(group.id);
+                await reload();
+                if (snapshot) offerGroupUndo(strings.groupOpened(snapshot.removed.length), snapshot);
+                void chrome.windows.create({ url: urls, focused: true });
+            } else if (action === "ungroup") {
+                const snapshot = await ungroup(group.id);
+                await reload();
+                if (snapshot) offerGroupUndo(strings.groupBrokenApart, snapshot);
+            } else {
+                const snapshot = await deleteGroup(group.id);
+                await reload();
+                if (snapshot) offerGroupUndo(strings.groupDeleted(snapshot.removed.length), snapshot);
+            }
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
     };
 
     const onReorder = async (draggedId: string, targetId: string) => {
@@ -304,6 +382,9 @@ export function App(props: { whatsNew?: string | null }) {
                 </p>
                 <TabList
                     tabs={visible.tabs}
+                    groups={library.groups}
+                    // A closed window could hide a match: filtered or searched, every tab is its own row.
+                    grouped={activeFilter === ALL && !searching}
                     settings={library.settings}
                     titleRanges={visible.ranges}
                     searchActive={searching}
@@ -331,6 +412,9 @@ export function App(props: { whatsNew?: string | null }) {
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onReorder={onReorder}
+                    onToggleGroup={onToggleGroup}
+                    onGroupAction={onGroupAction}
+                    onRenameGroup={onRenameGroup}
                     onEscape={focusSearch}
                 />
             </main>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { SavedTab } from "../../types";
+import type { SavedTab, TabGroup } from "../../types";
 import { addTab, refreshTab, type AddTabResult } from "../../domain/TabRepository";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isSupportedTabUrl, urlsMatch } from "../../util/url";
@@ -37,7 +37,7 @@ export function SaveCard(props: {
     onSaved: (result: AddTabResult) => void;
     onShow: (id: string) => void;
     onUpdated: (previous: SavedTab) => void;
-    onWindowSaved: (added: SavedTab[]) => void;
+    onWindowSaved: (added: SavedTab[], group: TabGroup | null) => void;
 }) {
     const tab = useActiveTab();
     // What you picked, and for which saved copy (none: a page not saved yet).
