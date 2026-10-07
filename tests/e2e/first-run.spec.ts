@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures";
 import { seedLibrary, tabList } from "./helpers";
 
-const whatsNew = (popup: import("@playwright/test").Page) => popup.getByRole("region", { name: "New in 3.1" });
+const whatsNew = (popup: import("@playwright/test").Page) => popup.getByRole("region", { name: "New in 3.2" });
 const lastSeen = (popup: import("@playwright/test").Page) =>
     popup.evaluate(async () => (await chrome.storage.local.get("tabSandwich.lastSeenVersion"))["tabSandwich.lastSeenVersion"]);
 const version = (popup: import("@playwright/test").Page) => popup.evaluate(() => chrome.runtime.getManifest().version);

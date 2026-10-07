@@ -1,5 +1,5 @@
-import { SavedTab } from "../types";
-import { getTabs, setTabs } from "../storage/chromeStorage";
+import { SavedTab, TabGroup } from "../types";
+import { getGroups, getTabs, setTabs, setTabsAndGroups } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 import { urlsMatch } from "../util/url";
 
@@ -36,6 +36,47 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
         };
         await setTabs([newTab, ...tabs]);
         return { tab: newTab, duplicate: false };
+    });
+}
+
+export interface AddTabsResult {
+    /** What was written, in the order given — now at the top of the list. */
+    added: SavedTab[];
+    /** Inputs skipped because their page was saved meanwhile (or given twice). */
+    duplicates: number;
+    /** The saved window they were put in together, if one was asked for and 2+ tabs were added. */
+    group: TabGroup | null;
+}
+
+/** Names a new saved window, given the names already in use (so it can pick one that isn't). */
+export type NameGroup = (taken: string[]) => string;
+
+/**
+ * Saves several pages in one write (a whole window): the same duplicate rule as addTab, checked
+ * again under the lock in case something was saved since the caller looked. The new tabs go to
+ * the top of the list, keeping the order they were given in, all into one category. With
+ * `nameGroup`, two or more added tabs also become a saved window (collapsed), written together
+ * with them; a single tab needs no group.
+ */
+export async function addTabs(inputs: { title: string; url: string }[], category?: string, nameGroup?: NameGroup): Promise<AddTabsResult> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const added: SavedTab[] = [];
+        const savedAt = Date.now();
+        for (const input of inputs) {
+            if (tabs.some((t) => urlsMatch(t.url, input.url)) || added.some((t) => urlsMatch(t.url, input.url))) continue;
+            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category, savedAt });
+        }
+        let group: TabGroup | null = null;
+        if (nameGroup && added.length >= 2) {
+            const groups = await getGroups();
+            group = { id: crypto.randomUUID(), name: nameGroup(groups.map((g) => g.name)), createdAt: savedAt, collapsed: true };
+            for (const tab of added) tab.groupId = group.id;
+            await setTabsAndGroups([...added, ...tabs], [group, ...groups]);
+        } else if (added.length > 0) {
+            await setTabs([...added, ...tabs]);
+        }
+        return { added, duplicates: inputs.length - added.length, group };
     });
 }
 
@@ -124,6 +165,123 @@ export async function restoreTab(tab: SavedTab, index: number): Promise<void> {
         const tabs = await getTabs();
         const clampedIndex = Math.max(0, Math.min(index, tabs.length));
         await setTabs([...tabs.slice(0, clampedIndex), tab, ...tabs.slice(clampedIndex)]);
+    });
+}
+
+/** A tab's category before a bulk move — what Undo puts back. */
+export interface PreviousCategory {
+    id: string;
+    category?: string;
+}
+
+/**
+ * Moves several tabs into one category (undefined: Uncategorized) in one write, and hands back
+ * what each had before, for one Undo (restoreCategories). Ids no longer saved are skipped.
+ */
+export async function setCategoryOf(ids: string[], category: string | undefined): Promise<PreviousCategory[]> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const wanted = new Set(ids);
+        const previous = tabs.filter((t) => wanted.has(t.id)).map((t) => ({ id: t.id, category: t.category }));
+        if (previous.length > 0) await setTabs(tabs.map((t) => (wanted.has(t.id) ? { ...t, category } : t)));
+        return previous;
+    });
+}
+
+/** Undo for setCategoryOf: each tab back in the category it had (tabs deleted since are skipped). */
+export async function restoreCategories(previous: PreviousCategory[]): Promise<void> {
+    return withStorageLock(async () => {
+        const before = new Map(previous.map((p) => [p.id, p.category]));
+        const tabs = await getTabs();
+        await setTabs(tabs.map((t) => (before.has(t.id) ? { ...t, category: before.get(t.id) } : t)));
+    });
+}
+
+/**
+ * Deletes several tabs in one write and hands back each with its position, for one Undo that
+ * puts them all back where they were (restoreTabs). Ids no longer saved are skipped.
+ */
+export async function deleteTabs(ids: string[]): Promise<DeleteTabResult[]> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const wanted = new Set(ids);
+        const removed = tabs.flatMap((tab, index) => (wanted.has(tab.id) ? [{ tab, index }] : []));
+        if (removed.length > 0) await setTabs(tabs.filter((t) => !wanted.has(t.id)));
+        return removed;
+    });
+}
+
+/**
+ * Undo for deleteTabs: reinserts each tab at its old position, lowest first, so each index
+ * means what it did before the delete (clamped, as tabs may have changed meanwhile). A tab
+ * that's somehow back already is not added twice.
+ */
+export async function restoreTabs(removed: DeleteTabResult[]): Promise<void> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        for (const { tab, index } of [...removed].sort((a, b) => a.index - b.index)) {
+            if (tabs.some((t) => t.id === tab.id)) continue;
+            tabs.splice(Math.max(0, Math.min(index, tabs.length)), 0, tab);
+        }
+        await setTabs(tabs);
+    });
+}
+
+/**
+ * Moves a tab to where `targetId` is (itself: it stays put), into the saved window `groupId`, or
+ * out of any window (null), in one write: dragging a tab into or out of a window, or stepping it
+ * out with Alt+arrows. Hands back the tab as it was, and where, for Undo (undoMoveTab); null if
+ * either tab is gone.
+ */
+export async function moveTab(draggedId: string, targetId: string, groupId: string | null): Promise<DeleteTabResult | null> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const fromIndex = tabs.findIndex((t) => t.id === draggedId);
+        const toIndex = tabs.findIndex((t) => t.id === targetId);
+        if (fromIndex === -1 || toIndex === -1) return null;
+        const previous = tabs[fromIndex];
+        const { groupId: _old, ...rest } = previous;
+        const moved: SavedTab = groupId ? { ...rest, groupId } : rest;
+        const next = [...tabs];
+        next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        await setTabs(next);
+        return { tab: previous, index: fromIndex };
+    });
+}
+
+/**
+ * Drag and drop: puts a tab just before or just after `targetId`, into the saved window `groupId`
+ * or out of any (null), in one write. Placed next to itself (a window's first tab dropped above
+ * its window), it stays where it is and only changes window. Hands back the tab as it was, and
+ * where, for Undo (undoMoveTab); null if either tab is gone.
+ */
+export async function placeTab(draggedId: string, targetId: string, side: "before" | "after", groupId: string | null): Promise<DeleteTabResult | null> {
+    if (draggedId === targetId) return moveTab(draggedId, targetId, groupId);
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const fromIndex = tabs.findIndex((t) => t.id === draggedId);
+        if (fromIndex === -1) return null;
+        const previous = tabs[fromIndex];
+        const rest = tabs.filter((t) => t.id !== draggedId);
+        const at = rest.findIndex((t) => t.id === targetId);
+        if (at === -1) return null;
+        const { groupId: _old, ...plain } = previous;
+        rest.splice(side === "before" ? at : at + 1, 0, groupId ? { ...plain, groupId } : plain);
+        await setTabs(rest);
+        return { tab: previous, index: fromIndex };
+    });
+}
+
+/** Undo for moveTab and placeTab: the tab back exactly as it was, in its old place (unless it's been deleted since). */
+export async function undoMoveTab(previous: DeleteTabResult): Promise<void> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const at = tabs.findIndex((t) => t.id === previous.tab.id);
+        if (at === -1) return;
+        tabs.splice(at, 1);
+        tabs.splice(Math.max(0, Math.min(previous.index, tabs.length)), 0, previous.tab);
+        await setTabs(tabs);
     });
 }
 

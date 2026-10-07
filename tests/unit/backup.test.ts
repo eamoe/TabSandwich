@@ -112,3 +112,52 @@ describe("replaceImport", () => {
         expect(result.settings.theme).toBe("system");
     });
 });
+
+describe("saved windows in backups (v3.2)", () => {
+    const g = { id: "file-g", name: "Research", createdAt: 5, collapsed: false };
+    const tabs = [
+        { id: "a", title: "A", url: "https://a.example.com/", savedAt: 1, groupId: "file-g" },
+        { id: "b", title: "B", url: "https://b.example.com/", savedAt: 1, groupId: "file-g" },
+        { id: "c", title: "C", url: "https://c.example.com/", savedAt: 1 },
+    ];
+
+    it("round-trips: export, then Replace, brings the groups back with new ids", () => {
+        const parsed = parseBackupFile(fileWith(buildBackupFile(tabs, DEFAULT_SETTINGS, [g])))!;
+        const result = replaceImport(parsed);
+        expect(result.groups).toEqual([expect.objectContaining({ name: "Research", createdAt: 5, collapsed: false })]);
+        const [newGroup] = result.groups;
+        expect(newGroup.id).not.toBe("file-g");
+        expect(result.tabs.map((t) => t.groupId)).toEqual([newGroup.id, newGroup.id, undefined]);
+    });
+
+    it("imports a v3.1 file (no groups) as before", () => {
+        const parsed = parseBackupFile(fileWith({ version: 1, tabs: [{ title: "A", url: "https://a.example.com/" }], settings: {} }))!;
+        expect(parsed.groups).toEqual([]);
+        expect(replaceImport(parsed).groups).toEqual([]);
+    });
+
+    it("leaves out malformed groups, and their tabs import ungrouped", () => {
+        const parsed = parseBackupFile(fileWith({ tabs, groups: [{ id: "file-g", name: "" }, "junk"] }))!;
+        const result = replaceImport(parsed);
+        expect(result.groups).toEqual([]);
+        expect(result.tabs.every((t) => t.groupId === undefined)).toBe(true);
+    });
+
+    it("Merge brings a group along only with its tabs that are new, and keeps existing groups", () => {
+        const existingGroup = { id: "mine", name: "Mine", createdAt: 1, collapsed: true };
+        const existing = [makeTab({ url: "https://a.example.com/" })];
+        const parsed = parseBackupFile(fileWith(buildBackupFile(tabs, DEFAULT_SETTINGS, [g])))!;
+        const result = mergeImport(existing, DEFAULT_SETTINGS, parsed, [existingGroup]);
+        expect(result.addedCount).toBe(2);
+        expect(result.groups).toHaveLength(2);
+        expect(result.groups[1]).toEqual(existingGroup);
+        const b = result.tabs.find((t) => t.title === "B")!;
+        expect(b.groupId).toBe(result.groups[0].id);
+    });
+
+    it("Merge adds no group when all of its tabs were already saved", () => {
+        const existing = [makeTab({ url: "https://a.example.com/" }), makeTab({ url: "https://b.example.com/" })];
+        const parsed = parseBackupFile(fileWith(buildBackupFile(tabs, DEFAULT_SETTINGS, [g])))!;
+        expect(mergeImport(existing, DEFAULT_SETTINGS, parsed).groups).toEqual([]);
+    });
+});

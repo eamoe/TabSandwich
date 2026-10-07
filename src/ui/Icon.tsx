@@ -88,11 +88,49 @@ const PATHS: Record<IconName, JSX.Element> = {
             <circle cx="15" cy="18" r="1" />
         </>
     ),
+    // Two browser windows, one behind the other: a whole window of tabs.
+    tabs: (
+        <>
+            <rect x="3" y="7" width="14" height="13" rx="2" />
+            <path d="M7 4h11a3 3 0 0 1 3 3v9" />
+            <line x1="3" y1="11" x2="17" y2="11" />
+        </>
+    ),
     moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
     check: <polyline points="5 12 10 17 19 7" />,
     chevronDown: <polyline points="6 9 12 15 18 9" />,
     chevronUp: <polyline points="18 15 12 9 6 15" />,
     chevronLeft: <polyline points="15 18 9 12 15 6" />,
+    chevronRight: <polyline points="9 18 15 12 9 6" />,
+    // A ticked box: choosing several at once.
+    select: (
+        <>
+            <rect x="4" y="4" width="16" height="16" rx="4" />
+            <polyline points="8.5 12 11 14.5 15.5 9.5" />
+        </>
+    ),
+    more: (
+        <>
+            <circle cx="5" cy="12" r="1.2" />
+            <circle cx="12" cy="12" r="1.2" />
+            <circle cx="19" cy="12" r="1.2" />
+        </>
+    ),
+    external: (
+        <>
+            <path d="M14 4h6v6" />
+            <line x1="20" y1="4" x2="11" y2="13" />
+            <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        </>
+    ),
+    unlink: (
+        <>
+            <rect x="3" y="4" width="8" height="7" rx="2" />
+            <rect x="13" y="13" width="8" height="7" rx="2" />
+            <path d="M15 4h4a2 2 0 0 1 2 2v3" />
+            <path d="M9 20H5a2 2 0 0 1-2-2v-3" />
+        </>
+    ),
     warning: (
         <>
             <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
@@ -115,11 +153,17 @@ export type IconName =
     | "edit"
     | "trash"
     | "grip"
+    | "tabs"
     | "moon"
     | "check"
     | "chevronDown"
     | "chevronUp"
     | "chevronLeft"
+    | "chevronRight"
+    | "select"
+    | "more"
+    | "external"
+    | "unlink"
     | "warning";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {

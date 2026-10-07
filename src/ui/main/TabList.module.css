@@ -24,7 +24,20 @@
 .drop { animation: drop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1); }
 .leaving { animation: leave 0.24s ease-in forwards; pointer-events: none; }
 .dragging { opacity: 0.45; }
-.dragOver { box-shadow: inset 0 0 0 2px var(--accent), var(--row-lift); }
+/* Where a dragged tab would land: a line in the gap above or below the row it's over. */
+.dropBefore::before, .dropAfter::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    pointer-events: none;
+    z-index: 3;
+}
+.dropBefore::before { top: calc(var(--row-gap) / -2 - 2px); }
+.dropAfter::before { bottom: calc(var(--row-gap) / -2 - 2px); }
 @keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes drop { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes leave { to { opacity: 0; transform: translateX(28px) scale(0.97); height: 0; margin-bottom: calc(var(--row-gap) * -1); } }
@@ -114,3 +127,128 @@
 .editing:hover { transform: none; }
 .editForm { display: flex; flex-direction: column; gap: 6px; }
 .editActions { display: flex; align-items: center; gap: 6px; }
+
+/* A saved window: a row drawn as a small stack of cards, which opens to show its tabs. */
+.group { display: flex; flex-direction: column; gap: var(--row-gap); flex-shrink: 0; }
+.groupHead {
+    position: relative;
+    height: var(--row-h);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px 0 0;
+    border-radius: 12px;
+    background: var(--surface);
+    /* The card peeking out underneath (narrower, 5px lower): this row stands for several tabs. */
+    --stack: 0 11px 0 -6px var(--surface-2), 0 11px 0 -5px var(--line);
+    box-shadow: inset 0 0 0 1px var(--line), var(--row-shadow), var(--stack);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.groupHead:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px var(--line), var(--row-lift), var(--stack); z-index: 1; }
+.groupOpen { --stack: 0 0 transparent; margin-bottom: 0; }
+.groupToggle {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0 0 10px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.groupToggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.groupToggle .lead { color: var(--ink-2); transition: transform 0.15s ease; }
+.groupToggle[aria-expanded="true"] .lead { transform: rotate(90deg); }
+.groupName {
+    max-width: 100%;
+    font-weight: 700;
+    line-height: 17px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.groupIcons { display: inline-flex; padding-left: 3px; }
+.groupIcons > span { margin-left: -3px; }
+.groupMenuBtn { flex-shrink: 0; }
+
+/* The window's tabs, while it's open: indented under it, along a rail. */
+.members {
+    list-style: none;
+    margin: 0 0 4px 14px;
+    padding: 0 0 0 10px;
+    border-left: 2px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: var(--row-gap);
+}
+
+/* The window's actions: float over the list, so opening them never moves anything. Placed
+   against the window (below the row, or above it when the popup is short) by useMenuPlacement;
+   the row holds still meanwhile, as a moving row would carry a fixed menu with it. */
+.menuOpen, .menuOpen:hover { transform: none; animation: none; z-index: 3; }
+/* (3: above the filter row, which the menu may open over.) */
+.groupMenu {
+    position: fixed;
+    z-index: 5;
+    overflow-y: auto;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    animation: menuPop 0.14s ease-out;
+}
+@keyframes menuPop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+.menuItem {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.menuItem:hover, .menuItem:focus-visible { background: var(--hover); outline: none; }
+.menuItem > svg { color: var(--ink-2); }
+.menuDanger, .menuDanger > svg { color: var(--danger); }
+.renameForm { flex: 1; display: flex; padding: 0 0 0 8px; }
+.renameForm input { flex: 1; }
+
+/* Choosing several tabs: each row is a checkbox; picked rows wear the accent. */
+.check {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1.5px var(--ink-3);
+    color: var(--on-accent);
+}
+.selected .check, .checkSome, .checkAll { background: var(--accent); box-shadow: none; }
+.selecting .title { cursor: default; }
+/* The checkbox is only a picture: a click on it falls through to the row, which selects. */
+.selecting .lead { pointer-events: none; }
+.selected, .selected:hover { box-shadow: inset 0 0 0 2px var(--accent), var(--row-shadow); }
+.dash { width: 9px; height: 2px; border-radius: 1px; background: var(--on-accent); }
+/* The chevron that opens a window while selecting: points down when the window is open. */
+.chevronBtn > svg { transition: transform 0.15s ease; }
+.chevronBtn[aria-expanded="true"] > svg { transform: rotate(90deg); }

@@ -1,5 +1,5 @@
-import type { SavedTab, Settings } from "../types";
-import { getSettings, getTabs, setSettings, setTabs } from "../storage/chromeStorage";
+import type { SavedTab, Settings, TabGroup } from "../types";
+import { getGroups, getSettings, getTabs, setSettings, setTabsAndGroups } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 import { mergeImport, replaceImport, type ApplyImportResult, type ParsedImport } from "./backup";
 
@@ -7,7 +7,10 @@ import { mergeImport, replaceImport, type ApplyImportResult, type ParsedImport }
 export interface Snapshot {
     tabs: SavedTab[];
     settings: Settings;
+    groups: TabGroup[];
 }
+
+const takeSnapshot = async (): Promise<Snapshot> => ({ tabs: await getTabs(), settings: await getSettings(), groups: await getGroups() });
 
 export interface ImportOutcome {
     result: ApplyImportResult;
@@ -21,11 +24,11 @@ export interface ImportOutcome {
  */
 export async function importMerge(parsed: ParsedImport): Promise<ImportOutcome | null> {
     return withStorageLock(async () => {
-        const before = { tabs: await getTabs(), settings: await getSettings() };
-        const result = mergeImport(before.tabs, before.settings, parsed);
+        const before = await takeSnapshot();
+        const result = mergeImport(before.tabs, before.settings, parsed, before.groups);
         // Both counts matter: a merge can restore a category with no tabs to show for it.
         if (result.addedCount === 0 && result.addedCategoryCount === 0) return null;
-        await setTabs(result.tabs);
+        await setTabsAndGroups(result.tabs, result.groups);
         await setSettings(result.settings);
         return { result, before };
     });
@@ -34,9 +37,9 @@ export async function importMerge(parsed: ParsedImport): Promise<ImportOutcome |
 /** Replaces everything saved with the backup's contents. */
 export async function importReplace(parsed: ParsedImport): Promise<ImportOutcome> {
     return withStorageLock(async () => {
-        const before = { tabs: await getTabs(), settings: await getSettings() };
+        const before = await takeSnapshot();
         const result = replaceImport(parsed);
-        await setTabs(result.tabs);
+        await setTabsAndGroups(result.tabs, result.groups);
         await setSettings(result.settings);
         return { result, before };
     });
@@ -45,7 +48,7 @@ export async function importReplace(parsed: ParsedImport): Promise<ImportOutcome
 /** Undo for either import: puts back exactly what was saved before it. */
 export async function restoreSnapshot(snapshot: Snapshot): Promise<void> {
     return withStorageLock(async () => {
-        await setTabs(snapshot.tabs);
+        await setTabsAndGroups(snapshot.tabs, snapshot.groups);
         await setSettings(snapshot.settings);
     });
 }

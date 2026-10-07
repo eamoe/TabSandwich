@@ -52,7 +52,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
         test("what's new showing", async ({ popup }) => {
             await seedLibrary(popup, [{ title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" }], {}, { seenVersion: "3.0.0" });
-            await expect(popup.getByRole("region", { name: "New in 3.1" })).toBeVisible();
+            await expect(popup.getByRole("region", { name: /^New in / })).toBeVisible();
             expect(await scan(popup)).toEqual([]);
         });
 
@@ -74,6 +74,55 @@ for (const colorScheme of ["light", "dark"] as const) {
         test("sort menu open", async ({ popup }) => {
             await popup.getByRole("button", { name: /^Sort:/ }).click();
             await expect(popup.getByRole("menu")).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("a saved window, closed and open, with its menu", async ({ popup }) => {
+            const tabs = [
+                { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", groupId: "w" },
+                { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20, groupId: "w" },
+                { title: "Loose", url: "https://loose.example.com/" },
+            ];
+            await seedLibrary(popup, tabs, {}, { groups: [{ id: "w", name: "Toasted Rye" }] });
+            expect(await scan(popup)).toEqual([]);
+            await popup.getByRole("button", { name: /^Toasted Rye/ }).click();
+            await expect(popup.getByRole("list", { name: "Toasted Rye" })).toBeVisible();
+            await popup.getByRole("button", { name: /^Actions for/ }).click();
+            await expect(popup.getByRole("menu")).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("choosing several tabs, a saved window among them", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" },
+                    { title: "A", url: "https://a.example.com/", groupId: "w" },
+                    { title: "B", url: "https://b.example.com/", groupId: "w" },
+                ],
+                {},
+                { groups: [{ id: "w", name: "Toasted Rye", collapsed: false }] }
+            );
+            await popup.getByRole("button", { name: "Select tabs" }).click();
+            await popup.getByRole("checkbox", { name: "A", exact: true }).click();
+            await popup.getByRole("checkbox", { name: "Q3 Roadmap" }).click();
+            await expect(popup.getByRole("navigation", { name: "Selected tabs" })).toContainText("2 selected");
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("renaming a saved window", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "A", url: "https://a.example.com/", groupId: "w" },
+                    { title: "B", url: "https://b.example.com/", groupId: "w" },
+                ],
+                {},
+                { groups: [{ id: "w", name: "Research" }] }
+            );
+            await popup.getByRole("button", { name: "Actions for Research" }).click();
+            await popup.getByRole("menuitem", { name: "Rename" }).click();
+            await expect(popup.getByRole("textbox", { name: "Saved window name" })).toBeFocused();
             expect(await scan(popup)).toEqual([]);
         });
 

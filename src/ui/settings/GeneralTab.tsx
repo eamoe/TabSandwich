@@ -18,10 +18,12 @@ const LIST_KEYS: Array<{ keys: string[]; what: string }> = [
     { keys: ["/"], what: strings.keyHelp.search },
     { keys: ["↑", "↓"], what: strings.keyHelp.move },
     { keys: ["Enter"], what: strings.keyHelp.open },
+    { keys: ["→", "←"], what: strings.keyHelp.window },
     { keys: ["E"], what: strings.keyHelp.edit },
     { keys: [IS_MAC ? "⌫" : "Delete"], what: strings.keyHelp.delete },
     { keys: [IS_MAC ? "⌘" : "Ctrl", "Z"], what: strings.keyHelp.undo },
     { keys: [IS_MAC ? "⌥" : "Alt", "↑", "↓"], what: strings.keyHelp.reorder },
+    { keys: ["Space"], what: strings.keyHelp.select },
     { keys: ["Esc"], what: strings.keyHelp.back },
 ];
 const THEMES: Array<{ value: ThemeChoice; label: string }> = [

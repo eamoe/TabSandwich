@@ -11,7 +11,7 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 ```
 
 - **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
-- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search and filters, categories, export and import — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
+- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search, filters and sorting, categories, export and import, the keyboard, saving a whole window (with a stand-in for Chrome's permission prompt), saved windows, selecting many — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
 - **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
@@ -21,11 +21,13 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
 2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); confirm drag is off while searching (TC-119).
-3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops; all of it stops with the system's reduce-motion setting (TC-049, TC-192).
+3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
-7. Anything new in this release that isn't marked **[auto]** yet.
+7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 is the first that does).
+9. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -220,8 +222,8 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
-- Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position.
-- Expected: Order updates immediately and is preserved after closing/reopening the popup.
+- Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position: once onto a row's upper half, once onto the last row's lower half.
+- Expected: While dragging, a line in the gap shows where the tab will land: above the row under the pointer's upper half, below it on the lower half. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
 - Preconditions: tabs across 2+ categories, filtered to one category.
@@ -341,7 +343,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
+- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `pnpm build`.
@@ -626,7 +628,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-184 — Data upgrades are versioned and can't half-apply (P1)** **[auto]**
 - Steps: Open the popup on data saved by v2.2.0 or earlier, then inspect `(await chrome.storage.local.get(null))` in the popup's DevTools.
-- Expected: `tabSandwich.schemaVersion` is `1`; tabs and settings are unchanged. (A future release that changes the stored format runs each upgrade step on a copy, keeps a backup in `tabSandwich.upgradeBackup`, writes data and version together, and restores the original exactly if anything fails — the logic tests force each failure path.)
+- Expected: `tabSandwich.schemaVersion` is `2` since v3.2 (version 2 adds saved windows); tabs and settings are unchanged, and a backup of the data as it was is kept in `tabSandwich.upgradeBackup`. (A release that changes the stored format runs each upgrade step on a copy, keeps a backup in `tabSandwich.upgradeBackup`, writes data and version together, and restores the original exactly if anything fails — the logic tests force each failure path.)
 
 **TC-185 — Accessibility scan passes on every screen (P1)** **[auto]**
 - Steps: `pnpm test:e2e` (the accessibility tests scan the list, manual entry, edit mode, Settings, and the undo toast, in both light and dark mode).
@@ -661,7 +663,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-192 — Motion, and reduce-motion (P3)**
 - Steps: Open the popup; save a tab; delete one; hover a row. Then turn on the system's reduce-motion setting and repeat.
-- Expected: Rows rise in quickly on open, a saved row drops in and flashes, a deleted row slides away, Save presses down and pops "✓ Saved!", "Already saved" gives a small shake, hovered rows lift slightly. With reduce motion on, all of it is instant.
+- Expected: Rows rise in quickly on open, a saved row drops in and flashes, a deleted row slides away, Save presses down and pops "✓ Saved!" while the logo hops (TC-228), "Already saved" gives a small shake, hovered rows lift slightly. With reduce motion on, all of it is instant.
 
 **TC-193 — Dark mode follows the system (P1)** **[auto]**
 - Steps: Switch the computer between light and dark mode with the popup open.
@@ -804,4 +806,128 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-227 — The keys are listed in Settings (P3)**
 - Steps: Settings → **General**, under **Keyboard shortcut**.
-- Expected: A short list of the list's keys, named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
+- Expected: A short list of the list's keys (including → and ← for saved windows, and Space while selecting), named as this computer's keyboard labels them (⌘, ⌥ and ⌫ on a Mac; Ctrl, Alt and Delete elsewhere).
+
+## 20. Save Everything (v3.2)
+
+**TC-228 — The logo hops on a new save (P3)** **[auto]**
+- Steps: Save the page you're on. Then add a link by hand. Then try adding a link that's already saved, and press **Update** on a saved page. Repeat the first step with the system's reduce-motion setting on.
+- Expected: The logo left of the search field hops once — up, a tilt each way, and down — for each new save (about half a second). An already-saved link and Update don't make it hop. With reduce motion on, it stays still.
+
+**TC-229 — Save all tabs in a window (P1)** **[auto]**
+- Preconditions: Several web pages open in one window, one of them already saved, plus a browser page (e.g. `chrome://settings`).
+- Steps: Open the popup on a page that isn't saved, pick a category, and click **Save all N tabs in this window** under Save. The first time, Chrome asks to let Tab Sandwich read your open tabs: allow it.
+- Expected: Every unsaved web page in the window is saved, in the window's order, in the picked category, and the logo hops. Two or more of them land at the top as one closed saved window with a random sandwich name (e.g. "Toasted Rye"), "N tabs" and today's date, which flashes; open it to see them (TC-234). The line says "✓ Saved N tabs · M skipped"; hovering "M skipped" (or a screen reader) says why: how many were already saved and how many were browser pages. Chrome asked only this once. Started from a page that's already saved (the picker shows its category), the window's pages go to Uncategorized instead.
+
+**TC-230 — Close the saved tabs (P1)** **[auto]**
+- Steps: After TC-229, click **Close N tabs**.
+- Expected: Nothing closed before the click. Then every saved web page in the window closes, except the tab you're on; browser pages and anything not saved stay open. The line says "✓ Closed N tabs".
+
+**TC-231 — Saying no to the permission (P1, release gate)** **[auto]**
+- Steps: On a fresh install, click **Save all N tabs in this window** and choose **Deny** in Chrome's prompt.
+- Expected: Nothing is saved; the line says "Nothing saved. Saving a window needs your OK to see its tabs." with **Try again**. Save, search, editing and everything else work as before.
+
+**TC-232 — Counting new tabs once allowed (P2)** **[auto]**
+- Steps: After allowing once, close and reopen the popup; open a page you haven't saved.
+- Expected: No second prompt. The line counts only what's new ("Save 1 new tab from this window"), and disappears when every page in the window is already saved. Without the permission it counts every open tab ("Save all 7 tabs in this window").
+
+**TC-233 — The real permission prompt (P1, release gate)**
+- Steps: In a normal Chrome with the release build, on a fresh install, open the popup from the toolbar in a window with several tabs and click **Save all N tabs in this window**. Allow Chrome's prompt. Repeat on another profile choosing **Deny**. Afterwards, in `chrome://extensions` › Tab Sandwich › Details, remove the "Read your browsing history" permission and reopen the popup.
+- Expected: The prompt explains what's asked ("Read your browsing history"). Allowing saves the window, either straight away or, if Chrome closed the popup while asking, on the next click after reopening it, with no second prompt. Denying saves nothing and the popup keeps working. With the permission removed, the line counts every open tab again and asks again on click.
+
+**TC-234 — A saved window opens and closes (P1)** **[auto]**
+- Preconditions: A saved window (from TC-229) among loose tabs.
+- Steps: Click the window's row. Close and reopen the popup. Click it again.
+- Expected: Closed, it's one row drawn as a small stack: its name, a few site icons, "N tabs" and the date it was saved. Open, its tabs show underneath, indented along a rail, working like any other row. It stays open or closed as you left it.
+
+**TC-235 — Filters and search look inside windows (P1)** **[auto]**
+- Steps: With a closed saved window, search for one of its tabs; then pick a category filter; then **All**.
+- Expected: Searching or filtering shows every matching tab as its own row, including ones in a closed window. **All** with no search shows the window again.
+
+**TC-236 — Rename a saved window (P2)** **[auto]**
+- Steps: ⋯ → **Rename**; type a name and press Enter. Again, but press Escape.
+- Expected: The name changes in place and is kept; Escape (or clicking away) leaves it as it was. A blank name is not accepted.
+
+**TC-237 — Break a window apart (P2)** **[auto]**
+- Steps: ⋯ → **Break apart**; then **Undo** in the toast.
+- Expected: The window goes, its tabs stay saved, in place, as ordinary rows. Undo brings the window back with the same tabs.
+
+**TC-238 — Remove a window and its tabs from the list (P1)** **[auto]**
+- Steps: ⋯ → **Remove from list**; then **Undo**.
+- Expected: The toast says "Removed N tabs" and they're gone. Undo puts the window and every tab back where they were.
+
+**TC-239 — Open a window's tabs (P1)** **[auto]**
+- Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and remove from list**.
+- Expected: Each opens the window's tabs in one new browser window. The first keeps them saved; the second removes them (and the window) from the list, with Undo while the popup is open.
+
+**TC-240 — The ⋯ menu from the keyboard (P2)** **[auto]**
+- Steps: Tab to a window's ⋯ button and press Enter; use the arrow keys, Home and End; press Escape.
+- Expected: Focus lands on the first item and moves with the keys (wrapping around); Escape closes the menu and returns focus to ⋯.
+
+**TC-241 — The list's keys on saved windows (P1)** **[auto]**
+- Steps: Arrow onto a window's row; press →, → again, ←, ← again; Enter twice; ↓; then Delete on the window's row and Ctrl+Z (⌘Z).
+- Expected: → opens the window, then moves onto its first tab; ← from a tab goes back to the window's row, then closes it; Enter opens and closes it; ↓ past a closed window skips its tabs. Delete on the window's row deletes the window with its tabs, focus moves on, and Ctrl+Z brings it all back.
+
+**TC-242 — Moving tabs with Alt+arrows around windows (P2)** **[auto]**
+- Steps: In your own order, with a window open: Alt+↓ on a loose tab just above it; Alt+↑ back. Then Alt+↓ on a tab inside the window, to the bottom of the window, and once more; then **Undo**.
+- Expected: A loose tab steps past the whole window in one move. A tab inside the window moves within it ("position 2 of 3" counts within the window); past the window's last (or first) tab it steps out of the window, staying where it is, with "Moved “…” out of …" read out, a toast with Undo, and focus still on it. Undo puts it back in the window.
+
+**TC-243 — Show finds a tab inside a closed window (P2)** **[auto]**
+- Steps: Open the popup on a page that's saved inside a closed saved window; click **Show**.
+- Expected: The window opens and the tab flashes. Undoing a delete of a tab inside a closed window opens the window the same way.
+
+**TC-244 — A window down to one tab (P3)** **[auto]**
+- Steps: Delete all but one tab of a saved window.
+- Expected: The last tab shows as an ordinary row; no window row with a single tab.
+
+**TC-245 — Saved windows in real Chrome (P1, release gate)**
+- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window, out of it, and into it.
+- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list: a tab dropped on a loose tab leaves its window, one dropped on a window's tab joins it, each with a toast and Undo. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
+
+**TC-246 — A window's menu always fits (P1)** **[auto]**
+- Preconditions: Nothing saved but one saved window (so the popup is short).
+- Steps: Open the window's ⋯ menu. Then, with many tabs saved, open a window's ⋯ menu and scroll the list.
+- Expected: The whole menu shows, opening upward over the filter row when there's no room below, on top of everything; it works from there. Scrolling the list closes it rather than leaving it floating away from its row.
+
+**TC-247 — The sort menu always fits (P2)** **[auto]**
+- Preconditions: One saved tab (so the popup is short).
+- Steps: Open the sort menu.
+- Expected: All five choices show (opening upward when there's no room below) and work. (Before 3.2 the bottom of the menu could be cut off here.)
+
+**TC-248 — Drag into and out of a window (P1)** **[auto]**
+- Steps: With a window open, drag one of its tabs onto a loose tab; **Undo**. Drag a loose tab onto one of the window's tabs. Drag a tab onto a window's own row.
+- Expected: A line in the gap shows where the tab will land: above the row on its upper half (that row and the rest move down), below it on its lower half. Out: the tab leaves the window and lands at the line ("Moved out of …"). In: it joins the window at the line ("Moved into …"). On the window's own row: its upper half puts the tab just above the window, outside it; its lower half just below a closed window, or into an open one as its first tab. Undo puts the tab back exactly as it was.
+
+**TC-249 — Selecting starts and stops without moving anything (P1)** **[auto]**
+- Steps: Click the ☑ button at the end of the filter row. Pick a row by clicking it, another by clicking its checkbox. Click ✕. Start again and press Escape.
+- Expected: The popup doesn't change size or jump: the bar ("N selected · Select all · Move to… · 🗑 · ✕") takes the filter row's place at the same height, and focus moves to ✕. Rows become checkboxes; clicking anywhere on a row (checkbox included) picks it without opening the tab; rows' own edit and delete step aside, and dragging is off. Move to… and 🗑 wait until something is picked. ✕ or Escape stops (Escape doesn't close the popup) and forgets the picks.
+
+**TC-250 — Pick a range (P2)** **[auto]**
+- Steps: Pick one row, then Shift-click another further down. Then Shift-click a picked row in between.
+- Expected: Everything between is picked; the second Shift-click unpicks from the last row picked back to the clicked one.
+
+**TC-251 — Pick a whole saved window (P2)** **[auto]**
+- Steps: While selecting, click a closed window's row; open it with its chevron; unpick one of its tabs; click the window's row twice.
+- Expected: The window's row picks all its tabs (its checkbox ticked), shows a dash when only some are picked, and picks them all again, then none. The chevron opens and closes the window while selecting.
+
+**TC-252 — Select all, and filters (P2)** **[auto]**
+- Steps: While selecting, click **Select all**. Stop; pick a category filter; start again and **Select all**.
+- Expected: Every tab shown is picked, including tabs in closed windows; under a filter, only that filter's tabs. Changing the filter or search forgets earlier picks, so nothing hidden is moved or deleted.
+
+**TC-253 — Move picked tabs to a category (P1)** **[auto]**
+- Steps: Pick a few tabs (and a window); choose a category in **Move to…**; then **Undo**.
+- Expected: All of them move in one step ("Moved N tabs to …") and selecting ends. Undo puts each back in the category it had.
+
+**TC-254 — Delete picked tabs (P1)** **[auto]**
+- Steps: Pick a few tabs (and a window); click 🗑; then **Undo**.
+- Expected: All of them are deleted in one step ("Deleted N tabs") and selecting ends. Undo puts every one back where it was, the window included.
+
+**TC-255 — Selecting from the keyboard (P1)** **[auto]**
+- Steps: Start selecting; Tab into the list; Space; ↓; Space; press E and Delete; → on a window.
+- Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
+
+**TC-256 — Updating an existing install keeps everything (P1, release gate)**
+- Preconditions: The previous release (3.1.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
+- Expected: Every tab, category, color, theme and sort is as it was; "New in 3.2" shows once. Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 2, with a backup copy; the robot tests cover the upgrade itself (TC-184), but not an existing install updating in place.)
+

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs } from "../../src/ui/main/listModel";
+import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
 import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
@@ -88,5 +88,69 @@ describe("sorting the main list", () => {
         sortTabs(tabs, "title");
         sortTabs(tabs, "newest");
         expect(titles(tabs)).toEqual(before);
+    });
+});
+
+describe("saved windows in the list", () => {
+    const g = { id: "g", name: "Research", createdAt: 0, collapsed: false };
+    const [a, m1, m2, m3, z] = [
+        makeTab({ id: "a" }),
+        makeTab({ id: "m1", groupId: "g" }),
+        makeTab({ id: "m2", groupId: "g" }),
+        makeTab({ id: "m3", groupId: "g" }),
+        makeTab({ id: "z" }),
+    ];
+    const items = groupItems([a, m1, m2, m3, z], [g]);
+    const shape = (list: ListItem[]) => list.map((i) => (i.kind === "tab" ? i.tab.id : `[${i.tabs.map((t) => t.id).join(",")}]`));
+
+    it("puts a window where its first tab falls, holding its tabs in the same order", () => {
+        expect(shape(items)).toEqual(["a", "[m1,m2,m3]", "z"]);
+        // Sorted differently, the window moves with its first tab, and its tabs follow the sort.
+        expect(shape(groupItems([m3, a, m1, z, m2], [g]))).toEqual(["[m3,m1,m2]", "a", "z"]);
+    });
+
+    it("shows a window down to one tab, or a tab naming a window that's gone, as a plain tab", () => {
+        expect(shape(groupItems([a, m1], [g]))).toEqual(["a", "m1"]);
+        expect(shape(groupItems([m1, m2], []))).toEqual(["m1", "m2"]);
+    });
+
+    it("names a saved window at random, sandwich-style, never reusing a name in use", () => {
+        const first = () => 0;
+        expect(newGroupName([], first)).toBe("Toasted Rye");
+        expect(newGroupName([], () => 0.999)).toBe("Seeded Mustard");
+        expect(newGroupName([], Math.random)).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
+        // Taken: it tries again; with every pairing it draws taken, it adds a number.
+        let n = 0;
+        expect(newGroupName(["Toasted Rye"], () => (n++ < 2 ? 0 : 0.05))).toBe("Crispy Bagel");
+        expect(newGroupName(["Toasted Rye", "Toasted Rye 2"], first)).toBe("Toasted Rye 3");
+    });
+
+    it("Alt+arrows: a window's tab moves within it and steps out past its edge; a loose tab skips a whole window", () => {
+        expect(reorderTarget(items, "m1", "down")).toEqual({ to: "m2", group: "g" });
+        // Out of the window, staying where it is.
+        expect(reorderTarget(items, "m1", "up")).toEqual({ to: "m1", group: null });
+        expect(reorderTarget(items, "m3", "down")).toEqual({ to: "m3", group: null });
+        expect(reorderTarget(items, "a", "down")).toEqual({ to: "m3", group: null });
+        expect(reorderTarget(items, "z", "up")).toEqual({ to: "m1", group: null });
+        expect(reorderTarget(items, "a", "up")).toBeNull();
+        expect(reorderTarget(items, "nope", "down")).toBeNull();
+    });
+
+    it("drag and drop: lands above or below the row it's dropped on, joining that row's window or leaving its own", () => {
+        expect(dropTarget(items, "a", { tabId: "z" }, "before")).toEqual({ to: "z", group: null, side: "before" });
+        expect(dropTarget(items, "m1", { tabId: "m3" }, "after")).toEqual({ to: "m3", group: "g", side: "after" });
+        // Into the window, and out of it.
+        expect(dropTarget(items, "a", { tabId: "m2" }, "before")).toEqual({ to: "m2", group: "g", side: "before" });
+        expect(dropTarget(items, "m1", { tabId: "z" }, "before")).toEqual({ to: "z", group: null, side: "before" });
+        expect(dropTarget(items, "a", { tabId: "a" }, "after")).toBeNull();
+    });
+
+    it("drag and drop on a window's own row: above it (outside), or below it: after a closed one, into an open one", () => {
+        expect(dropTarget(items, "z", { groupId: "g" }, "before")).toEqual({ to: "m1", group: null, side: "before" });
+        // `items` has the window open: its lower half means "first tab in the window".
+        expect(dropTarget(items, "z", { groupId: "g" }, "after")).toEqual({ to: "m1", group: "g", side: "before" });
+        const closed = groupItems([a, m1, m2, m3, z], [{ ...g, collapsed: true }]);
+        expect(dropTarget(closed, "a", { groupId: "g" }, "after")).toEqual({ to: "m3", group: null, side: "after" });
+        expect(dropTarget(closed, "m2", { groupId: "g" }, "before")).toEqual({ to: "m1", group: null, side: "before" });
     });
 });

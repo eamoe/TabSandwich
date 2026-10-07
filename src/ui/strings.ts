@@ -32,6 +32,25 @@ export const strings = {
     open: "Open",
     openSavedTooltip: "Open the saved link in a new tab",
     onlyWebPages: "Only web pages can be saved",
+    // Saving a whole window, under the save card.
+    saveWindowAll: (count: number) => `Save all ${count} tabs in this window`,
+    saveWindowNew: (count: number) => `Save ${count} new tab${count === 1 ? "" : "s"} from this window`,
+    saveWindowTooltip: "Saves every web page open in this window into the category picked above (Uncategorized when the page you're on is already saved). Pages you've already saved are skipped.",
+    savingWindow: "Saving…",
+    windowSaved: (count: number) => (count === 0 ? "Nothing new to save" : `Saved ${count} tab${count === 1 ? "" : "s"}`),
+    windowSkippedCount: (count: number) => `${count} skipped`,
+    windowSkipped: (alreadySaved: number, browserPages: number) =>
+        [
+            alreadySaved > 0 && `${alreadySaved} already saved`,
+            browserPages > 0 && `${browserPages} browser page${browserPages === 1 ? "" : "s"}`,
+        ]
+            .filter(Boolean)
+            .join(", "),
+    closeTabs: (count: number) => `Close ${count} tab${count === 1 ? "" : "s"}`,
+    closeTabsTooltip: "Close the saved tabs in this window. The tab you're on stays open.",
+    closedTabs: (count: number) => `Closed ${count} tab${count === 1 ? "" : "s"}`,
+    windowDenied: "Nothing saved. Saving a window needs your OK to see its tabs.",
+    tryAgain: "Try again",
     saveToCategory: "Save to category",
 
     addLinkTitle: "Add a link by hand",
@@ -79,6 +98,11 @@ export const strings = {
     whatsNewTitle: (release: string) => `New in ${release}`,
     dismissWhatsNew: "Dismiss what's new",
     whatsNewNotes: {
+        "3.2": [
+            "Save every tab in a window at once, then close them in one click.",
+            "A saved window stays together as one row, named like “Toasted Rye”.",
+            "Select several tabs to move or delete them together.",
+        ],
         "3.1": [
             "Sort your list by newest, oldest, title or site.",
             "A page you've already saved says so, with Show and Update.",
@@ -88,6 +112,56 @@ export const strings = {
     categoryForScreenReaders: (category: string) => `Category: ${category}`,
     savedDaysAgo: (days: number) => `Saved ${days} day${days === 1 ? "" : "s"} ago`,
     ageBadge: (days: number) => `${days}d`,
+    // Choosing several tabs at once.
+    selectTabs: "Select tabs",
+    selectTooltip: "Select several tabs, to move or delete them together",
+    selectedCount: (count: number) => (count === 0 ? "None selected" : `${count} selected`),
+    selectAll: "Select all",
+    selectAllTooltip: "Select every tab shown, including the tabs in saved windows",
+    moveTo: "Move to…",
+    moveToLabel: "Move the selected tabs to a category",
+    deleteSelectedLabel: (count: number) => `Delete ${count} selected tab${count === 1 ? "" : "s"}`,
+    stopSelecting: "Stop selecting",
+    stopSelectingTooltip: "Stop selecting (Esc)",
+    selectionBarLabel: "Selected tabs",
+    selectWindow: (name: string) => `Select every tab in ${name}`,
+    toggleWindow: "Open or close this saved window",
+    movedTabs: (count: number, category: string) => `Moved ${count} tab${count === 1 ? "" : "s"} to ${category}`,
+    deletedTabs: (count: number) => `Deleted ${count} tab${count === 1 ? "" : "s"}`,
+
+    // Saved windows (groups) in the list.
+    /**
+     * A saved window is named at random from these, sandwich-style ("Toasted Rye"): a name that
+     * belongs to no one tab in it. Its count and date are shown beside it, worked out live.
+     */
+    groupNameWords: {
+        adjectives: ["Toasted", "Crispy", "Golden", "Buttery", "Warm", "Crusty", "Fluffy", "Grilled", "Melty", "Savory", "Zesty", "Tangy",
+            "Smoky", "Honeyed", "Peppery", "Herby", "Sunny", "Rustic", "Hearty", "Flaky", "Spicy", "Fresh", "Cozy", "Seeded"],
+        nouns: ["Rye", "Bagel", "Panini", "Baguette", "Ciabatta", "Brioche", "Croissant", "Focaccia", "Pretzel", "Sourdough", "Muffin", "Pita",
+            "Wrap", "Club", "Reuben", "Toastie", "Melt", "Hoagie", "Bun", "Crumpet", "Biscuit", "Flatbread", "Roll", "Loaf", "Pickle",
+            "Cheddar", "Pesto", "Avocado", "Tomato", "Mustard"],
+    },
+    groupTabCount: (count: number) => `${count} tabs`,
+    /** When a window was saved: "6 Oct", with the year once it isn't this year's. */
+    groupSavedOn: (date: Date) =>
+        new Intl.DateTimeFormat(undefined, {
+            day: "numeric",
+            month: "short",
+            year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+        }).format(date),
+    groupMore: (count: number) => `+${count}`,
+    groupActions: (name: string) => `Actions for ${name}`,
+    groupActionsTooltip: "Open, rename, break apart or delete",
+    openGroup: "Open all in a new window",
+    openGroupAndRemove: "Open all and remove from list",
+    renameGroup: "Rename",
+    groupNameLabel: "Saved window name",
+    ungroup: "Break apart",
+    // "Remove", not "Delete": it's about the list, and closes nothing in the browser.
+    deleteGroup: "Remove from list",
+    groupDeleted: (count: number) => `Removed ${count} tabs`,
+    groupBrokenApart: "Broken apart",
+    groupOpened: (count: number) => `Opened ${count} tabs and removed them`,
     editTab: (title: string) => `Edit ${title}`,
     deleteTab: (title: string) => `Delete ${title}`,
     editTooltip: "Edit",
@@ -102,6 +176,10 @@ export const strings = {
 
     // Keyboard control of the list (stage 4 of v3.1).
     movedTo: (title: string, position: number, total: number) => `Moved “${title}” to position ${position} of ${total}`,
+    movedOutOf: (name: string) => `Moved out of ${name}`,
+    movedInto: (name: string) => `Moved into ${name}`,
+    /** Read out after Alt+arrows steps a tab out of its saved window. */
+    steppedOutOf: (title: string, name: string) => `Moved “${title}” out of ${name}`,
     cantMoveSorted: "Tabs can only be moved in your own order. Switch the sort to Your order first.",
     cantMoveSearching: "Clear the search to move tabs.",
     keyboardKeys: "Keys in the list",
@@ -109,6 +187,8 @@ export const strings = {
         search: "Jump to search",
         move: "Move through your saved tabs",
         open: "Open the tab",
+        window: "Open or close a saved window",
+        select: "Select or unselect, while selecting",
         edit: "Edit it",
         delete: "Delete it",
         undo: "Undo, while Undo is showing",

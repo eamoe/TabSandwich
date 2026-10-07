@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { SavedTab } from "../../types";
+import type { SavedTab, TabGroup } from "../../types";
 import { addTab, refreshTab, type AddTabResult } from "../../domain/TabRepository";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isSupportedTabUrl, urlsMatch } from "../../util/url";
@@ -11,6 +11,7 @@ import { SiteIcon } from "../SiteIcon";
 import { showErrorToast } from "../toastStore";
 import { strings } from "../strings";
 import { siteName } from "./listModel";
+import { SaveWindow } from "./SaveWindow";
 import { useActiveTab } from "./useActiveTab";
 import controls from "../controls.module.css";
 import styles from "./Hero.module.css";
@@ -26,6 +27,8 @@ const STATUS_MS = 2500;
  * A page that's already saved says so straight away — when, and in which category (the picker
  * starts on it) — and offers Show (find it in the list) and Update (bring the saved copy up to
  * date with the page) instead of a Save that could only answer "Already saved".
+ *
+ * Its last line saves every tab in the window at once (SaveWindow).
  */
 export function SaveCard(props: {
     tabs: SavedTab[];
@@ -34,6 +37,7 @@ export function SaveCard(props: {
     onSaved: (result: AddTabResult) => void;
     onShow: (id: string) => void;
     onUpdated: (previous: SavedTab) => void;
+    onWindowSaved: (added: SavedTab[], group: TabGroup | null) => void;
 }) {
     const tab = useActiveTab();
     // What you picked, and for which saved copy (none: a page not saved yet).
@@ -172,6 +176,11 @@ export function SaveCard(props: {
                         saveButton
                     )}
                 </div>
+            )}
+            {tab !== undefined && (
+                // On a page that's already saved, the picker shows that one page's category, which
+                // says nothing about the rest of the window: those go to Uncategorized.
+                <SaveWindow tabs={props.tabs} category={showSaved || chosen === UNCATEGORIZED ? undefined : chosen} onSaved={props.onWindowSaved} />
             )}
             <p class="visually-hidden" role="status" aria-live="polite">
                 {status === "idle" ? "" : label}

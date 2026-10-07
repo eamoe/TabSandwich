@@ -7,6 +7,7 @@ Guidance for Claude Code (or any AI collaborator) working in this repo.
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
 revisiting browser tabs. Popup-only UI (no background/content scripts),
 category tagging with color coding, outdated-tab tracking, drag-to-reorder,
+saving a whole window at once,
 keyboard shortcut to open. Everything is stored locally via
 `chrome.storage.local` — there is no server, no sync, no analytics.
 
@@ -24,24 +25,30 @@ one the release zip is made from.
 
 ```
 src/
-  types.ts              SavedTab, Settings, ThemeChoice, SortOrder
+  types.ts              SavedTab, TabGroup (a saved window), Settings, ThemeChoice, SortOrder
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
+                            tabs and saved windows written together in one write when a change touches both;
                             the last "What's new" version seen, kept apart from Settings so backups can't revive it
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
-                            backup before writing, original restored if anything fails
+                            backup before writing, original restored if anything fails (version 2 = v3.2: saved windows)
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
-    TabRepository.ts      add/edit/delete/restore/reorder saved tabs, refresh from the page (+ its undo), duplicate detection,
+    TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    GroupRepository.ts    saved windows: rename, open/closed, break apart, delete with its tabs (+ Undo for both)
+    windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
+                            which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
-                            merge (additive, dedupes by URL) vs. replace (full overwrite) — pure
+                            merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
+                            with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
     SettingsRepository.ts  theme, sort and outdated-tab settings writes; clamps the day count to 1–365
   util/
@@ -58,6 +65,8 @@ src/
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
+    useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
+                            when the popup is too short, never clipped by the list
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
@@ -69,16 +78,24 @@ src/
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
-      Header.tsx            logo, search, + (add link manually), gear
+      Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
+      SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
+                             "tabs" permission the first time), what was saved and skipped, Close the saved tabs
+      useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted
       ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
       FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
+      SelectionBar.tsx      the Select button after it, and the bar that takes the filter row's place while selecting
+                             (count, Select all, Move to…, Delete, ✕) at the same height, so the popup never resizes
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
-                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, Escape), one Tab stop
-      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names) — logic-tested
+                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, → ← for windows, Space to pick
+                             while selecting, Escape), one Tab stop; rows become checkboxes while selecting
+      GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
+      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names, saved windows
+                             in the list, random window names, where a move or drop takes a tab: into or out of a window) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
@@ -92,7 +109,8 @@ src/
                             (with the "What's new" release to show, if any)
 
 popup/popup.html               just the mount point for the Preact app
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon; "tabs" only as an
+                                optional permission, asked for when you first save a whole window
 branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
                                 to its tile for 48 px), icon-32.svg and icon-16.svg (redrawn on whole pixels,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
@@ -170,7 +188,8 @@ animation smoothness, and the manual release pass at the top of
   `MIGRATIONS`, with tests (see `tests/unit/upgrade.test.ts`). Never
   reshape stored data anywhere else.
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
-  `favicon`). If a new feature needs a new permission, that's a deliberate,
+  `favicon`, plus the optional `tabs`, requested at the moment you first save
+  a whole window). If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
 - **Preact for screens, no state library.** Preact was adopted for the
   v3.0 redesign; don't add another UI or state library. Components keep

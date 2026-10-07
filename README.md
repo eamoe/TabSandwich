@@ -9,6 +9,9 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 ## Features
 
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
+- **Save a whole window** — "Save all tabs in this window", under Save, saves every web page open in the window into the picked category (Uncategorized when the page you're on is already saved, since its category is that one page's), skipping browser pages and pages already saved, and says exactly how many it saved and skipped. It then offers to close the saved tabs (never on its own; the tab you're on stays open). Chrome asks for permission to see your open tabs the first time; saying no leaves everything else working.
+- **Saved windows** — a window saved in one go stays together in the list as one row with a random sandwich name ("Toasted Rye"), its tab count and the date; click it (or press →) to open it and see its tabs. Its ⋯ menu opens all its tabs in a new window (keeping or removing them), renames it, breaks it apart, or removes it and its tabs from the list (all undoable; nothing is closed in the browser). Filtering or searching shows every tab as its own row, so nothing stays hidden in a closed window. Drag a tab out of a window to take it out, or onto a window's tab to add it (Alt+↑ / Alt+↓ past a window's edge steps a tab out too); both say so and can be undone.
+- **Select many at once** — the ☑ button at the end of the filter row turns the rows into checkboxes (the bar replaces the filter row, so nothing moves): click or Space to pick, Shift-click for a range, a saved window's row picks all its tabs, **Select all** picks everything shown. Then **Move to…** a category or delete them, in one step with one Undo. ✕ or Escape stops.
 - **A friendly start** — with nothing saved yet, the list shows three tips: saving, the keyboard shortcut, and categories. A search that finds nothing says so and, inside a filter, offers to search everything.
 - **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
@@ -20,13 +23,13 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Undo delete** — deleting a tab shows an 8-second Undo option before it's gone for good.
 - **Storage write protection** — a save, edit, delete, or category change that fails to write (e.g. storage full) shows a specific error instead of silently vanishing, and a warning appears once storage is over 80% full, before you actually hit the limit.
 - **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
-- **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you.
+- **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you: a line shows where a tab will land, above or below the row you're over.
 - **Sorting** — newest, oldest, title or site, remembered between opens. Sorting never rewrites your own order, so switching back restores it exactly.
 - **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a small moon badge with their age and their own quick filter.
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
-- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, / jumps to search. The keys are listed in Settings › General.
+- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, → and ← open and close a saved window, Space picks a row while selecting, / jumps to search. The keys are listed in Settings › General.
 
 ## Installation
 

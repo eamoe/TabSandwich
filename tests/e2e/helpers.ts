@@ -7,6 +7,14 @@ export interface SeedTab {
     category?: string;
     /** How long ago it was saved; defaults to now. */
     daysAgo?: number;
+    /** The id of a saved window in `groups` (seedLibrary's last argument). */
+    groupId?: string;
+}
+
+export interface SeedGroup {
+    id: string;
+    name: string;
+    collapsed?: boolean;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -20,10 +28,10 @@ export async function seedLibrary(
     popup: Page,
     tabs: SeedTab[],
     settings: Record<string, unknown> = {},
-    { seenVersion = "current" }: { seenVersion?: string | null } = {}
+    { seenVersion = "current", groups = [] }: { seenVersion?: string | null; groups?: SeedGroup[] } = {}
 ): Promise<void> {
     await popup.evaluate(
-        async ({ tabs, settings, day, seenVersion }) => {
+        async ({ tabs, settings, day, seenVersion, groups }) => {
             await chrome.storage.local.clear();
             if (seenVersion !== null) {
                 await chrome.storage.local.set({
@@ -40,7 +48,9 @@ export async function seedLibrary(
                     url: t.url,
                     category: t.category,
                     savedAt: now - (t.daysAgo ?? 0) * day,
+                    ...(t.groupId ? { groupId: t.groupId } : {}),
                 })),
+                "tabSandwich.groups": groups.map((g) => ({ id: g.id, name: g.name, createdAt: now, collapsed: g.collapsed ?? true })),
                 "tabSandwich.settings": {
                     outdatedEnabled: true,
                     outdatedDays: 7,
@@ -50,7 +60,7 @@ export async function seedLibrary(
                 },
             });
         },
-        { tabs, settings, day: DAY, seenVersion }
+        { tabs, settings, day: DAY, seenVersion, groups }
     );
     await popup.reload();
     await waitUntilReady(popup);
@@ -93,16 +103,27 @@ export const tabList = (popup: Page): Locator => popup.getByRole("list", { name:
 
 export const row = (popup: Page, title: string): Locator => tabList(popup).getByRole("listitem").filter({ hasText: title });
 
-/** The titles of the rows on screen, top to bottom — each row's first button is its title, which opens the tab. */
+/**
+ * The titles of the rows on screen, top to bottom — each row's first button is its title, which
+ * opens the tab. A saved window's row shows as "▸ name" (closed) or "▾ name" (open), followed by
+ * its tabs while it's open.
+ */
 export async function rowTitles(popup: Page): Promise<string[]> {
-    const rows = tabList(popup).getByRole("listitem");
-    const titles: string[] = [];
-    for (const item of await rows.all()) {
-        const title = item.getByRole("button").first();
-        if (await title.count()) titles.push((await title.textContent()) ?? "");
-    }
-    return titles;
+    // Read in one step inside the page: row by row from here, a row sliding away (deleted) between
+    // two reads would leave a read waiting for a row that's gone.
+    return tabList(popup).evaluate((list) =>
+        [...list.querySelectorAll("li")].flatMap((item) => {
+            const title = [...item.querySelectorAll("button")].find((b) => (b.getAttribute("role") ?? "button") === "button");
+            if (!title) return [];
+            const groupName = title.getAttribute("data-group-name");
+            if (groupName !== null) return [`${title.getAttribute("aria-expanded") === "true" ? "▾" : "▸"} ${groupName}`];
+            return [title.textContent ?? ""];
+        })
+    );
 }
+
+/** A saved window's own row (the button that opens and closes it), by its name. */
+export const windowRow = (popup: Page, name: string): Locator => tabList(popup).locator(`button[data-group-name="${name}"]`);
 
 export async function openSettings(popup: Page, tab?: "General" | "Categories" | "Backup" | "About"): Promise<void> {
     await popup.getByRole("button", { name: "Open settings" }).click();
@@ -119,4 +140,62 @@ export async function manualEntryCategories(popup: Page): Promise<string[]> {
     const options = await select.locator("option").allTextContents();
     await popup.getByRole("button", { name: "Cancel" }).click();
     return options;
+}
+
+/**
+ * Stands in for Chrome's permission prompt, which a test can't click: from now on, asking for
+ * the optional "tabs" permission is answered `answer` straight away, and remembered like Chrome
+ * would. Only the prompt is fake: the test copy of the extension can already read the fake
+ * site's tabs (see fixtures.ts), the same access the real permission gives on every site.
+ * Reloads the popup so it starts with the stand-in. `promptsShown` counts how often it was asked.
+ */
+export async function answerPermissionPrompt(context: BrowserContext, popup: Page, answer: "grant" | "deny"): Promise<void> {
+    await context.addInitScript((answer) => {
+        if (!location.href.startsWith("chrome-extension://") || typeof chrome === "undefined" || !chrome.permissions) return;
+        const GRANTED = "test.tabsPermission";
+        const asksTabs = (p: chrome.permissions.Permissions) => p.permissions?.includes("tabs") ?? false;
+        const replace = (name: string, value: unknown) => Object.defineProperty(chrome.permissions, name, { value, configurable: true });
+        replace("contains", async (p: chrome.permissions.Permissions) => asksTabs(p) && localStorage.getItem(GRANTED) === "yes");
+        replace("request", async (p: chrome.permissions.Permissions) => {
+            if (!asksTabs(p)) return false;
+            localStorage.setItem("test.promptsShown", String(Number(localStorage.getItem("test.promptsShown") ?? 0) + 1));
+            if (answer === "grant") localStorage.setItem(GRANTED, "yes");
+            return answer === "grant";
+        });
+    }, answer);
+    await popup.reload();
+    await waitUntilReady(popup);
+}
+
+export async function promptsShown(popup: Page): Promise<number> {
+    return popup.evaluate(() => Number(localStorage.getItem("test.promptsShown") ?? 0));
+}
+
+/** The addresses of every tab open in the browser. */
+export async function openTabUrls(popup: Page): Promise<string[]> {
+    return popup.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.url ?? t.pendingUrl ?? ""));
+}
+
+/**
+ * Shrinks the test window to the popup's own height. A real popup is only as tall as what it
+ * shows (the test window is always 580px), which is what a floating menu has to fit inside.
+ */
+export async function fitWindowToPopup(popup: Page): Promise<void> {
+    const height = await popup.evaluate(() => Math.ceil(document.getElementById("main-view")!.getBoundingClientRect().bottom));
+    await popup.setViewportSize({ width: 380, height });
+}
+
+/** Every item of the open menu is fully inside the window, and on top: nothing else covers it. */
+export async function expectMenuFullyVisible(popup: Page): Promise<void> {
+    const items = popup.getByRole("menu").locator("[role^='menuitem']");
+    for (const item of await items.all()) {
+        await expect(item).toBeInViewport({ ratio: 1 });
+        // What's actually drawn at the item's corners and middle is the item itself.
+        const covered = await item.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const points = [[r.left + 4, r.top + 4], [r.right - 4, r.bottom - 4], [r.left + r.width / 2, r.top + r.height / 2]];
+            return points.some(([x, y]) => !el.contains(document.elementFromPoint(x, y)));
+        });
+        expect(covered).toBe(false);
+    }
 }

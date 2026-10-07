@@ -17,6 +17,8 @@ export function Header(props: {
     onToggleManual: () => void;
     onOpenSettings: () => void;
     settingsButtonRef: Ref<HTMLButtonElement>;
+    /** Counts new saves; each one makes the logo hop once (none before the first). */
+    hops: number;
 }) {
     const input = useRef<HTMLInputElement>(null);
 
@@ -32,7 +34,8 @@ export function Header(props: {
 
     return (
         <div class={styles.header}>
-            <span class={styles.mark} aria-hidden="true">
+            {/* A new key per save remounts the mark, which restarts its animation. */}
+            <span key={props.hops} class={props.hops ? `${styles.mark} ${styles.hop}` : styles.mark} aria-hidden="true" data-hops={props.hops}>
                 <Logo />
             </span>
             {props.showSearch ? (

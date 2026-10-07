@@ -1,0 +1,45 @@
+/* In the filter row's place while selecting, at exactly its height (4 + 26 + 8 px), so the popup
+   never changes size when selecting starts or stops. Nothing in it may push it wider. */
+.bar { height: 38px; display: flex; align-items: flex-start; flex-shrink: 0; min-width: 0; position: relative; z-index: 2; }
+.main { flex: 1; min-width: 0; height: 26px; margin-top: 4px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 12px; overflow: hidden; }
+.count { margin: 0; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.link {
+    flex-shrink: 0;
+    border: 0;
+    padding: 2px;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.spacer { flex: 1; min-width: 0; }
+.moveWrap { position: relative; display: flex; align-items: center; min-width: 0; flex-shrink: 1; }
+/* Shaped like the filter row's own buttons. */
+.move {
+    appearance: none;
+    box-sizing: border-box;
+    width: 100px;
+    max-width: 100%;
+    height: 26px;
+    padding: 0 24px 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+.move:hover:not(:disabled) { background: var(--hover); }
+.move:disabled { opacity: 0.55; cursor: default; }
+.chevron { position: absolute; right: 8px; pointer-events: none; color: var(--ink-3); display: flex; }
+.delete { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; }
+.delete:hover:not(:disabled) { color: var(--danger); }
+.delete:disabled { opacity: 0.45; cursor: default; }

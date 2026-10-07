@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { addTab, deleteTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
-import { makeTab, seed, storedTabs } from "./helpers";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
+import { storage } from "./setup";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -30,6 +31,163 @@ describe("addTab", () => {
         const ids = storedTabs().map((t) => t.id);
         expect(ids).toHaveLength(20);
         expect(new Set(ids).size).toBe(20);
+    });
+});
+
+describe("addTabs", () => {
+    it("saves new pages at the top in the given order, in one category, skipping saved ones", async () => {
+        const existing = makeTab({ url: "https://saved.example.com/" });
+        seed([existing]);
+        const { added, duplicates } = await addTabs(
+            [
+                { title: "One", url: "https://one.example.com/" },
+                { title: "Saved", url: "https://saved.example.com" },
+                { title: "Two", url: "https://two.example.com/" },
+                { title: "One again", url: "https://one.example.com/#top" },
+            ],
+            "Reading"
+        );
+        expect(added.map((t) => t.title)).toEqual(["One", "Two"]);
+        expect(added.every((t) => t.category === "Reading" && UUID.test(t.id))).toBe(true);
+        expect(duplicates).toBe(2);
+        expect(storedTabs().map((t) => t.title)).toEqual(["One", "Two", existing.title]);
+    });
+
+    it("puts two or more new tabs in one collapsed saved window, written in the same write", async () => {
+        seed([makeTab()]);
+        seedGroups([makeGroup({ name: "Crispy Bagel" })]);
+        const writes: string[][] = [];
+        let offered: string[] = [];
+        storage.rejectSet = (items) => {
+            writes.push(Object.keys(items).sort());
+            return null;
+        };
+        const { added, group } = await addTabs(
+            [
+                { title: "One", url: "https://one.example.com/" },
+                { title: "Two", url: "https://two.example.com/" },
+            ],
+            undefined,
+            (taken) => {
+                offered = taken;
+                return "Toasted Rye";
+            }
+        );
+        // Named knowing which names are taken, so it can pick another.
+        expect(offered).toEqual(["Crispy Bagel"]);
+        expect(group).toEqual(expect.objectContaining({ name: "Toasted Rye", collapsed: true }));
+        expect(added.every((t) => t.groupId === group!.id)).toBe(true);
+        expect(storedGroups().map((g) => g.name)).toEqual(["Toasted Rye", "Crispy Bagel"]);
+        expect(writes).toEqual([["tabSandwich.groups", "tabSandwich.tabs"]]);
+    });
+
+    it("makes no saved window for a single new tab", async () => {
+        seed([]);
+        const { added, group } = await addTabs([{ title: "One", url: "https://one.example.com/" }], undefined, () => "Window");
+        expect(group).toBeNull();
+        expect(added[0].groupId).toBeUndefined();
+        expect(storedGroups()).toEqual([]);
+    });
+
+    it("writes nothing when every page is already saved", async () => {
+        const existing = makeTab({ url: "https://saved.example.com/" });
+        seed([existing]);
+        expect(await addTabs([{ title: "Saved", url: "https://saved.example.com/" }], undefined, () => "Window")).toEqual({ added: [], duplicates: 1, group: null });
+        expect(storedTabs()).toEqual([existing]);
+    });
+});
+
+describe("setCategoryOf / restoreCategories", () => {
+    it("moves several tabs into one category in one write, and Undo puts each back", async () => {
+        const tabs = [makeTab({ category: "Work" }), makeTab(), makeTab({ category: "Reading" })];
+        seed(tabs);
+        const previous = await setCategoryOf([tabs[0].id, tabs[1].id, "gone"], "Reading");
+        expect(previous).toEqual([
+            { id: tabs[0].id, category: "Work" },
+            { id: tabs[1].id, category: undefined },
+        ]);
+        expect(storedTabs().map((t) => t.category)).toEqual(["Reading", "Reading", "Reading"]);
+        await restoreCategories(previous);
+        expect(storedTabs().map((t) => t.category)).toEqual(["Work", undefined, "Reading"]);
+    });
+
+    it("moves to Uncategorized", async () => {
+        const tab = makeTab({ category: "Work" });
+        seed([tab]);
+        await setCategoryOf([tab.id], undefined);
+        expect(storedTabs()[0].category).toBeUndefined();
+    });
+});
+
+describe("moveTab / undoMoveTab", () => {
+    it("moves a tab into a saved window, and out of one, and Undo puts it back exactly", async () => {
+        const tabs = [makeTab(), makeTab({ groupId: "g" }), makeTab({ groupId: "g" }), makeTab()];
+        seed(tabs);
+        const into = await moveTab(tabs[3].id, tabs[2].id, "g");
+        expect(storedTabs().map((t) => [t.id, t.groupId])).toEqual([
+            [tabs[0].id, undefined],
+            [tabs[1].id, "g"],
+            [tabs[3].id, "g"],
+            [tabs[2].id, "g"],
+        ]);
+        await undoMoveTab(into!);
+        expect(storedTabs()).toEqual(tabs);
+
+        // Out, staying in place (Alt+arrow past the window's edge).
+        const out = await moveTab(tabs[1].id, tabs[1].id, null);
+        expect(storedTabs()[1]).not.toHaveProperty("groupId");
+        expect(storedTabs().map((t) => t.id)).toEqual(tabs.map((t) => t.id));
+        await undoMoveTab(out!);
+        expect(storedTabs()).toEqual(tabs);
+    });
+
+    it("does nothing when either tab is gone", async () => {
+        seed([makeTab()]);
+        expect(await moveTab("nope", "nope", null)).toBeNull();
+    });
+
+    it("placeTab puts a tab just above or below another, wherever it came from, with Undo", async () => {
+        const tabs = [makeTab({ groupId: "g" }), makeTab({ groupId: "g" }), makeTab(), makeTab()];
+        seed(tabs);
+        // Out of the window, onto a loose tab's upper half: it takes that tab's place, the rest move down.
+        const out = await placeTab(tabs[0].id, tabs[3].id, "before", null);
+        expect(storedTabs().map((t) => t.id)).toEqual([tabs[1].id, tabs[2].id, tabs[0].id, tabs[3].id]);
+        expect(storedTabs()[2]).not.toHaveProperty("groupId");
+        await undoMoveTab(out!);
+        expect(storedTabs()).toEqual(tabs);
+        // Below the last tab: the very end is reachable.
+        await placeTab(tabs[0].id, tabs[3].id, "after", null);
+        expect(storedTabs().at(-1)!.id).toBe(tabs[0].id);
+        // Into the window, above its first tab.
+        await placeTab(tabs[2].id, tabs[1].id, "before", "g");
+        expect(storedTabs().map((t) => [t.id, t.groupId])).toEqual([
+            [tabs[2].id, "g"],
+            [tabs[1].id, "g"],
+            [tabs[3].id, undefined],
+            [tabs[0].id, undefined],
+        ]);
+        // Next to itself: stays put, only its window changes.
+        await placeTab(tabs[2].id, tabs[2].id, "before", null);
+        expect(storedTabs()[0]).toEqual(expect.objectContaining({ id: tabs[2].id }));
+        expect(storedTabs()[0]).not.toHaveProperty("groupId");
+    });
+});
+
+describe("deleteTabs / restoreTabs", () => {
+    it("deletes several tabs in one write, and Undo puts each back in its place", async () => {
+        const tabs = [makeTab(), makeTab(), makeTab(), makeTab(), makeTab()];
+        seed(tabs);
+        const removed = await deleteTabs([tabs[3].id, tabs[0].id, "gone"]);
+        expect(removed.map((r) => [r.tab.id, r.index])).toEqual([
+            [tabs[0].id, 0],
+            [tabs[3].id, 3],
+        ]);
+        expect(storedTabs().map((t) => t.id)).toEqual([tabs[1].id, tabs[2].id, tabs[4].id]);
+        await restoreTabs(removed);
+        expect(storedTabs()).toEqual(tabs);
+        // A second Undo doesn't duplicate anything.
+        await restoreTabs(removed);
+        expect(storedTabs()).toEqual(tabs);
     });
 });
 
