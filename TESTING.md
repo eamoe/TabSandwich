@@ -11,7 +11,7 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 ```
 
 - **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
-- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search and filters, categories, export and import — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
+- **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search, filters and sorting, categories, export and import, the keyboard, saving a whole window (with a stand-in for Chrome's permission prompt), saved windows, selecting many — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
 - **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
@@ -26,7 +26,8 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Anything new in this release that isn't marked **[auto]** yet.
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 is the first that does).
+9. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -627,7 +628,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-184 — Data upgrades are versioned and can't half-apply (P1)** **[auto]**
 - Steps: Open the popup on data saved by v2.2.0 or earlier, then inspect `(await chrome.storage.local.get(null))` in the popup's DevTools.
-- Expected: `tabSandwich.schemaVersion` is `1`; tabs and settings are unchanged. (A future release that changes the stored format runs each upgrade step on a copy, keeps a backup in `tabSandwich.upgradeBackup`, writes data and version together, and restores the original exactly if anything fails — the logic tests force each failure path.)
+- Expected: `tabSandwich.schemaVersion` is `2` since v3.2 (version 2 adds saved windows); tabs and settings are unchanged, and a backup of the data as it was is kept in `tabSandwich.upgradeBackup`. (A release that changes the stored format runs each upgrade step on a copy, keeps a backup in `tabSandwich.upgradeBackup`, writes data and version together, and restores the original exactly if anything fails — the logic tests force each failure path.)
 
 **TC-185 — Accessibility scan passes on every screen (P1)** **[auto]**
 - Steps: `pnpm test:e2e` (the accessibility tests scan the list, manual entry, edit mode, Settings, and the undo toast, in both light and dark mode).
@@ -924,4 +925,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-255 — Selecting from the keyboard (P1)** **[auto]**
 - Steps: Start selecting; Tab into the list; Space; ↓; Space; press E and Delete; → on a window.
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
+
+**TC-256 — Updating an existing install keeps everything (P1, release gate)**
+- Preconditions: The previous release (3.1.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
+- Expected: Every tab, category, color, theme and sort is as it was; "New in 3.2" shows once. Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 2, with a backup copy; the robot tests cover the upgrade itself (TC-184), but not an existing install updating in place.)
 
