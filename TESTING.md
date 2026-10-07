@@ -25,7 +25,8 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
-7. Anything new in this release that isn't marked **[auto]** yet.
+7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
+8. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 

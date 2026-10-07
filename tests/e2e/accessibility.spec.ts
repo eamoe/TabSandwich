@@ -52,7 +52,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
         test("what's new showing", async ({ popup }) => {
             await seedLibrary(popup, [{ title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work" }], {}, { seenVersion: "3.0.0" });
-            await expect(popup.getByRole("region", { name: "New in 3.1" })).toBeVisible();
+            await expect(popup.getByRole("region", { name: /^New in / })).toBeVisible();
             expect(await scan(popup)).toEqual([]);
         });
 

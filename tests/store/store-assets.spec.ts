@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { test } from "../e2e/fixtures";
 import { expect } from "../e2e/fixtures";
-import { openSettings, seedLibrary } from "../e2e/helpers";
+import { answerPermissionPrompt, openSettings, seedLibrary } from "../e2e/helpers";
 
 const OUT = "store-assets";
 
@@ -57,11 +57,20 @@ async function compose(page: Page, file: string, popupPng: Buffer, headline: str
 /** The page the save card shows: a real article, opened as the active tab in the popup's window. */
 const CURRENT_PAGE = "https://www.smashingmagazine.com/articles/";
 
+/** A window of open tabs, for "save the whole window" (the article above is the one you're on). */
+const WINDOW_PAGES = [
+    "https://vite.dev/",
+    "https://preactjs.com/",
+    "https://playwright.dev/",
+    "https://www.typescriptlang.org/",
+    "https://developer.chrome.com/docs/extensions",
+];
+
 test("Chrome Web Store screenshots", async ({ context, popup }) => {
     test.skip(!process.env.TS_STORE_SCREENSHOTS, "Run through `pnpm store:screenshots`.");
     // Visit each sample site once, so Chrome's own icon cache has its icon (as it would for a real user).
     const visitor = await context.newPage();
-    for (const { url } of [...LIBRARY, { url: CURRENT_PAGE }]) {
+    for (const { url } of [...LIBRARY, { url: CURRENT_PAGE }, ...WINDOW_PAGES.map((url) => ({ url }))]) {
         await visitor.goto(url, { waitUntil: "load", timeout: 30_000 }).catch(() => undefined);
         await visitor.waitForTimeout(800);
     }
@@ -87,19 +96,41 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
         "Colorful categories make your list easy to scan."
     ], "light", true);
 
-    await compose(canvas, "screenshot-2-dark-mode.png", await shot("dark", async () => {}), "Easy on the eyes, day or night", [
+    // A window full of tabs, saved in one click (Chrome's permission prompt answered "Allow"),
+    // then opened as a saved window, with "Close N tabs" on offer.
+    await compose(canvas, "screenshot-2-whole-window.png", await shot("light", async () => {
+        for (const url of WINDOW_PAGES) {
+            const opened = context.waitForEvent("page");
+            await popup.evaluate((u) => chrome.tabs.create({ url: u, active: false }), url);
+            await (await opened).waitForLoadState("load").catch(() => undefined);
+        }
+        await answerPermissionPrompt(context, popup, "grant");
+        await popup.mouse.move(0, 599);
+        await popup.getByRole("button", { name: /^Save all \d+ tabs in this window$/ }).click();
+        await expect(popup.getByRole("status").filter({ hasText: /^Saved \d+ tabs/ })).toBeVisible();
+        await popup.locator("button[data-group-name]").first().click();
+        await popup.mouse.move(0, 599);
+        await popup.waitForTimeout(2200);
+    }), "Forty tabs open? Save them all at once", [
+        "One click saves the whole window, skipping what's already saved.",
+        "It stays together in your list. Close the tabs, or keep them open."
+    ], "light");
+    // Close that window's tabs again, so the later shots show the usual window.
+    await popup.evaluate(async (urls) => {
+        const open = await chrome.tabs.query({});
+        await chrome.tabs.remove(open.filter((tab) => urls.some((u) => (tab.url ?? tab.pendingUrl ?? "").startsWith(u))).map((tab) => tab.id!));
+    }, WINDOW_PAGES);
+    // And forget the permission again (the stand-in for Chrome's prompt keeps it in the page).
+    await popup.evaluate(() => localStorage.removeItem("test.tabsPermission"));
+
+    await compose(canvas, "screenshot-3-dark-mode.png", await shot("dark", async () => {}), "Easy on the eyes, day or night", [
         "Follows your computer's light or dark mode,",
         "or pick one in Settings."
     ], "dark");
 
-    await compose(canvas, "screenshot-3-search.png", await shot("light", async () => {
+    await compose(canvas, "screenshot-4-search.png", await shot("light", async () => {
         await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("news");
-    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Sort by newest, title or site, and never touch the mouse."], "light");
-
-    await compose(canvas, "screenshot-4-categories.png", await shot("light", async () => {
-        await openSettings(popup, "Categories");
-        await popup.getByRole("button", { name: "Color for Reading" }).click();
-    }), "Organize your way", ["Add, rename, reorder and recolor categories.", "Settings stay calm and simple."], "light");
+    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Sort, select many, and never touch the mouse."], "light");
 
     await compose(canvas, "screenshot-5-private.png", await shot("dark", async () => {
         await openSettings(popup, "About");

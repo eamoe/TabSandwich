@@ -98,6 +98,11 @@ export const strings = {
     whatsNewTitle: (release: string) => `New in ${release}`,
     dismissWhatsNew: "Dismiss what's new",
     whatsNewNotes: {
+        "3.2": [
+            "Save every tab in a window at once, then close them in one click.",
+            "A saved window stays together as one row, named like “Toasted Rye”.",
+            "Select several tabs to move or delete them together.",
+        ],
         "3.1": [
             "Sort your list by newest, oldest, title or site.",
             "A page you've already saved says so, with Show and Update.",

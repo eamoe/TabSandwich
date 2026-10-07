@@ -34,7 +34,7 @@ Then zip the *contents* of `dist/` (so `manifest.json` sits at the root of the z
 
 **Summary** (132 char max — the Dashboard shows this as "Summary from package," pulled automatically from `manifest.json`'s `description` field — this is 127 chars, nothing to type in manually):
 ```
-Save tabs in one click, organize with color-coded categories, and spot outdated ones. 100% local — nothing leaves your browser.
+Save a tab or a whole window in one click, organize with color-coded categories. 100% local — nothing leaves your browser.
 ```
 
 **Detailed description:**
@@ -68,8 +68,8 @@ Export everything to a file and import it later. Every action works from the key
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site). Saving a whole window needs permission to see your open tabs; Chrome asks only when you first use it, and everything else works if you say no.
 
-NEW IN 3.1
-Sort your list by newest, oldest, title or site. Pages you've already saved say so, with one click to find or update them. Everything works from the keyboard. A friendlier first run, a short "What's new" note after updates, and a new icon.
+NEW IN 3.2
+Save every tab in a window at once, skipping what's already saved, then close them in one click. A saved window stays together in your list under a name like "Toasted Rye": open it, rename it, reopen all its tabs, or drag tabs in and out. Select several tabs to move them to a category or delete them in one go.
 ```
 
 ### Screenshots
@@ -77,10 +77,12 @@ Sort your list by newest, oldest, title or site. Pages you've already saved say 
 Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the icon, large (`branding/icon.svg`):
 
 1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list and save card
-2. `screenshot-2-dark-mode.png` — "Easy on the eyes, day or night": the same list in dark mode
-3. `screenshot-3-search.png` — "Find any saved tab in a keystroke": search with highlighted matches
-4. `screenshot-4-categories.png` — "Organize your way": Settings › Categories with the color strip open
+2. `screenshot-2-whole-window.png` — "Forty tabs open? Save them all at once": a window just saved, open as a saved window, with "Close N tabs" on offer
+3. `screenshot-3-dark-mode.png` — "Easy on the eyes, day or night": the list in dark mode
+4. `screenshot-4-search.png` — "Find any saved tab in a keystroke": search with highlighted matches
 5. `screenshot-5-private.png` — "Your tabs stay in your browser": Settings › About in dark mode
+
+(Since 3.2 the categories screenshot is gone to make room for saving a whole window; the main list still shows categories.)
 
 They're rendered from the built extension, not edited by hand: `pnpm build && pnpm store:screenshots` (on a Mac, with network access — it visits each sample site once so the rows show real site icons). Re-run it whenever the look changes, and check the pictures before uploading: they're public.
 
@@ -130,6 +132,7 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 1. Bump `manifest.json`'s `version`.
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
-4. Update the description/screenshots only if something user-facing actually changed (3.1.0 did: paste the detailed description above, including its "New in 3.1" paragraph, and replace all five screenshots — they show the new icon and the sort button, and About shows the version, so re-render them with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+4. Update the description/screenshots only if something user-facing actually changed (3.2.0 did: paste the summary and detailed description above, including its "New in 3.2" paragraph, and replace all five screenshots — delete the old ones first, since two were renamed — re-rendered with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - 3.2.0 adds the optional `tabs` permission: in the **Privacy practices** tab, add its justification (Step 3 above). Being optional, it's asked for only when someone first saves a whole window, so updating doesn't disable the extension for existing users.
    - A new icon (3.1.0 has one) normally comes from the uploaded zip. If the **Store listing** tab also has its own 128×128 store icon field, upload `images/icon-128.png` there too, or the listing keeps the old one.
 5. Submit for review again (update reviews are usually faster than the first one).
