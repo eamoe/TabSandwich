@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL, ARCHIVED, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, pinnedFirst, stoppedAtPinLine, isTabOutdated, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
+import { ALL, ARCHIVED, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, pinnedFirst, stoppedAtPinLine, isTabOutdated, staleKeptTabs, STALE_AFTER_DAYS, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
 import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
@@ -260,5 +260,40 @@ describe("archived tabs", () => {
 
     it("never show as waiting", () => {
         expect(isTabOutdated(archivedWork, settings)).toBe(false);
+    });
+});
+
+describe("last opened", () => {
+    const now = Date.UTC(2027, 5, 1);
+    const never = makeTab({ id: "never" });
+    const once = makeTab({ id: "once", lastOpenedAt: now - 5 * DAY, openCount: 1 });
+    const often = makeTab({ id: "often", lastOpenedAt: now - 9 * DAY, openCount: 7 });
+    const recent = makeTab({ id: "recent", lastOpenedAt: now - DAY, openCount: 1 });
+
+    it("sorts by most recently opened, or most often (then most recently), never-opened last", () => {
+        expect(sortTabs([never, once, often, recent], "opened").map((t) => t.id)).toEqual(["recent", "once", "often", "never"]);
+        expect(sortTabs([never, once, often, recent], "openedMost").map((t) => t.id)).toEqual(["often", "recent", "once", "never"]);
+    });
+
+    describe("the cleanup tip's tabs", () => {
+        const long = now - (STALE_AFTER_DAYS + 10) * DAY;
+        const base = { savedAt: long, category: "Work" };
+        const settingsKeep = { ...settings, waitingCategories: ["Reading"] };
+
+        it("are kept, unpinned, in the list, and untouched for six months since counting began", () => {
+            const stale = makeTab({ ...base, id: "stale" });
+            const openedLately = makeTab({ ...base, id: "opened", lastOpenedAt: now - 10 * DAY });
+            const pinned = makeTab({ ...base, id: "pinned", pinned: true });
+            const archived = makeTab({ ...base, id: "archived", archivedAt: now });
+            const aging = makeTab({ ...base, id: "aging", category: "Reading" });
+            const savedLately = makeTab({ ...base, id: "new", savedAt: now - 10 * DAY });
+            const all = [stale, openedLately, pinned, archived, aging, savedLately];
+            expect(staleKeptTabs(all, settingsKeep, now, long).map((t) => t.id)).toEqual(["stale"]);
+        });
+
+        it("wait six months from when counting began, so opens before then aren't held against a tab", () => {
+            const stale = makeTab({ ...base, id: "stale" });
+            expect(staleKeptTabs([stale], settingsKeep, now, now - 30 * DAY)).toEqual([]);
+        });
     });
 });

@@ -45,7 +45,7 @@ SAVE INSTANTLY
 Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button. Already saved the page? The popup says so, and one click updates the saved copy.
 
 FIND IT AGAIN, FAST
-Search matches titles, sites and your notes as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. Sort by newest, oldest, title or site, and switch back to your own order any time.
+Search matches titles, sites and your notes as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. Sort by newest, oldest, title, site, recently opened or most opened, and switch back to your own order any time. Kept tabs you haven't opened in six months? A quiet tip offers to archive them.
 
 ORGANIZE WITH CATEGORIES
 Give any saved tab a color-coded category. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.

@@ -1006,3 +1006,12 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-273 — Search finds notes (P1)** **[auto]**
 - Steps: Search for a word that's only in a tab's note.
 - Expected: That tab is found, the word highlighted in its note line; a title match still ranks above a note-only one.
+
+**TC-274 — Opens are counted, and sort by them (P2)** **[auto]**
+- Steps: Open a tab from the list (click its title, or Enter); open the sort menu and pick **Recently opened**, then **Most opened**.
+- Expected: The tab opened just now is first under Recently opened; Most opened puts the most often opened first (ties: the more recent). Tabs never opened from Tab Sandwich come last. Only opens from Tab Sandwich count (a row, Enter, a saved window's Open all).
+
+**TC-275 — The cleanup tip (P2)** **[auto]**
+- Preconditions: 3+ tabs in categories whose moon is off, not pinned, not opened from Tab Sandwich in 6 months — and Tab Sandwich counting opens for at least that long (it starts the day 3.3 is installed).
+- Steps: Look at All; click **Archive them**. Set it up again and click **Not now**; reopen the popup.
+- Expected: A line above the list: "N kept tabs not opened in 6 months", **Archive them**, **Not now**. Archive them archives exactly those (pinned ones, aging categories' and recently opened ones stay), with one Undo. Not now hides the tip for 30 days, across reopening. With counting begun less than 6 months ago, no tip at all.

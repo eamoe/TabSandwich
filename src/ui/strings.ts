@@ -74,9 +74,17 @@ export const strings = {
     sortButton: (choice: string) => `Sort: ${choice}`,
     sortMenuLabel: "Sort saved tabs",
     /** The menu's full wording. */
-    sortOptions: { custom: "Your order", newest: "Newest first", oldest: "Oldest first", title: "Title (A–Z)", site: "Site (A–Z)" } as Record<SortOrder, string>,
+    sortOptions: {
+        custom: "Your order",
+        newest: "Newest first",
+        oldest: "Oldest first",
+        title: "Title (A–Z)",
+        site: "Site (A–Z)",
+        opened: "Recently opened",
+        openedMost: "Most opened",
+    } as Record<SortOrder, string>,
     /** The short form the button shows while a sort other than your own order is on. */
-    sortShort: { custom: "Your order", newest: "Newest", oldest: "Oldest", title: "Title", site: "Site" } as Record<SortOrder, string>,
+    sortShort: { custom: "Your order", newest: "Newest", oldest: "Oldest", title: "Title", site: "Site", opened: "Opened", openedMost: "Most opened" } as Record<SortOrder, string>,
 
     storageNearlyFull: (pct: number) => `Storage is ${pct}% full.`,
     seeStorage: "See storage",
@@ -160,6 +168,9 @@ export const strings = {
     archivedTabs: (count: number) => `Archived ${count} tab${count === 1 ? "" : "s"}`,
     restoredTabs: (count: number) => `Restored ${count} tab${count === 1 ? "" : "s"}`,
     archiveAllWaiting: (count: number) => `Archive all ${count} waiting tab${count === 1 ? "" : "s"}`,
+    cleanupTip: (count: number) => `${count} kept tab${count === 1 ? "" : "s"} not opened in 6 months`,
+    cleanupArchive: "Archive them",
+    cleanupNotNow: "Not now",
     archiveAllWaitingHint: "Still saved: restore any of them from Archived.",
 
     // Saved windows (groups) in the list.

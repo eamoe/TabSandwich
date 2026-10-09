@@ -16,13 +16,14 @@ import {
     setPinned,
     archiveTabs,
     unarchiveTabs,
+    recordOpen,
     type AddTabResult,
 } from "../../domain/TabRepository";
 import { getCategoryColorHex, getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { renameGroup, restoreGroup, setGroupCollapsed, ungroup, type RemovedGroup } from "../../domain/GroupRepository";
 import { searchTabs, type SearchMatch } from "../../domain/search";
 import { setSort } from "../../domain/SettingsRepository";
-import { getGroups, getTabs, setLastSeenVersion } from "../../storage/chromeStorage";
+import { getGroups, getTabs, setCleanupTipHiddenUntil, setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
@@ -39,7 +40,7 @@ import { AllArchived, EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, ARCHIVED, OUTDATED, applyFilter, isArchived, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
+import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, applyFilter, isArchived, staleKeptTabs, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -442,10 +443,12 @@ export function App(props: { whatsNew?: string | null }) {
         const urls = tabs.map((t) => t.url);
         try {
             if (action === "open") {
-                // Opening a window usually closes the popup, so there's nothing to wait for here.
+                // Opening a window usually closes the popup: counted first, then nothing to wait for.
+                await recordOpen(tabs.map((t) => t.id)).catch(() => undefined);
                 void chrome.windows.create({ url: urls, focused: true });
             } else if (action === "openAndRemove") {
                 // Archived first: the new window may close the popup before anything after it runs.
+                await recordOpen(tabs.map((t) => t.id)).catch(() => undefined);
                 await archiveMany(tabs.map((t) => t.id), strings.groupOpened, group.id);
                 void chrome.windows.create({ url: urls, focused: true });
             } else if (action === "ungroup") {
@@ -511,7 +514,11 @@ export function App(props: { whatsNew?: string | null }) {
         setLastSeenVersion(chrome.runtime.getManifest().version).catch((err) => showErrorToast(writeErrorMessage(err)));
     };
 
-    const openTab = (tab: SavedTab) => void chrome.tabs.create({ url: tab.url });
+    // Counted first (opening a tab can close the popup); a count that fails to save never stops the open.
+    const openTab = async (tab: SavedTab) => {
+        await recordOpen([tab.id]).catch(() => undefined);
+        void chrome.tabs.create({ url: tab.url });
+    };
 
     // Only tabs still saved count as picked (one may have been deleted meanwhile).
     const pickedIds = library.tabs.filter((t) => picked.has(t.id)).map((t) => t.id);
@@ -595,6 +602,27 @@ export function App(props: { whatsNew?: string | null }) {
             showErrorToast(writeErrorMessage(err));
             await reload();
         }
+    };
+
+    // The cleanup tip: kept tabs untouched for months, on All while there are a few of them.
+    const stale = activeFilter === ALL && !searching && !selecting && Date.now() >= library.cleanupTipHiddenUntil
+        ? staleKeptTabs(library.tabs, library.settings, Date.now(), library.openTrackingSince)
+        : [];
+    const archiveStale = async () => {
+        try {
+            await archiveMany(stale.map((t) => t.id), strings.archivedTabs);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
+    };
+    const hideCleanupTip = async () => {
+        try {
+            await setCleanupTipHiddenUntil(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
     };
 
     // On the Waiting filter: every waiting tab to the archive at once (they stay restorable).
@@ -704,6 +732,18 @@ export function App(props: { whatsNew?: string | null }) {
                 <p class="visually-hidden" role="status" aria-live="polite">
                     {searching ? strings.matches(visible.tabs.length) : pinNote}
                 </p>
+                {stale.length >= CLEANUP_TIP_MIN && (
+                    <div class={styles.tip} role="note" aria-label={strings.cleanupTip(stale.length)}>
+                        <span class={styles.tipText}>{strings.cleanupTip(stale.length)}</span>
+                        <button type="button" class={styles.archiveAllButton} onClick={() => void archiveStale()}>
+                            <Icon name="archive" size={14} />
+                            {strings.cleanupArchive}
+                        </button>
+                        <button type="button" class={styles.tipLater} onClick={() => void hideCleanupTip()}>
+                            {strings.cleanupNotNow}
+                        </button>
+                    </div>
+                )}
                 {activeFilter === OUTDATED && !searching && !selecting && visible.tabs.length > 0 && (
                     <div class={styles.archiveAll}>
                         <button type="button" class={styles.archiveAllButton} onClick={() => void archiveWaiting()}>

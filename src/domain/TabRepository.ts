@@ -395,3 +395,14 @@ export async function unarchiveTabs(ids: string[]): Promise<string[]> {
         return restored;
     });
 }
+
+/** Counts an open from Tab Sandwich (a row, Enter, or a saved window's "Open all"): when, and how many times. */
+export async function recordOpen(ids: string[]): Promise<void> {
+    return withStorageLock(async () => {
+        const wanted = new Set(ids);
+        const tabs = await getTabs();
+        if (!tabs.some((t) => wanted.has(t.id))) return;
+        const now = Date.now();
+        await setTabs(tabs.map((t) => (wanted.has(t.id) ? { ...t, lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 } : t)));
+    });
+}

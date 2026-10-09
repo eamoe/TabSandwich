@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH, recordOpen } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -413,5 +413,19 @@ describe("notes", () => {
         expect(storedTabs()[0]).not.toHaveProperty("note");
         const { tab: plain } = await addTab({ title: "Plain", url: "https://plain.example.com/", note: "" });
         expect(plain).not.toHaveProperty("note");
+    });
+});
+
+describe("recordOpen", () => {
+    it("stamps when each tab was opened and counts how often, leaving the rest alone", async () => {
+        const [a, b] = [makeTab(), makeTab()];
+        seed([a, b]);
+        const before = Date.now();
+        await recordOpen([a.id]);
+        await recordOpen([a.id, "gone"]);
+        const [stored, other] = storedTabs();
+        expect(stored.openCount).toBe(2);
+        expect(stored.lastOpenedAt).toBeGreaterThanOrEqual(before);
+        expect(other).toEqual(b);
     });
 });

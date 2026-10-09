@@ -77,6 +77,13 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`notes-${colorScheme}.png`);
         });
 
+        test("the cleanup tip", async ({ popup }) => {
+            const old = LIBRARY.map((t) => (t.category === "Work" || t.category === "Travel" ? { ...t, daysAgo: 300 } : t));
+            await seedLibrary(popup, old, SETTINGS, { trackingSinceDaysAgo: 365 });
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`cleanup-tip-${colorScheme}.png`);
+        });
+
         test("editing a row", async ({ popup }) => {
             await popup.getByRole("button", { name: "Edit Q3 Roadmap" }).click();
             await expect(popup).toHaveScreenshot(`edit-${colorScheme}.png`);

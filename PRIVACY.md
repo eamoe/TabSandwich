@@ -16,10 +16,11 @@ When you save a tab, Tab Sandwich stores:
 - Whether you've pinned it
 - Whether, and when, you archived it
 - A note you write about it (optional)
+- When you last opened it from Tab Sandwich, and how many times (only opens from Tab Sandwich's own list are counted; it can't see your browsing)
 
 For each saved window, Tab Sandwich stores its name (a random one like "Toasted Rye", which you can change), when it was saved, and whether you've left it open or closed in the list.
 
-Tab Sandwich also stores your settings: your categories and their colors, the waiting reminder (after how many days, and which categories it covers), your light/dark theme choice, and how you sort the list.
+Tab Sandwich also stores your settings: your categories and their colors, the waiting reminder (after how many days, and which categories it covers), your light/dark theme choice, and how you sort the list. It also notes, for this browser only, since when it has counted opens and until when you've put off the cleanup tip.
 
 This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
 

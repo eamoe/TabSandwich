@@ -52,6 +52,12 @@ describe("parseBackupFile", () => {
         expect(parsed?.tabs.map((t) => t.note)).toEqual(["why", undefined, undefined]);
     });
 
+    it("keeps when a tab was last opened and how often", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", lastOpenedAt: 1700000000000, openCount: 3 }, { title: "b", url: "https://b.com", openCount: -1 }] }));
+        expect(parsed?.tabs.map((t) => [t.lastOpenedAt, t.openCount])).toEqual([[1700000000000, 3], [undefined, undefined]]);
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { sort: "openedMost" } }))?.settingsFields.sort).toBe("openedMost");
+    });
+
     it("keeps a tab's pin, and nothing but true counts as pinned", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", pinned: true }, { title: "b", url: "https://b.com", pinned: "yes" }] }));
         expect(parsed?.tabs.map((t) => t.pinned)).toEqual([true, undefined]);

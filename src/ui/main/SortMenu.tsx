@@ -5,7 +5,7 @@ import { useMenuPlacement } from "../useMenuPlacement";
 import { strings } from "../strings";
 import styles from "./SortMenu.module.css";
 
-const ORDERS: SortOrder[] = ["custom", "newest", "oldest", "title", "site"];
+const ORDERS: SortOrder[] = ["custom", "newest", "oldest", "title", "site", "opened", "openedMost"];
 
 /**
  * The sort button at the end of the filter row and its menu. The menu floats over the list, so

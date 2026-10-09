@@ -60,6 +60,17 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("the cleanup tip showing", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                ["a", "b", "c"].map((x) => ({ title: `Old ${x}`, url: `https://${x}.example.com/`, category: "Work", daysAgo: 300 })),
+                {},
+                { trackingSinceDaysAgo: 365 }
+            );
+            await expect(popup.getByRole("note", { name: /not opened in 6 months/ })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("first run: nothing saved yet", async ({ popup }) => {
             await seedLibrary(popup, []);
             await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();

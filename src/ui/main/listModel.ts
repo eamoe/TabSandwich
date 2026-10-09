@@ -90,6 +90,9 @@ export function sortTabs(tabs: SavedTab[], sort: SortOrder): SavedTab[] {
         oldest: (a: SavedTab, b: SavedTab) => a.savedAt - b.savedAt,
         title: (a: SavedTab, b: SavedTab) => byText.compare(a.title, b.title),
         site: (a: SavedTab, b: SavedTab) => byText.compare(siteName(a.url), siteName(b.url)) || byText.compare(a.title, b.title),
+        // Never opened from Tab Sandwich: after every tab that was.
+        opened: (a: SavedTab, b: SavedTab) => (b.lastOpenedAt ?? -1) - (a.lastOpenedAt ?? -1),
+        openedMost: (a: SavedTab, b: SavedTab) => (b.openCount ?? 0) - (a.openCount ?? 0) || (b.lastOpenedAt ?? -1) - (a.lastOpenedAt ?? -1),
     }[sort];
     // Array.prototype.sort is stable, so equal tabs stay in your own order.
     return [...tabs].sort(compare);
@@ -299,4 +302,26 @@ function tabIn(items: ListItem[], tabId: string): SavedTab | undefined {
         }
     }
     return undefined;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Not opened for this long, a kept tab is worth a second look. */
+export const STALE_AFTER_DAYS = 182;
+/** The cleanup tip waits until there's enough to tidy. */
+export const CLEANUP_TIP_MIN = 3;
+
+/**
+ * Kept tabs nobody has opened from Tab Sandwich in about six months: in the list, not pinned,
+ * in a category that doesn't age (aging ones have Waiting), and not opened — or saved, or
+ * counted at all (`trackingSince`: opens before then weren't seen) — within STALE_AFTER_DAYS.
+ */
+export function staleKeptTabs(tabs: SavedTab[], settings: Settings, now: number, trackingSince: number): SavedTab[] {
+    const cutoff = now - STALE_AFTER_DAYS * DAY_MS;
+    return tabs.filter(
+        (t) =>
+            !isArchived(t) &&
+            !t.pinned &&
+            !settings.waitingCategories.includes(getTabCategory(t)) &&
+            Math.max(t.lastOpenedAt ?? 0, t.savedAt, trackingSince) <= cutoff
+    );
 }

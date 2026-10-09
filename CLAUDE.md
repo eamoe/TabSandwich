@@ -29,7 +29,8 @@ src/
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
                             tabs and saved windows written together in one write when a change touches both;
-                            the last "What's new" version seen, kept apart from Settings so backups can't revive it
+                            the last "What's new" version seen, since when opens are counted and the cleanup tip's
+                            "Not now" date — kept apart from Settings so backups can't revive them
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
                             backup before writing, original restored if anything fails (version 2 = v3.2: saved windows; 3 = v3.3: which categories age)
@@ -37,7 +38,7 @@ src/
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
@@ -81,7 +82,8 @@ src/
       App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
-      useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
+      useLibrary.ts         loads tabs + settings + storage use (+ open-counting and tip dates) for both screens;
+                             only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
@@ -103,7 +105,7 @@ src/
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
-                             in the list and each tab's window name, random window names, pinned tabs first, where a move or drop takes a tab: into or out of a window,
+                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main

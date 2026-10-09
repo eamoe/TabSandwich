@@ -17,6 +17,12 @@ export interface SavedTab {
     archivedAt?: number;
     /** A line on why you saved it (v3.3), shown under the row and searched. At most MAX_NOTE_LENGTH characters; absent: no note. */
     note?: string;
+    /**
+     * When it was last opened from Tab Sandwich, and how many times (v3.3). Only opens from the
+     * popup count (it can't see the browser's history, and doesn't ask to). Absent: never opened from it.
+     */
+    lastOpenedAt?: number;
+    openCount?: number;
 }
 
 /** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */
@@ -29,7 +35,8 @@ export interface TabGroup {
 }
 
 /** How the main list is ordered. "custom" is your own drag-and-drop order; the others are views of it that never rewrite it. */
-export type SortOrder = "custom" | "newest" | "oldest" | "title" | "site";
+/** "opened": most recently opened from Tab Sandwich first; "openedMost": most often (never opened, last). */
+export type SortOrder = "custom" | "newest" | "oldest" | "title" | "site" | "opened" | "openedMost";
 
 /** "system" follows the OS light/dark setting; the other two pin the popup to one theme. */
 export type ThemeChoice = "system" | "light" | "dark";
