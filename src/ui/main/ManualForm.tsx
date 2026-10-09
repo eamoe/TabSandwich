@@ -19,6 +19,8 @@ export function ManualForm(props: {
     colorOf: (category: string) => string;
     onAdded: (result: AddTabResult) => void;
     onDuplicate: (existingId: string) => void;
+    /** The link is an archived tab: Restore brings it back to the list. */
+    onRestore: (existingId: string) => void;
     onClose: () => void;
 }) {
     const [url, setUrl] = useState("");
@@ -50,7 +52,7 @@ export function ManualForm(props: {
                 category: chosen === UNCATEGORIZED ? undefined : chosen,
             });
             if (result.duplicate) {
-                setError(strings.alreadySavedAs(result.tab.title));
+                setError(result.tab.archivedAt ? strings.archivedAs(result.tab.title) : strings.alreadySavedAs(result.tab.title));
                 setDuplicateOf(result.tab);
                 props.onDuplicate(result.tab.id);
                 return;
@@ -98,7 +100,12 @@ export function ManualForm(props: {
                     <p class={controls.error} role="alert">
                         {error}
                     </p>
-                    {duplicateOf && (
+                    {duplicateOf?.archivedAt !== undefined && (
+                        <button type="button" class={styles.inlineLink} title={strings.restoreSavedTooltip} onClick={() => props.onRestore(duplicateOf.id)}>
+                            {strings.restore}
+                        </button>
+                    )}
+                    {duplicateOf && duplicateOf.archivedAt === undefined && (
                         <button
                             type="button"
                             class={styles.inlineLink}

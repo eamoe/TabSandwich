@@ -70,7 +70,9 @@ export async function addTabs(inputs: { title: string; url: string }[], category
         let group: TabGroup | null = null;
         if (nameGroup && added.length >= 2) {
             const groups = await getGroups();
-            group = { id: crypto.randomUUID(), name: nameGroup(groups.map((g) => g.name)), createdAt: savedAt, collapsed: true };
+            // Names in use: a window whose tabs were all deleted for good leaves its record behind, but not its name.
+            const inUse = new Set(tabs.map((t) => t.groupId));
+            group = { id: crypto.randomUUID(), name: nameGroup(groups.filter((g) => inUse.has(g.id)).map((g) => g.name)), createdAt: savedAt, collapsed: true };
             for (const tab of added) tab.groupId = group.id;
             await setTabsAndGroups([...added, ...tabs], [group, ...groups]);
         } else if (added.length > 0) {
@@ -111,7 +113,7 @@ export async function editTab(
 /**
  * "Update" in the save card: brings a saved tab up to date with the page it was saved from —
  * the page's title and exact address now, the chosen category, and now as its saved date (so it
- * no longer counts as outdated). The address is a variant of the same page (the card only
+ * no longer counts as waiting, and an archived copy is back in the list). The address is a variant of the same page (the card only
  * offers Update when the two match), so there's no duplicate to check for. Hands back the tab
  * as it was, for Undo; null if it was deleted meanwhile (nothing written).
  */
@@ -120,7 +122,9 @@ export async function refreshTab(id: string, page: { title: string; url: string;
         const tabs = await getTabs();
         const previous = tabs.find((t) => t.id === id);
         if (!previous) return null;
-        const refreshed: SavedTab = { ...previous, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
+        // Brought up to date is current again: an archived copy comes back to the list (Undo puts it back as it was).
+        const { archivedAt: _archived, ...kept } = previous;
+        const refreshed: SavedTab = { ...kept, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
         await setTabs(tabs.map((t) => (t.id === id ? refreshed : t)));
         return previous;
     });

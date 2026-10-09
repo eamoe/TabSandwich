@@ -121,18 +121,43 @@ test.describe("Choosing several tabs", () => {
         await expect.poll(categories).toEqual({ Alpha: "Work", Bravo: "Work", Gamma: undefined, Delta: undefined, Echo: "Reading" });
     });
 
-    test("TC-254: Delete removes every picked tab in one step, with one Undo", async ({ popup }) => {
+    test("TC-254: Archive takes every picked tab out of the list in one step, with one Undo", async ({ popup }) => {
         await seed(popup);
         await start(popup);
         await box(popup, "Bravo").click();
         await tabList(popup).getByRole("checkbox", { name: /^Research/ }).click();
-        await bar(popup).getByRole("button", { name: "Delete 3 selected tabs" }).click();
-        await expect(popup.getByText("Deleted 3 tabs")).toBeVisible();
+        await bar(popup).getByRole("button", { name: "Archive 3 selected tabs" }).click();
+        await expect(popup.getByText("Archived 3 tabs")).toBeVisible();
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Echo"]);
+        expect(await storedTabs(popup)).toHaveLength(5);
 
         await popup.getByRole("button", { name: "Undo" }).click();
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Bravo", "▸ Research", "Echo"]);
         await expect(windowRow(popup, "Research")).toBeVisible();
+    });
+
+    test("TC-269: in the archive, the bar restores or deletes for good", async ({ popup }) => {
+        await seed(popup);
+        await start(popup);
+        await bar(popup).getByRole("button", { name: "Select all" }).click();
+        await bar(popup).getByRole("button", { name: "Archive 5 selected tabs" }).click();
+        await popup.getByRole("button", { name: "Archived (5)" }).click();
+        await start(popup);
+        // No moving to a category here: restore or delete for good.
+        await expect(popup.getByLabel("Move the selected tabs to a category")).toHaveCount(0);
+        await box(popup, "Alpha").click();
+        await box(popup, "Bravo").click();
+        await bar(popup).getByRole("button", { name: "Delete 2 selected tabs for good" }).click();
+        await expect(popup.getByText("Deleted 2 tabs")).toBeVisible();
+        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Gamma", "Delta", "Echo"]);
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(async () => (await storedTabs(popup)).length).toBe(5);
+
+        await start(popup);
+        await bar(popup).getByRole("button", { name: "Select all" }).click();
+        await bar(popup).getByRole("button", { name: "Restore 5 selected tabs" }).click();
+        await expect(popup.getByText("Restored 5 tabs")).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Bravo", "▸ Research", "Echo"]);
     });
 
     test("TC-255: from the keyboard: arrows move, Space picks, a row's E and Delete stay quiet", async ({ popup }) => {
@@ -160,6 +185,6 @@ test.describe("Choosing several tabs", () => {
         await seed(popup);
         await start(popup);
         await expect(popup.getByLabel("Move the selected tabs to a category")).toBeDisabled();
-        await expect(bar(popup).getByRole("button", { name: /^Delete/ })).toBeDisabled();
+        await expect(bar(popup).getByRole("button", { name: /^Archive/ })).toBeDisabled();
     });
 });

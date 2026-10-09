@@ -40,7 +40,7 @@ src/
                            move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
-    GroupRepository.ts    saved windows: rename, open/closed, break apart, delete with its tabs (+ Undo for both)
+    GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
@@ -93,7 +93,7 @@ src/
       FilterPills.tsx       All / Waiting / category / Archived pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       SelectionBar.tsx      the Select button after it, and the bar that takes the filter row's place while selecting
-                             (count, Select all, Move to…, Delete, ✕) at the same height, so the popup never resizes
+                             (count, Select all, Move to…, Archive, ✕; on Archived: Restore, Delete for good) at the same height, so the popup never resizes
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
                              "everything's in the archive", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;

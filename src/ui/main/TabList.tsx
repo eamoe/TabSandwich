@@ -181,7 +181,7 @@ export function TabList(props: {
             if (row.tab) li.querySelector<HTMLElement>('[data-row-action="delete"]')?.click();
             else {
                 const item = items.find((i) => i.kind === "group" && i.group.id === row.group!.id);
-                if (item?.kind === "group") props.onGroupAction(item.group, item.tabs, "delete");
+                if (item?.kind === "group") props.onGroupAction(item.group, item.tabs, "archive");
             }
         } else if (e.key === "Escape") props.onEscape();
         else return;

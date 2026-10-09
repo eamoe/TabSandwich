@@ -36,6 +36,8 @@ export function SaveCard(props: {
     colorOf: (category: string) => string;
     onSaved: (result: AddTabResult) => void;
     onShow: (id: string) => void;
+    /** The page's saved copy is archived: Restore brings it back to the list. */
+    onRestore: (id: string) => void;
     onUpdated: (previous: SavedTab) => void;
     onWindowSaved: (added: SavedTab[], group: TabGroup | null) => void;
 }) {
@@ -134,8 +136,8 @@ export function SaveCard(props: {
                     {showSaved ? (
                         <p class={styles.pageSite}>
                             <span class={styles.savedNote}>
-                                <Icon name="check" size={12} />
-                                {strings.savedAgo(daysSince(savedCopy.savedAt))}
+                                <Icon name={savedCopy.archivedAt ? "archive" : "check"} size={12} />
+                                {savedCopy.archivedAt ? strings.inYourArchive : strings.savedAgo(daysSince(savedCopy.savedAt))}
                             </span>
                             {" · "}
                             {siteName(tab!.url!)}
@@ -158,9 +160,15 @@ export function SaveCard(props: {
                     />
                     {showSaved ? (
                         <>
-                            <button type="button" class={controls.btn} title={strings.showTooltip} onClick={() => props.onShow(savedCopy.id)}>
-                                {strings.show}
-                            </button>
+                            {savedCopy.archivedAt ? (
+                                <button type="button" class={controls.btn} title={strings.restoreSavedTooltip} onClick={() => props.onRestore(savedCopy.id)}>
+                                    {strings.restore}
+                                </button>
+                            ) : (
+                                <button type="button" class={controls.btn} title={strings.showTooltip} onClick={() => props.onShow(savedCopy.id)}>
+                                    {strings.show}
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 class={`${styles.save} ${styles.update} ${status === "updated" ? styles.saved : ""}`}

@@ -54,8 +54,9 @@ describe("addTabs", () => {
     });
 
     it("puts two or more new tabs in one collapsed saved window, written in the same write", async () => {
-        seed([makeTab()]);
-        seedGroups([makeGroup({ name: "Crispy Bagel" })]);
+        const bagel = makeGroup({ name: "Crispy Bagel" });
+        seed([makeTab({ groupId: bagel.id })]);
+        seedGroups([bagel]);
         const writes: string[][] = [];
         let offered: string[] = [];
         storage.rejectSet = (items) => {
@@ -79,6 +80,17 @@ describe("addTabs", () => {
         expect(added.every((t) => t.groupId === group!.id)).toBe(true);
         expect(storedGroups().map((g) => g.name)).toEqual(["Toasted Rye", "Crispy Bagel"]);
         expect(writes).toEqual([["tabSandwich.groups", "tabSandwich.tabs"]]);
+    });
+
+    it("doesn't count the name of a window none of whose tabs are saved any more as taken", async () => {
+        seed([makeTab()]);
+        seedGroups([makeGroup({ name: "Crispy Bagel" })]);
+        let offered: string[] = ["?"];
+        await addTabs([{ title: "One", url: "https://one.example.com/" }, { title: "Two", url: "https://two.example.com/" }], undefined, (taken) => {
+            offered = taken;
+            return "Crispy Bagel";
+        });
+        expect(offered).toEqual([]);
     });
 
     it("makes no saved window for a single new tab", async () => {

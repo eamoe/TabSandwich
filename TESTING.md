@@ -854,13 +854,13 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: ⋯ → **Break apart**; then **Undo** in the toast.
 - Expected: The window goes, its tabs stay saved, in place, as ordinary rows. Undo brings the window back with the same tabs.
 
-**TC-238 — Remove a window and its tabs from the list (P1)** **[auto]**
-- Steps: ⋯ → **Remove from list**; then **Undo**.
-- Expected: The toast says "Removed N tabs" and they're gone. Undo puts the window and every tab back where they were.
+**TC-238 — Archive a window with its tabs (P1)** **[auto]**
+- Steps: ⋯ → **Archive**; then **Undo**. Archive it again; on the Archived pill select all its tabs and **Restore**.
+- Expected: The toast says "Archived N tabs" and they leave the list (still saved, under Archived). Undo puts them back. Restoring them from the archive puts the window back together, in its place.
 
 **TC-239 — Open a window's tabs (P1)** **[auto]**
-- Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and remove from list**.
-- Expected: Each opens the window's tabs in one new browser window. The first keeps them saved; the second removes them (and the window) from the list, with Undo while the popup is open.
+- Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and archive them**.
+- Expected: Each opens the window's tabs in one new browser window. The first keeps them in the list; the second archives them (the window leaves the list, restorable from Archived), with Undo while the popup is open.
 
 **TC-240 — The ⋯ menu from the keyboard (P2)** **[auto]**
 - Steps: Tab to a window's ⋯ button and press Enter; use the arrow keys, Home and End; press Escape.
@@ -883,8 +883,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: The last tab shows as an ordinary row; no window row with a single tab.
 
 **TC-245 — Saved windows in real Chrome (P1, release gate)**
-- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window, out of it, and into it.
-- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list: a tab dropped on a loose tab leaves its window, one dropped on a window's tab joins it, each with a toast and Undo. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
+- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and archive them**; drag tabs within the open window, out of it, and into it.
+- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list (under Archived) when you reopen the popup. Dragging feels like the rest of the list: a tab dropped on a loose tab leaves its window, one dropped on a window's tab joins it, each with a toast and Undo. Export a backup, archive the window and delete its tabs for good from Archived, import it with **Replace all**: the window comes back with its name and tabs.
 
 **TC-246 — A window's menu always fits (P1)** **[auto]**
 - Preconditions: Nothing saved but one saved window (so the popup is short).
@@ -902,7 +902,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-249 — Selecting starts and stops without moving anything (P1)** **[auto]**
 - Steps: Click the ☑ button at the end of the filter row. Pick a row by clicking it, another by clicking its checkbox. Click ✕. Start again and press Escape.
-- Expected: The popup doesn't change size or jump: the bar ("N selected · Select all · Move to… · 🗑 · ✕") takes the filter row's place at the same height, and focus moves to ✕. Rows become checkboxes; clicking anywhere on a row (checkbox included) picks it without opening the tab; rows' own edit and delete step aside, and dragging is off. Move to… and 🗑 wait until something is picked. ✕ or Escape stops (Escape doesn't close the popup) and forgets the picks.
+- Expected: The popup doesn't change size or jump: the bar ("N selected · Select all · Move to… · archive · ✕"; on the Archived pill "Restore · 🗑 for good" instead of the last two) takes the filter row's place at the same height, and focus moves to ✕. Rows become checkboxes; clicking anywhere on a row (checkbox included) picks it without opening the tab; rows' own edit and delete step aside, and dragging is off. Move to… and Archive (Restore and 🗑 in the archive) wait until something is picked. ✕ or Escape stops (Escape doesn't close the popup) and forgets the picks.
 
 **TC-250 — Pick a range (P2)** **[auto]**
 - Steps: Pick one row, then Shift-click another further down. Then Shift-click a picked row in between.
@@ -920,9 +920,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Pick a few tabs (and a window); choose a category in **Move to…**; then **Undo**.
 - Expected: All of them move in one step ("Moved N tabs to …") and selecting ends. Undo puts each back in the category it had.
 
-**TC-254 — Delete picked tabs (P1)** **[auto]**
-- Steps: Pick a few tabs (and a window); click 🗑; then **Undo**.
-- Expected: All of them are deleted in one step ("Deleted N tabs") and selecting ends. Undo puts every one back where it was, the window included.
+**TC-254 — Archive picked tabs (P1)** **[auto]**
+- Steps: Pick a few tabs (and a window); click the archive button; then **Undo**.
+- Expected: All of them leave the list in one step ("Archived N tabs", still saved) and selecting ends. Undo puts every one back where it was, the window included.
 
 **TC-255 — Selecting from the keyboard (P1)** **[auto]**
 - Steps: Start selecting; Tab into the list; Space; ↓; Space; press E and Delete; → on a window.
@@ -969,7 +969,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-264 — Archived tabs are out of the list (P1)** **[auto]**
 - Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
 - Steps: Look at the list, the pills and the search field; search for an archived tab's title; click **Search the archive**; on the Archived pill press P and Alt+↑ on a row.
-- Expected: Archived tabs aren't in All, any category's count, the Waiting count, the search field's "Search N saved tabs", or the window's tab count. A search that only the archive matches says so and offers **Search the archive**, which picks the **Archived (N)** pill (last in the row, with a box icon); there the field reads "Search N archived tabs". Archived rows show no age badge or pin; P does nothing; Alt+arrows say "Restore a tab to move it."; there's no ☑ (selecting there comes in a later stage).
+- Expected: Archived tabs aren't in All, any category's count, the Waiting count, the search field's "Search N saved tabs", or the window's tab count. A search that only the archive matches says so and offers **Search the archive**, which picks the **Archived (N)** pill (last in the row, with a box icon); there the field reads "Search N archived tabs". Archived rows show no age badge or pin; P does nothing; Alt+arrows say "Restore a tab to move it."
 
 **TC-265 — Restore puts it back where it was (P1)** **[auto]**
 - Steps: On the Archived pill, click a row's Restore (box with an arrow) for a tab that was inside a saved window; go to All; then Undo.
@@ -983,6 +983,14 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Settings › Categories: look at a category whose only tabs are archived, and click its remove button.
 - Expected: Its count says 0 tabs (counted as the list shows them); removing it is refused with "Tabs in your archive still use it — delete them there first."
 
-**TC-268 — The save card on an archived page (P2)** **[auto]**
-- Steps: Open a page whose saved copy is archived; click **Show** on the save card.
-- Expected: The list switches to the Archived pill, the saved copy flashing in view.
+**TC-268 — An archived page on the save card and in the + form (P2)** **[auto]**
+- Steps: Open a page whose saved copy is archived; click **Restore** on the save card. Archive it again and click **Update** instead, then **Undo**. Then type its link into the + form and **Add**.
+- Expected: The card says "In your archive" and offers **Restore** (instead of Show): the tab is back in the list ("Restored", with Undo). **Update** brings it back too, up to date; its Undo puts it back in the archive as it was. The + form says "In your archive, as “…”." with **Restore**.
+
+**TC-269 — Selecting in the archive (P1)** **[auto]**
+- Steps: On the Archived pill, start selecting; pick two; delete them for good; Undo; then Select all and **Restore**.
+- Expected: The bar offers Restore and "Delete N selected tabs for good" (no Move to…). Deleting says "Deleted N tabs", with Undo; restoring says "Restored N tabs" and puts every one back where it was, saved windows reassembled.
+
+**TC-270 — Archive every waiting tab at once (P1)** **[auto]**
+- Steps: Pick the Waiting pill; click **Archive all N waiting tabs** above the list; then **Undo**.
+- Expected: Every waiting tab goes to the archive in one step ("Archived N tabs"); the hint says they stay restorable. With nothing waiting the list goes back to All. Undo brings them back, and with them the Waiting filter.

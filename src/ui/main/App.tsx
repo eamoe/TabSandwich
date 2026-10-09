@@ -19,13 +19,14 @@ import {
     type AddTabResult,
 } from "../../domain/TabRepository";
 import { getCategoryColorHex, getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
-import { deleteGroup, renameGroup, restoreGroup, setGroupCollapsed, ungroup, type RemovedGroup } from "../../domain/GroupRepository";
+import { renameGroup, restoreGroup, setGroupCollapsed, ungroup, type RemovedGroup } from "../../domain/GroupRepository";
 import { searchTabs, type SearchMatch } from "../../domain/search";
 import { setSort } from "../../domain/SettingsRepository";
 import { getGroups, getTabs, setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
+import { Icon } from "../Icon";
 import { Toast } from "../Toast";
 import { strings } from "../strings";
 import { Header } from "./Header";
@@ -251,6 +252,30 @@ export function App(props: { whatsNew?: string | null }) {
         flash(id);
     };
 
+    // From the save card or the + form: an archived page back in the list, shown where it landed.
+    const restoreSaved = async (id: string) => {
+        setManualOpen(false);
+        try {
+            const restored = await unarchiveTabs([id]);
+            await reload();
+            if (restored.length === 0) return;
+            setFilter(ALL);
+            setQuery("");
+            await openWindowHolding(id, true);
+            flash(id);
+            showUndoToast(strings.restoredToast, async () => {
+                try {
+                    await archiveTabs(restored);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await reload();
+            });
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+    };
+
     const afterUpdate = async (previous: SavedTab) => {
         await reload();
         reveal(previous.id);
@@ -382,7 +407,26 @@ export function App(props: { whatsNew?: string | null }) {
         await reload();
     };
 
-    /** Undo for deleting a saved window or breaking it apart: everything back, the window flashing. */
+    /**
+     * Archives tabs (a saved window's, the picked ones, or every waiting one) in one step, with one
+     * Undo that restores them all where they were; `flashId` is what flashes after Undo.
+     */
+    const archiveMany = async (ids: string[], message: (count: number) => string, flashId?: string) => {
+        const archived = await archiveTabs(ids);
+        await reload();
+        if (archived.length === 0) return;
+        showUndoToast(message(archived.length), async () => {
+            try {
+                await unarchiveTabs(archived);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
+            if (flashId) flash(flashId);
+        });
+    };
+
+    /** Undo for breaking a saved window apart: everything back, the window flashing. */
     const offerGroupUndo = (message: string, snapshot: RemovedGroup) =>
         showUndoToast(message, async () => {
             try {
@@ -401,19 +445,15 @@ export function App(props: { whatsNew?: string | null }) {
                 // Opening a window usually closes the popup, so there's nothing to wait for here.
                 void chrome.windows.create({ url: urls, focused: true });
             } else if (action === "openAndRemove") {
-                // Removed first: the new window may close the popup before anything after it runs.
-                const snapshot = await deleteGroup(group.id);
-                await reload();
-                if (snapshot) offerGroupUndo(strings.groupOpened(snapshot.removed.length), snapshot);
+                // Archived first: the new window may close the popup before anything after it runs.
+                await archiveMany(tabs.map((t) => t.id), strings.groupOpened, group.id);
                 void chrome.windows.create({ url: urls, focused: true });
             } else if (action === "ungroup") {
                 const snapshot = await ungroup(group.id);
                 await reload();
                 if (snapshot) offerGroupUndo(strings.groupBrokenApart, snapshot);
             } else {
-                const snapshot = await deleteGroup(group.id);
-                await reload();
-                if (snapshot) offerGroupUndo(strings.groupDeleted(snapshot.removed.length), snapshot);
+                await archiveMany(tabs.map((t) => t.id), strings.groupArchived, group.id);
             }
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
@@ -524,6 +564,50 @@ export function App(props: { whatsNew?: string | null }) {
         }
     };
 
+    const archiveSelected = async () => {
+        const ids = pickedIds;
+        stopSelecting();
+        try {
+            await archiveMany(ids, strings.archivedTabs);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
+    };
+
+    // In the archive: back to the list, where each was; Undo archives them again.
+    const restoreSelected = async () => {
+        const ids = pickedIds;
+        stopSelecting();
+        try {
+            const restored = await unarchiveTabs(ids);
+            await reload();
+            if (restored.length === 0) return;
+            showUndoToast(strings.restoredTabs(restored.length), async () => {
+                try {
+                    await archiveTabs(restored);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await reload();
+            });
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
+    };
+
+    // On the Waiting filter: every waiting tab to the archive at once (they stay restorable).
+    const archiveWaiting = async () => {
+        try {
+            await archiveMany(visible.tabs.map((t) => t.id), strings.archivedTabs);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+            await reload();
+        }
+    };
+
+    // In the archive only: deleted for good, with Undo.
     const deleteSelected = async () => {
         const ids = pickedIds;
         stopSelecting();
@@ -576,6 +660,7 @@ export function App(props: { whatsNew?: string | null }) {
                         colorOf={colorOf}
                         onAdded={afterSave}
                         onDuplicate={flash}
+                        onRestore={(id) => void restoreSaved(id)}
                         onClose={() => setManualOpen(false)}
                     />
                 ) : (
@@ -585,6 +670,7 @@ export function App(props: { whatsNew?: string | null }) {
                         colorOf={colorOf}
                         onSaved={afterSave}
                         onShow={reveal}
+                        onRestore={(id) => void restoreSaved(id)}
                         onUpdated={afterUpdate}
                         onWindowSaved={afterWindowSave}
                     />
@@ -593,9 +679,12 @@ export function App(props: { whatsNew?: string | null }) {
             {hasTabs && selecting && (
                 <SelectionBar
                     count={pickedIds.length}
+                    inArchive={inArchive}
                     moveOptions={saveOptions}
                     onSelectAll={() => setPicked(new Set(visible.tabs.map((t) => t.id)))}
                     onMove={moveSelected}
+                    onArchive={archiveSelected}
+                    onRestore={restoreSelected}
                     onDelete={deleteSelected}
                     onStop={stopSelecting}
                 />
@@ -604,7 +693,7 @@ export function App(props: { whatsNew?: string | null }) {
                 <nav class={styles.filterBar} aria-label={strings.filterBarLabel}>
                     <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />
                     <SortMenu value={sort} onChange={onSort} />
-                    {!inArchive && <SelectButton active={false} onToggle={() => setSelecting(true)} />}
+                    <SelectButton active={false} onToggle={() => setSelecting(true)} />
                 </nav>
             )}
             <main id="main-view" class={listStyles.wrap}>
@@ -615,6 +704,15 @@ export function App(props: { whatsNew?: string | null }) {
                 <p class="visually-hidden" role="status" aria-live="polite">
                     {searching ? strings.matches(visible.tabs.length) : pinNote}
                 </p>
+                {activeFilter === OUTDATED && !searching && !selecting && visible.tabs.length > 0 && (
+                    <div class={styles.archiveAll}>
+                        <button type="button" class={styles.archiveAllButton} onClick={() => void archiveWaiting()}>
+                            <Icon name="archive" size={14} />
+                            {strings.archiveAllWaiting(visible.tabs.length)}
+                        </button>
+                        <span class={styles.archiveAllHint}>{strings.archiveAllWaitingHint}</span>
+                    </div>
+                )}
                 <TabList
                     tabs={visible.tabs}
                     groups={library.groups}

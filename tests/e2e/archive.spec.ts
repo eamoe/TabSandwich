@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
-import { openSettings, row, rowTitles, seedLibrary, storedTabs, tabList, windowRow } from "./helpers";
+import { openSettings, rowTitles, seedLibrary, storedTabs, tabList, windowRow } from "./helpers";
 
 /**
  * Alpha (Work), the saved window "Research" (Gamma, Delta, and Old notes: archived), Bravo
@@ -47,7 +47,6 @@ test.describe("Archive", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Old notes", "Zulu"]);
         await expect(search(popup)).toHaveAttribute("placeholder", "Search 2 archived tabs");
         await expect(tabList(popup).getByTitle(/Saved \d+ days ago/)).toHaveCount(0);
-        await expect(popup.getByRole("button", { name: "Select tabs" })).toHaveCount(0);
         await tabList(popup).getByRole("button", { name: "Zulu", exact: true }).focus();
         await popup.keyboard.press("p");
         await popup.keyboard.press("Alt+ArrowUp");
@@ -100,15 +99,52 @@ test.describe("Archive", () => {
         await expect(popup.getByRole("status").filter({ hasText: "Tabs in your archive still use it — delete them there first." })).toBeVisible();
     });
 
-    test("TC-268: Show on the save card of an archived page opens the archive at it", async ({ context, popup }) => {
+    test("TC-268: an archived page: the save card and the + form say so and offer Restore; Update brings it back too", async ({ context, popup }) => {
         const { openSiteTab } = await import("./helpers");
         const url = await openSiteTab(context, popup, "Example Article");
-        await seedLibrary(popup, [
+        const library = [
             { title: "Alpha", url: "https://alpha.example.com/" },
             { title: "Example Article", url, archivedDaysAgo: 3 },
+        ];
+        await seedLibrary(popup, library);
+        const card = popup.getByRole("region", { name: "Current tab" });
+        await expect(card).toContainText("In your archive");
+        await card.getByRole("button", { name: "Restore", exact: true }).click();
+        await expect(popup.getByRole("status").filter({ hasText: "Restored" })).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Example Article"]);
+        await expect(card).toContainText("Saved 0 days ago".replace("0 days ago", "today"));
+
+        // Update on an archived copy brings it back as well (and Undo puts it back in the archive).
+        await seedLibrary(popup, library);
+        await card.getByRole("button", { name: "Update", exact: true }).click();
+        await expect.poll(archivedFlags.bind(null, popup)).toMatchObject({ "Example Article": false });
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(archivedFlags.bind(null, popup)).toMatchObject({ "Example Article": true });
+
+        // The + form, given that link.
+        await popup.getByRole("button", { name: "Add link manually" }).click();
+        await popup.getByLabel("URL").fill(url);
+        await popup.getByRole("button", { name: "Add", exact: true }).click();
+        await expect(popup.getByRole("alert")).toHaveText("In your archive, as “Example Article”.");
+        await popup.getByRole("button", { name: "Restore", exact: true }).click();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Example Article"]);
+    });
+
+    test("TC-270: the Waiting filter archives every waiting tab at once, with one Undo", async ({ popup }) => {
+        await seedLibrary(popup, [
+            { title: "Alpha", url: "https://alpha.example.com/", category: "Work", daysAgo: 40 },
+            { title: "Bravo", url: "https://bravo.example.com/", category: "Reading", daysAgo: 20 },
+            { title: "Charlie", url: "https://charlie.example.com/", daysAgo: 10 },
+            { title: "Delta", url: "https://delta.example.com/", category: "Reading" },
         ]);
-        await popup.getByRole("button", { name: "Show", exact: true }).click();
-        await expect(popup.getByRole("button", { name: "Archived (1)" })).toHaveAttribute("aria-pressed", "true");
-        await expect(row(popup, "Example Article")).toBeVisible();
+        await popup.getByRole("button", { name: "Waiting (2)" }).click();
+        await popup.getByRole("button", { name: "Archive all 2 waiting tabs" }).click();
+        await expect(popup.getByText("Archived 2 tabs")).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Delta"]);
+        await expect(popup.getByRole("button", { name: "Archived (2)" })).toBeVisible();
+        // Undo: they're back, and so is the Waiting filter you were on.
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Bravo", "Charlie"]);
+        await expect(popup.getByRole("button", { name: "Waiting (2)" })).toHaveAttribute("aria-pressed", "true");
     });
 });
