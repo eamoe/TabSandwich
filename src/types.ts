@@ -25,8 +25,15 @@ export type SortOrder = "custom" | "newest" | "oldest" | "title" | "site";
 export type ThemeChoice = "system" | "light" | "dark";
 
 export interface Settings {
-    outdatedEnabled: boolean;
+    /** How many days a tab in a waiting category waits before it shows as "Waiting" (1–365). */
     outdatedDays: number;
+    /**
+     * The categories whose tabs age (v3.3): saved to read later, they show as "Waiting" once
+     * they've waited outdatedDays. Every other category is kept — its tabs never age. Names as in
+     * `categories`, plus "Uncategorized". Replaces the single on/off switch (`outdatedEnabled`)
+     * that versions before 3.3 stored; the version-3 upgrade turns that into this list.
+     */
+    waitingCategories: string[];
     /** User-managed presets. Never includes "Uncategorized" — that's an implicit, protected sentinel. */
     categories: string[];
     /** Category name -> palette key (see CategoryRepository.CATEGORY_COLOR_PALETTE). Missing entries fall back to a default. */

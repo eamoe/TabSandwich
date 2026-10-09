@@ -111,6 +111,7 @@ export async function renameCategory(oldName: string, newName: string): Promise<
         settings.categories = settings.categories.map((c) => (c === oldName ? trimmed : c));
         const { [oldName]: colorKey, ...remainingColors } = settings.categoryColors;
         settings.categoryColors = colorKey ? { ...remainingColors, [trimmed]: colorKey } : remainingColors;
+        settings.waitingCategories = settings.waitingCategories.map((c) => (c === oldName ? trimmed : c));
         await setSettings(settings);
 
         // Re-reads tabs from storage rather than trusting the caller's snapshot: that snapshot
@@ -187,6 +188,8 @@ export async function removeCategory(name: string): Promise<RemoveCategoryResult
         settings.categories = settings.categories.filter((c) => c !== name);
         const { [name]: _removed, ...remainingColors } = settings.categoryColors;
         settings.categoryColors = remainingColors;
+        // A category added later under the same name starts out kept, like any new one.
+        settings.waitingCategories = settings.waitingCategories.filter((c) => c !== name);
         await setSettings(settings);
         return { removed: true };
     });

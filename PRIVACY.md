@@ -16,7 +16,7 @@ When you save a tab, Tab Sandwich stores:
 
 For each saved window, Tab Sandwich stores its name (a random one like "Toasted Rye", which you can change), when it was saved, and whether you've left it open or closed in the list.
 
-Tab Sandwich also stores your settings: your categories and their colors, the outdated-tab setting, your light/dark theme choice, and how you sort the list.
+Tab Sandwich also stores your settings: your categories and their colors, the waiting reminder (after how many days, and which categories it covers), your light/dark theme choice, and how you sort the list.
 
 This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
 

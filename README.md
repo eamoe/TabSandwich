@@ -16,7 +16,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
 - **Knows what you've saved** — on a page you've already saved, the popup says when ("Saved 12 days ago") instead of offering Save again. **Show** finds it in the list; **Update** refreshes the saved copy with the page's current title and address, today's date and the picked category (undoable). Adding an already-saved link by hand offers to open it.
-- **Search** — fuzzy-matches on title, domain, and path as you type, and finds every tab in a category or saved window by typing its name, with matched characters highlighted; combines with an active category or Outdated filter.
+- **Search** — fuzzy-matches on title, domain, and path as you type, and finds every tab in a category or saved window by typing its name, with matched characters highlighted; combines with an active category or Waiting filter.
 - **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/rename/remove/reorder) from Settings.
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings). Saved tabs are tinted and outlined in it and show the category name next to a matching dot, so the list scans by color without relying on color alone.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.
@@ -25,7 +25,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you: a line shows where a tab will land, above or below the row you're over.
 - **Sorting** — newest, oldest, title or site, remembered between opens. Sorting never rewrites your own order, so switching back restores it exactly.
-- **Outdated tab tracking** — tabs saved longer than a configurable number of days (7 by default) get a small moon badge with their age and their own quick filter.
+- **Read later or keep** — tabs in the categories you choose (Reading and Uncategorized to start) get a small moon badge once they've waited a configurable number of days (7 by default), and their own "Waiting" filter; every other category is kept and never ages, so tools, docs and accounts don't nag.
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).

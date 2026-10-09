@@ -105,7 +105,12 @@ export function parseBackupFile(raw: string): ParsedImport | null {
     const settingsFields: Partial<Settings> = {};
     if (isPlainObject(data.settings)) {
         const s = data.settings;
-        if (typeof s.outdatedEnabled === "boolean") settingsFields.outdatedEnabled = s.outdatedEnabled;
+        if (Array.isArray(s.waitingCategories) && s.waitingCategories.every((c) => typeof c === "string")) {
+            settingsFields.waitingCategories = s.waitingCategories as string[];
+        } else if (s.outdatedEnabled === false) {
+            // A backup from before 3.3 with reminders switched off: still no reminders.
+            settingsFields.waitingCategories = [];
+        }
         if (typeof s.outdatedDays === "number" && s.outdatedDays >= 1 && s.outdatedDays <= 365) {
             settingsFields.outdatedDays = s.outdatedDays;
         }

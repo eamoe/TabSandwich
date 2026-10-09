@@ -11,8 +11,9 @@ import { strings } from "../strings";
 export const ALL = "All";
 export const OUTDATED = "Outdated";
 
+/** Waiting: in a category whose tabs age (Settings.waitingCategories), saved at least the set number of days ago. */
 export function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
-    return isOutdated(tab.savedAt, settings.outdatedEnabled, settings.outdatedDays);
+    return isOutdated(tab.savedAt, settings.waitingCategories.includes(getTabCategory(tab)), settings.outdatedDays);
 }
 
 /**

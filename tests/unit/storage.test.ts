@@ -33,9 +33,9 @@ describe("chromeStorage", () => {
     it("round-trips tabs and settings", async () => {
         const tabs = [makeTab(), makeTab()];
         await setTabs(tabs);
-        await setSettings({ ...DEFAULT_SETTINGS, outdatedEnabled: false });
+        await setSettings({ ...DEFAULT_SETTINGS, waitingCategories: [] });
         expect(await getTabs()).toEqual(tabs);
-        expect((await getSettings()).outdatedEnabled).toBe(false);
+        expect((await getSettings()).waitingCategories).toEqual([]);
     });
 
     it("recognizes a quota rejection as storage being full", async () => {

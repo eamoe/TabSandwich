@@ -52,8 +52,9 @@ export async function seedLibrary(
                 })),
                 "tabSandwich.groups": groups.map((g) => ({ id: g.id, name: g.name, createdAt: now, collapsed: g.collapsed ?? true })),
                 "tabSandwich.settings": {
-                    outdatedEnabled: true,
                     outdatedDays: 7,
+                    // As on a fresh install: Reading and Uncategorized age, the rest are kept.
+                    waitingCategories: ["Reading", "Uncategorized"],
                     categories: ["Work", "Personal", "Reading", "Entertainment"],
                     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
                     ...settings,
@@ -73,8 +74,8 @@ export async function storedTabs(popup: Page): Promise<Array<{ title: string; ur
 export interface StoredSettings {
     categories: string[];
     categoryColors: Record<string, string>;
-    outdatedEnabled?: boolean;
     outdatedDays?: number;
+    waitingCategories?: string[];
     theme?: string;
     sort?: string;
 }

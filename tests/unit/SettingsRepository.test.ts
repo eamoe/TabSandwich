@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampOutdatedDays, setOutdatedDays, setOutdatedEnabled, setSort, setTheme } from "../../src/domain/SettingsRepository";
+import { clampOutdatedDays, setCategoryWaiting, setOutdatedDays, setSort, setTheme } from "../../src/domain/SettingsRepository";
 import { getSettings } from "../../src/storage/chromeStorage";
 
 describe("SettingsRepository", () => {
@@ -16,9 +16,14 @@ describe("SettingsRepository", () => {
         expect(await getSettings()).toEqual({ ...before, sort: "newest" });
     });
 
-    it("turns outdated tracking on and off", async () => {
-        await setOutdatedEnabled(false);
-        expect((await getSettings()).outdatedEnabled).toBe(false);
+    it("turns aging on and off per category, Uncategorized included", async () => {
+        expect((await getSettings()).waitingCategories).toEqual(["Reading", "Uncategorized"]);
+        await setCategoryWaiting("Work", true);
+        await setCategoryWaiting("Reading", false);
+        await setCategoryWaiting("Work", true); // twice on is still once
+        expect((await getSettings()).waitingCategories).toEqual(["Uncategorized", "Work"]);
+        await setCategoryWaiting("Uncategorized", false);
+        expect((await getSettings()).waitingCategories).toEqual(["Work"]);
     });
 
     it.each([

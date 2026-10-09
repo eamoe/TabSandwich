@@ -76,7 +76,7 @@ test.describe("Search and filters", () => {
 
     test("TC-060/TC-061: old tabs get an age badge and their own filter", async ({ popup }) => {
         await expect(tabList(popup).getByTitle("Saved 30 days ago")).toHaveText("30d");
-        await popup.getByRole("button", { name: "Outdated (1)" }).click();
+        await popup.getByRole("button", { name: "Waiting (1)" }).click();
         await expect.poll(() => rowTitles(popup)).toEqual(["The Pragmatic Programmer"]);
     });
 

@@ -33,6 +33,15 @@ describe("parseBackupFile", () => {
         expect(parsed?.settingsFields).toEqual({ categories: ["Ok"], categoryColors: { Ok: "teal" } });
     });
 
+    it("reads which categories age from a v3.3 backup, and an older backup's reminders-off as none", () => {
+        const current = parseBackupFile(fileWith(buildBackupFile([], { ...DEFAULT_SETTINGS, waitingCategories: ["Work"] })));
+        expect(current?.settingsFields.waitingCategories).toEqual(["Work"]);
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { outdatedEnabled: false } }))?.settingsFields.waitingCategories).toEqual([]);
+        // An older backup with reminders on says nothing about categories: whatever's set now stays.
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { outdatedEnabled: true } }))?.settingsFields.waitingCategories).toBeUndefined();
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { waitingCategories: [1] } }))?.settingsFields.waitingCategories).toBeUndefined();
+    });
+
     it("reads the theme from a backup exported by v3.0 or later", () => {
         const parsed = parseBackupFile(fileWith(buildBackupFile([], { ...DEFAULT_SETTINGS, theme: "dark" })));
         expect(parsed?.settingsFields.theme).toBe("dark");

@@ -4,7 +4,8 @@ import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
 const DAY = 24 * 60 * 60 * 1000;
-const settings = { ...DEFAULT_SETTINGS, categories: ["Work", "Reading"] };
+// Work ages here (and Reading doesn't), so the one old tab below, in Work, is waiting.
+const settings = { ...DEFAULT_SETTINGS, categories: ["Work", "Reading"], waitingCategories: ["Work"] };
 
 describe("filters on the main list", () => {
     const now = Date.now();
@@ -15,7 +16,7 @@ describe("filters on the main list", () => {
         makeTab({ category: "Hobby", savedAt: now }),
     ];
 
-    it("lists All, then Outdated, then categories in Settings order, strays, and Uncategorized last", () => {
+    it("lists All, then Waiting, then categories in Settings order, strays, and Uncategorized last", () => {
         expect(filterOptions(tabs, settings)).toEqual([
             { key: ALL, count: 4 },
             { key: OUTDATED, count: 1 },
@@ -26,8 +27,19 @@ describe("filters on the main list", () => {
         ]);
     });
 
-    it("offers no Outdated filter while outdated flagging is off", () => {
-        expect(filterOptions(tabs, { ...settings, outdatedEnabled: false }).map((o) => o.key)).not.toContain(OUTDATED);
+    it("offers no Waiting filter while no category ages", () => {
+        expect(filterOptions(tabs, { ...settings, waitingCategories: [] }).map((o) => o.key)).not.toContain(OUTDATED);
+    });
+
+    it("flags only tabs in a category that ages (Uncategorized included), however long others have waited", () => {
+        const old = now - 30 * DAY;
+        const reading = makeTab({ category: "Reading", savedAt: old });
+        const work = makeTab({ category: "Work", savedAt: old });
+        const loose = makeTab({ savedAt: old });
+        const fresh = makeTab({ category: "Reading", savedAt: now });
+        const all = [reading, work, loose, fresh];
+        expect(applyFilter(all, { ...settings, waitingCategories: ["Reading", "Uncategorized"] }, OUTDATED)).toEqual([reading, loose]);
+        expect(applyFilter(all, { ...settings, waitingCategories: ["Work"] }, OUTDATED)).toEqual([work]);
     });
 
     it("leaves out categories nothing uses", () => {
@@ -40,7 +52,7 @@ describe("filters on the main list", () => {
         expect(effectiveFilter("Work", options)).toBe("Work");
     });
 
-    it("shows only the chosen category, or only outdated tabs", () => {
+    it("shows only the chosen category, or only waiting tabs", () => {
         expect(applyFilter(tabs, settings, "Work")).toEqual([tabs[1]]);
         expect(applyFilter(tabs, settings, OUTDATED)).toEqual([tabs[1]]);
         expect(applyFilter(tabs, settings, "Uncategorized")).toEqual([tabs[2]]);

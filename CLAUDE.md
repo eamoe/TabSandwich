@@ -6,7 +6,7 @@ Guidance for Claude Code (or any AI collaborator) working in this repo.
 
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
 revisiting browser tabs. Popup-only UI (no background/content scripts),
-category tagging with color coding, outdated-tab tracking, drag-to-reorder,
+category tagging with color coding, a "Waiting" reminder for categories you read later (others are kept), drag-to-reorder,
 saving a whole window at once,
 keyboard shortcut to open. Everything is stored locally via
 `chrome.storage.local` — there is no server, no sync, no analytics.
@@ -32,7 +32,7 @@ src/
                             the last "What's new" version seen, kept apart from Settings so backups can't revive it
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
-                            backup before writing, original restored if anything fails (version 2 = v3.2: saved windows)
+                            backup before writing, original restored if anything fails (version 2 = v3.2: saved windows; 3 = v3.3: which categories age)
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
@@ -51,7 +51,7 @@ src/
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme, sort and outdated-tab settings writes; clamps the day count to 1–365
+    SettingsRepository.ts  theme, sort, the waiting days and which categories age; clamps the day count to 1–365
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -89,7 +89,7 @@ src/
                              "tabs" permission the first time), what was saved and skipped, Close the saved tabs
       useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted
       ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
-      FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
+      FilterPills.tsx       All / Waiting / category pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       SelectionBar.tsx      the Select button after it, and the bar that takes the filter row's place while selecting
                              (count, Select all, Move to…, Delete, ✕) at the same height, so the popup never resizes
@@ -103,9 +103,10 @@ src/
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut and the list's keys, storage meter
-      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; color strip and messages
-                             float over the row so nothing ever shifts
+      GeneralTab.tsx        Light/Dark/System, keyboard shortcut and the list's keys, storage meter
+      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; the ☾ on each row (its tabs age
+                             and show as Waiting, or are kept), Uncategorized's own row (☾ only), the days
+                             field under the list; color strip and messages float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
   vite-env.d.ts             types for non-code imports, e.g. *.module.css

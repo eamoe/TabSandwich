@@ -29,25 +29,52 @@ test.describe("Settings", () => {
         expect(await surface(popup)).toBe("#FFFFFF");
     });
 
-    test("TC-062: turning outdated tabs off hides the badges and the Outdated filter", async ({ popup }) => {
-        await expect(popup.getByRole("button", { name: "Outdated (1)" })).toBeVisible();
-        await openSettings(popup);
-        await popup.getByRole("switch", { name: "Outdated tabs" }).uncheck({ force: true });
-        await expect(popup.getByLabel("Mark as outdated after")).toBeDisabled();
+    test("TC-062/TC-259: each category's moon says whether its tabs age; switching one off keeps its tabs", async ({ popup }) => {
+        await seedLibrary(popup, [
+            { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", daysAgo: 30 },
+            { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20 },
+            { title: "Loose link", url: "https://loose.example.com/", daysAgo: 10 },
+        ]);
+        // Work is kept: 30 days old, but no badge and not in the Waiting filter.
+        await expect(popup.getByRole("button", { name: "Waiting (2)" })).toBeVisible();
+        await expect(row(popup, "Q3 Roadmap").getByTitle(/Saved \d+ days ago/)).toHaveCount(0);
+        await expect(row(popup, "Old article").getByTitle("Saved 20 days ago")).toBeVisible();
+
+        await openSettings(popup, "Categories");
+        const moon = (name: string) => popup.getByRole("button", { name: `Waiting reminder for ${name}` });
+        await expect(moon("Reading")).toHaveAttribute("aria-pressed", "true");
+        await expect(moon("Uncategorized")).toHaveAttribute("aria-pressed", "true");
+        await expect(moon("Work")).toHaveAttribute("aria-pressed", "false");
+        await expect(moon("Work")).toHaveAttribute("title", "Kept: its tabs never show as waiting");
+        await moon("Reading").click();
+        await moon("Work").click();
+        await expect(moon("Work")).toHaveAttribute("aria-pressed", "true");
+        await expect(moon("Work")).toHaveAttribute("title", "Its tabs show as waiting after 7 days");
+        await expect.poll(async () => (await storedSettings(popup)).waitingCategories).toEqual(["Uncategorized", "Work"]);
+
         await popup.getByRole("button", { name: "Back", exact: true }).click();
-        await expect(popup.getByRole("button", { name: "Outdated (1)" })).toHaveCount(0);
+        await expect(popup.getByRole("button", { name: "Waiting (2)" })).toBeVisible();
+        await expect(row(popup, "Old article").getByTitle(/Saved \d+ days ago/)).toHaveCount(0);
+        await expect(row(popup, "Q3 Roadmap").getByTitle("Saved 30 days ago")).toBeVisible();
+
+        // No moon lit: no reminders at all.
+        await openSettings(popup, "Categories");
+        await moon("Work").click();
+        await moon("Uncategorized").click();
+        await popup.getByRole("button", { name: "Back", exact: true }).click();
+        await expect(popup.getByRole("button", { name: /^Waiting/ })).toHaveCount(0);
         await expect(tabList(popup).getByTitle(/Saved \d+ days ago/)).toHaveCount(0);
     });
 
     test("TC-064: a new day threshold is kept within 1–365 and updates the badges", async ({ popup }) => {
-        await openSettings(popup);
-        const days = popup.getByLabel("Mark as outdated after");
+        await openSettings(popup, "Categories");
+        const days = popup.getByLabel("Show as waiting after");
         await days.fill("500");
         await days.press("Enter");
         await expect(days).toHaveValue("365");
         await expect.poll(async () => (await storedSettings(popup)).outdatedDays).toBe(365);
         await popup.getByRole("button", { name: "Back", exact: true }).click();
-        await expect(popup.getByRole("button", { name: /^Outdated/ })).toHaveCount(0);
+        await expect(popup.getByRole("button", { name: /^Waiting/ })).toHaveCount(0);
     });
 
     test("TC-080: General shows how much is saved and how much storage it uses", async ({ popup }) => {
@@ -140,16 +167,18 @@ test("TC-199: a settings change that fails to save puts the controls back to wha
         chrome.storage.local.set = () => Promise.reject(new Error("disk unavailable"));
     });
 
-    const days = popup.getByLabel("Mark as outdated after");
+    await popup.getByRole("button", { name: "Dark", exact: true }).click();
+    await expect(popup.locator("html")).not.toHaveAttribute("data-theme");
+    await expect(popup.getByRole("button", { name: "System", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+    await popup.getByRole("tab", { name: "Categories" }).click();
+    const days = popup.getByLabel("Show as waiting after");
     await days.fill("30");
     await days.press("Enter");
     await expect(popup.getByRole("status").filter({ hasText: "Couldn't save your changes. Try again." })).toBeVisible();
     await expect(days).toHaveValue("7");
 
-    await popup.getByRole("button", { name: "Dark", exact: true }).click();
-    await expect(popup.locator("html")).not.toHaveAttribute("data-theme");
-    await expect(popup.getByRole("button", { name: "System", exact: true })).toHaveAttribute("aria-pressed", "true");
-
-    await popup.getByRole("switch", { name: "Outdated tabs" }).click({ force: true });
-    await expect(popup.getByRole("switch", { name: "Outdated tabs" })).toBeChecked();
+    const work = popup.getByRole("button", { name: "Waiting reminder for Work" });
+    await work.click();
+    await expect(work).toHaveAttribute("aria-pressed", "false");
 });

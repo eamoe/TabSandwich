@@ -1,6 +1,5 @@
-import { useEffect, useState } from "preact/hooks";
 import type { ThemeChoice } from "../../types";
-import { clampOutdatedDays, MAX_OUTDATED_DAYS, MIN_OUTDATED_DAYS, setOutdatedDays, setOutdatedEnabled, setTheme } from "../../domain/SettingsRepository";
+import { setTheme } from "../../domain/SettingsRepository";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast } from "../toastStore";
@@ -44,20 +43,11 @@ async function attempt(write: () => Promise<void>, reload: () => Promise<void>):
 
 export function GeneralTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
     const { settings } = library;
-    const [days, setDays] = useState(String(settings.outdatedDays));
     const shortcut = useShortcut();
-    // Every load resets the field to what's stored, so a change that failed to save doesn't linger.
-    useEffect(() => setDays(String(library.settings.outdatedDays)), [library]);
 
     const chooseTheme = (theme: ThemeChoice) => {
         applyTheme(theme); // straight away; the write follows
         void attempt(() => setTheme(theme), reload);
-    };
-
-    const commitDays = () => {
-        const clamped = clampOutdatedDays(days);
-        setDays(String(clamped));
-        if (clamped !== settings.outdatedDays) void attempt(() => setOutdatedDays(clamped), reload);
     };
 
     const nearlyFull = library.storagePct >= STORAGE_WARNING_PCT;
@@ -75,45 +65,6 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                     ))}
                 </div>
                 <p class={styles.hint}>{strings.themeHint}</p>
-            </section>
-
-            <section class={styles.group} aria-label={strings.outdatedTabs}>
-                <div class={styles.row}>
-                    <div>
-                        <label for="outdated-toggle" class={styles.label}>
-                            {strings.outdatedTabs}
-                        </label>
-                        <p class={styles.hint}>{strings.outdatedHint}</p>
-                    </div>
-                    <label class={styles.switch}>
-                        <input
-                            id="outdated-toggle"
-                            type="checkbox"
-                            role="switch"
-                            class="visually-hidden"
-                            checked={settings.outdatedEnabled}
-                            onChange={(e) => void attempt(() => setOutdatedEnabled(e.currentTarget.checked), reload)}
-                        />
-                        <span class={styles.track}>
-                            <span class={styles.thumb} />
-                        </span>
-                    </label>
-                </div>
-                <div class={settings.outdatedEnabled ? styles.days : `${styles.days} ${styles.off}`}>
-                    <label for="outdated-days">{strings.markOutdatedAfter}</label>
-                    <input
-                        id="outdated-days"
-                        class={controls.field}
-                        type="number"
-                        min={MIN_OUTDATED_DAYS}
-                        max={MAX_OUTDATED_DAYS}
-                        value={days}
-                        disabled={!settings.outdatedEnabled}
-                        onInput={(e) => setDays(e.currentTarget.value)}
-                        onChange={commitDays}
-                    />
-                    <span>{strings.days}</span>
-                </div>
             </section>
 
             <section class={styles.group} aria-label={strings.keyboardShortcut}>

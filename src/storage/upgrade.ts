@@ -7,7 +7,7 @@ import { withStorageLock } from "./writeQueue";
  * Version 1 is the data shape v2.2.0 shipped with. Everything stored before this module
  * existed has no version number and is, by definition, version 1.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 export const SCHEMA_VERSION_KEY = "tabSandwich.schemaVersion";
 /** The data as it was right before the most recent upgrade — kept (only the latest) as a recovery copy. */
 export const UPGRADE_BACKUP_KEY = "tabSandwich.upgradeBackup";
@@ -34,6 +34,23 @@ export const MIGRATIONS: Migration[] = [
         from: 1,
         to: 2,
         migrate: (data) => ({ ...data, "tabSandwich.groups": Array.isArray(data["tabSandwich.groups"]) ? data["tabSandwich.groups"] : [] }),
+    },
+    {
+        // v3.3: categories are kept (never age) unless chosen to. The one on/off switch becomes
+        // the list of categories whose tabs age: for an existing library only Uncategorized
+        // (none if the switch was off), so no category starts nudging on its own. A fresh install
+        // (nothing stored) is left alone and gets the defaults, Reading included.
+        from: 2,
+        to: 3,
+        migrate: (data) => {
+            const SETTINGS = "tabSandwich.settings";
+            const stored = data[SETTINGS];
+            const settings = stored !== null && typeof stored === "object" && !Array.isArray(stored) ? (stored as Record<string, unknown>) : null;
+            if (!settings && !("tabSandwich.tabs" in data)) return data;
+            const { outdatedEnabled, ...rest } = settings ?? {};
+            if (Array.isArray(rest.waitingCategories)) return { ...data, [SETTINGS]: rest };
+            return { ...data, [SETTINGS]: { ...rest, waitingCategories: outdatedEnabled === false ? [] : ["Uncategorized"] } };
+        },
     },
 ];
 

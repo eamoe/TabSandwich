@@ -12,8 +12,10 @@ export const GROUPS_KEY = "tabSandwich.groups";
 const LAST_SEEN_VERSION_KEY = "tabSandwich.lastSeenVersion";
 
 export const DEFAULT_SETTINGS: Settings = {
-    outdatedEnabled: true,
     outdatedDays: 7,
+    // A fresh install: a reading list and quick, unsorted saves are what reminders are for;
+    // everything else is kept. ("Uncategorized" spelled out: CategoryRepository imports this module.)
+    waitingCategories: ["Reading", "Uncategorized"],
     categories: ["Work", "Personal", "Reading", "Entertainment"],
     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
     theme: "system",

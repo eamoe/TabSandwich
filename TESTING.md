@@ -236,29 +236,31 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ---
 
-## 7. Outdated Tracking
+## 7. Waiting Tabs (called "Outdated" before 3.3)
 
-**TC-060 — Outdated badge appears past threshold (P1)** **[auto]**
-- Preconditions: Settings → outdated threshold set to 1 day; a tab's `savedAt` backdated via console (`chrome.storage.local.get('tabSandwich.tabs', r => {...})`) to 2+ days ago.
+Since 3.3 only tabs in the categories whose moon is lit in Settings › Categories age (Reading and Uncategorized on a fresh install); every other category is kept and never shows as waiting (TC-259).
+
+**TC-060 — Waiting badge appears past threshold (P1)** **[auto]**
+- Preconditions: Settings → days set to 1; a tab in an aging category (e.g. Reading) with its `savedAt` backdated via console (`chrome.storage.local.get('tabSandwich.tabs', r => {...})`) to 2+ days ago.
 - Steps: Reopen popup.
 - Expected: That row shows a small moon badge with its age (e.g. "☾ 2d"); hovering it says "Saved 2 days ago".
 
-**TC-061 — Outdated quick filter (P1)** **[auto]**
-- Preconditions: at least one outdated tab exists.
-- Steps: Click the moon "Outdated N" pill (appears right after "All"; screen readers hear "Outdated (N)").
-- Expected: List narrows to only outdated tabs, regardless of position in the full list.
+**TC-061 — Waiting quick filter (P1)** **[auto]**
+- Preconditions: at least one waiting tab exists.
+- Steps: Click the moon "Waiting N" pill (appears right after "All"; screen readers hear "Waiting (N)").
+- Expected: List narrows to only waiting tabs, regardless of position in the full list.
 
-**TC-062 — Disabling outdated tracking hides badges and filter (P1)** **[auto]**
-- Steps: Settings → **General** → switch "Outdated tabs" off.
-- Expected: All age badges disappear; the "Outdated" pill is no longer offered.
+**TC-062 — Dimming every category's moon hides badges and filter (P1)** **[auto]**
+- Steps: Settings → **Categories** → click every lit ☾ (Uncategorized's row included) to dim it.
+- Expected: All age badges disappear; the "Waiting" pill is no longer offered.
 
-**TC-063 — Default threshold is 7 days on fresh install (P2)**
+**TC-063 — Defaults on a fresh install (P2)**
 - Steps: Clear storage, reopen popup, check Settings.
-- Expected: Toggle is on, day input reads 7.
+- Expected: Settings › Categories: the days field under the list reads 7; the ☾ is lit on Reading and Uncategorized, dim on the others.
 
 **TC-064 — Changing the day threshold updates badges live (P2)** **[auto]**
-- Steps: Change the day-threshold input to a smaller/larger value (press Enter or click away).
-- Expected: Badges and the Outdated pill count update; a value outside 1–365 is corrected to the nearest limit.
+- Steps: In Settings › Categories, change the days field under the list to a smaller/larger value (press Enter or click away).
+- Expected: Badges and the Waiting pill count update; a value outside 1–365 is corrected to the nearest limit.
 
 ---
 
@@ -306,11 +308,11 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
-- Steps: Tab to a category pill and the Outdated pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
+- Steps: Tab to a category pill and the Waiting pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
 - Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable, Escape cancels.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
-- Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; operate the outdated switch and day input; on **Categories** add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
+- Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; on **Categories** toggle a ☾ and change the days field, add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
 - Expected: All operable via keyboard with visible focus indicators throughout.
 
 **TC-093 — No control relies on color alone (P2)**
@@ -382,7 +384,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
 - Expected: The list says "No saved tabs match “zzzzz”" with a hint that search looks at titles, sites, categories and saved windows, and to try fewer letters or part of a name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
 
-**TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
+**TC-115 — Search composes with an active category/Waiting pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
 - Steps: Click a category pill → then type a query that matches tabs both inside and outside that category.
 - Expected: Only matches within the selected pill's tabs appear. Pills themselves are unaffected by the query (all pills with any tabs in the full library stay visible).
@@ -447,7 +449,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-134 — Merge preserves existing settings and adds only missing categories (P1)**
 - Preconditions: an imported tab references a category not currently configured.
 - Steps: Merge the file.
-- Expected: The new category appears in Settings with an assigned color; existing categories, colors, and the outdated toggle/threshold are unchanged.
+- Expected: The new category appears in Settings with an assigned color; existing categories, colors, and which categories age (☾) and after how many days are unchanged.
 
 **TC-135 — Merge restores a category even when zero tabs are re-added (P1)**
 - Preconditions: export a backup, then locally remove only a category that currently has no tabs on it (no tab deletion) — e.g. export, then delete an empty "Reading" category in Settings without touching any tab.
@@ -466,7 +468,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-138 — Replace overwrites everything (P1)** **[auto]**
 - Preconditions: current tabs/settings differ from the backup file being imported.
 - Steps: Import a file → click **Replace all**.
-- Expected: The saved list and settings (categories, colors, outdated toggle/threshold) become exactly what the file contained (missing settings fields fall back to defaults). A toast confirms the replace, with **Undo**.
+- Expected: The saved list and settings (categories, colors, which categories age and after how many days) become exactly what the file contained (missing settings fields fall back to defaults). A toast confirms the replace, with **Undo**.
 
 **TC-139 — Replace is undoable (P1)** **[auto]**
 - Steps: Replace → click **Undo** in the toast before it times out.
@@ -527,7 +529,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-158 — Reordering categories reorders their filter pills (P2)**
 - Preconditions: 2+ categories, each with at least one tab.
 - Steps: Reorder categories in Settings, then check the filter pill order on the main view.
-- Expected: Category pills appear in the same order as Settings' category list. **All** and **Outdated** (when shown) always come first, in that fixed order, and **Uncategorized**'s pill (when shown) always comes last — reordering never moves those three.
+- Expected: Category pills appear in the same order as Settings' category list. **All** and **Waiting** (when shown) always come first, in that fixed order, and **Uncategorized**'s pill (when shown) always comes last — reordering never moves those three.
 
 **TC-159 — Drag-and-drop also reorders categories (P2)** **[auto]**
 - Preconditions: 3+ configured categories.
@@ -584,9 +586,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Add a new category.
 - Expected: An error toast appears; the typed name stays in the input (nothing is cleared, since nothing was saved).
 
-**TC-177 — A failed outdated-settings change shows an error and reverts the control (P3)** **[auto]** (TC-199)
+**TC-177 — A failed waiting-settings change shows an error and reverts the control (P3)** **[auto]** (TC-199)
 - Preconditions: write patched to reject.
-- Steps: Settings → **General** → flip the outdated switch, or change the days field.
+- Steps: Settings → **Categories** → click a ☾, or change the days field.
 - Expected: An error toast appears and the control snaps back to its actual stored value (not left showing the un-saved change).
 
 **TC-178 — A failed import shows an error without discarding what was there before (P2)**
@@ -691,8 +693,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-199 — A settings change that fails to save is undone on screen (P2)** **[auto]**
 - Preconditions: writes patched to fail (see section 15).
-- Steps: Settings → **General** → change the day count, choose **Dark**, flip the outdated switch.
-- Expected: Each shows "Couldn't save your changes. Try again." in a toast, and each control goes back to what's actually stored (the day count, the theme, the switch).
+- Steps: Settings → **General** → choose **Dark**; then **Categories** → change the day count, click a ☾.
+- Expected: Each shows "Couldn't save your changes. Try again." in a toast, and each control goes back to what's actually stored (the theme, the day count, the moon).
 
 **TC-200 — Every screen matches its approved screenshot (P1, release gate)** **[auto]**
 - Steps: `pnpm visual` (or CI's `visual` job).
@@ -942,3 +944,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: GitHub and a colorful site (e.g. Figma, Hacker News) visited in Chrome and saved; Wikipedia saved too.
 - Steps: Look at the list in Light, then in Dark (Settings › General).
 - Expected: GitHub's black cat shows dark on its tile in Light and light in Dark; colorful icons, icons with their own background (Wikipedia, MDN) and Chrome's gray globe look the same in both. (The pixel check itself is logic-tested in `tests/unit/iconInk.test.ts`; robot tests can't plant a real site's icon in Chrome's cache.)
+
+**TC-259 — Kept and waiting categories (P1)** **[auto]**
+- Preconditions: tabs saved 10–30 days ago in Work, Reading and Uncategorized; days set to 7.
+- Steps: Look at the list; open Settings › Categories; click Reading's ☾ (dims) and Work's (lights); hover each to read what it means; go Back.
+- Expected: At first only the Reading and Uncategorized tabs have the ☾ age badge and are counted in "Waiting (N)"; Work's 30-day-old tab has neither. After the change Work's tab is waiting and Reading's isn't. A lit moon's tooltip says "Its tabs show as waiting after 7 days", a dim one "Kept: its tabs never show as waiting". Uncategorized has its own last row with only the ☾. A category added later starts kept (☾ dim); renaming a category keeps its ☾. Updating from 3.2: every category is kept except Uncategorized (none at all if "Outdated tabs" was switched off), checked by the robot tests on stored 3.2 data.
