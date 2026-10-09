@@ -65,6 +65,18 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`archive-${colorScheme}.png`);
         });
 
+        test("rows with notes, and the save card's note open", async ({ popup }) => {
+            const notes: Record<string, string> = {
+                "Q3 Roadmap": "numbers for Thursday's board meeting",
+                "Principles of calm technology": "quoted in the onboarding redesign doc, section 3 — worth a second read before it goes out",
+            };
+            await seedLibrary(popup, LIBRARY.map((t) => (notes[t.title] ? { ...t, note: notes[t.title] } : t)), SETTINGS);
+            await popup.getByRole("button", { name: "Add a note" }).click();
+            await popup.getByRole("textbox", { name: "Note" }).fill("for the calm-tech reading list");
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`notes-${colorScheme}.png`);
+        });
+
         test("editing a row", async ({ popup }) => {
             await popup.getByRole("button", { name: "Edit Q3 Roadmap" }).click();
             await expect(popup).toHaveScreenshot(`edit-${colorScheme}.png`);

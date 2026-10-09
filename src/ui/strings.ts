@@ -201,6 +201,9 @@ export const strings = {
     deleteTooltip: "Delete",
 
     titleLabel: "Title",
+    noteLabel: "Note",
+    notePlaceholder: "Why you saved it (optional)",
+    addNote: "Add a note",
     titlePlaceholder: "Title",
     categoryLabel: "Category",
     editUrlPlaceholder: "https://example.com",

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, TabGroup } from "../../types";
-import { addTab, refreshTab, type AddTabResult } from "../../domain/TabRepository";
+import { addTab, MAX_NOTE_LENGTH, refreshTab, type AddTabResult } from "../../domain/TabRepository";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isSupportedTabUrl, urlsMatch } from "../../util/url";
 import { daysSince } from "../../util/time";
@@ -46,6 +46,12 @@ export function SaveCard(props: {
     const [picked, setPicked] = useState<{ forId: string | undefined; value: string } | null>(null);
     const [status, setStatus] = useState<Status>("idle");
     const [busy, setBusy] = useState(false);
+    // A note to save with the page: closed until "Add a note" opens it (null), then what's typed.
+    const [note, setNote] = useState<string | null>(null);
+    const noteInput = useRef<HTMLInputElement>(null);
+    useLayoutEffect(() => {
+        if (note === "") noteInput.current?.focus();
+    }, [note === null]);
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -84,8 +90,9 @@ export function SaveCard(props: {
         try {
             const page = await activePage();
             if (!page) return;
-            const result = await addTab({ ...page, category: chosen === UNCATEGORIZED ? undefined : chosen });
+            const result = await addTab({ ...page, category: chosen === UNCATEGORIZED ? undefined : chosen, note: note ?? undefined });
             flash(result.duplicate ? "duplicate" : "saved");
+            if (!result.duplicate) setNote(null);
             props.onSaved(result);
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
@@ -143,11 +150,49 @@ export function SaveCard(props: {
                             {siteName(tab!.url!)}
                         </p>
                     ) : (
-                        <p class={styles.pageSite}>{tab === undefined ? "" : supported ? siteName(tab!.url!) : strings.onlyWebPages}</p>
+                        <p class={styles.pageSite}>
+                            {tab === undefined ? "" : supported ? siteName(tab!.url!) : strings.onlyWebPages}
+                            {supported && note === null && (
+                                <>
+                                    {" · "}
+                                    <button type="button" class={styles.addNote} onClick={() => setNote("")}>
+                                        {strings.addNote}
+                                    </button>
+                                </>
+                            )}
+                        </p>
                     )}
                 </div>
                 {tab !== undefined && !supported && saveButton}
             </div>
+            {supported && !showSaved && note !== null && (
+                <div class={styles.noteRow}>
+                    <label for="save-note" class="visually-hidden">
+                        {strings.noteLabel}
+                    </label>
+                    <input
+                        ref={noteInput}
+                        id="save-note"
+                        class={controls.field}
+                        type="text"
+                        maxLength={MAX_NOTE_LENGTH}
+                        placeholder={strings.notePlaceholder}
+                        value={note}
+                        onInput={(e) => setNote(e.currentTarget.value)}
+                        onKeyDown={(e) => {
+                            // Enter saves, as the Save button does; Escape puts the note away.
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                void save();
+                            } else if (e.key === "Escape") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setNote(null);
+                            }
+                        }}
+                    />
+                </div>
+            )}
             {(tab === undefined || supported) && (
                 <div class={styles.actionRow}>
                     <CategoryPicker

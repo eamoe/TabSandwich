@@ -7,6 +7,15 @@ export interface AddTabInput {
     title: string;
     url: string;
     category?: string;
+    note?: string;
+}
+
+export const MAX_NOTE_LENGTH = 120;
+
+/** A note as stored: one line, trimmed, at most MAX_NOTE_LENGTH characters; undefined when nothing's left. */
+export function tidyNote(raw: string | undefined): string | undefined {
+    const note = (raw ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_NOTE_LENGTH).trim();
+    return note || undefined;
 }
 
 export interface AddTabResult {
@@ -27,12 +36,14 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
         // click, or two async saves racing) used to mint identical ids, and every id-keyed
         // lookup below (edit/delete/reorder) would then silently act on whichever matching
         // tab it found first.
+        const note = tidyNote(input.note);
         const newTab: SavedTab = {
             id: crypto.randomUUID(),
             title: input.title,
             url: input.url,
             category: input.category,
             savedAt: Date.now(),
+            ...(note ? { note } : {}),
         };
         await setTabs([newTab, ...tabs]);
         return { tab: newTab, duplicate: false };
@@ -95,7 +106,7 @@ export interface EditTabResult {
  */
 export async function editTab(
     id: string,
-    updates: Partial<Pick<SavedTab, "title" | "url" | "category">>
+    updates: Partial<Pick<SavedTab, "title" | "url" | "category" | "note">>
 ): Promise<EditTabResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
@@ -104,7 +115,13 @@ export async function editTab(
             const other = tabs.find((t) => t.id !== id && urlsMatch(t.url, updates.url!));
             if (other) return { duplicateOf: other };
         }
-        const updated = tabs.map((t) => (t.id === id ? { ...t, ...updates } : t));
+        const updated = tabs.map((t): SavedTab => {
+            if (t.id !== id) return t;
+            const { note: _old, ...rest } = { ...t, ...updates };
+            // A note emptied in the edit form is gone, not stored as "".
+            const note = "note" in updates ? tidyNote(updates.note) : t.note;
+            return note ? { ...rest, note } : rest;
+        });
         await setTabs(updated);
         return { duplicateOf: null };
     });

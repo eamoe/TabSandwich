@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
-import { addTab, type AddTabResult } from "../../domain/TabRepository";
+import { addTab, MAX_NOTE_LENGTH, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { normalizeUrl } from "../../util/url";
 import { writeErrorMessage } from "../errors";
@@ -25,6 +25,7 @@ export function ManualForm(props: {
 }) {
     const [url, setUrl] = useState("");
     const [title, setTitle] = useState("");
+    const [note, setNote] = useState("");
     const [category, setCategory] = useState(UNCATEGORIZED);
     const [error, setError] = useState("");
     // The saved tab the typed link turned out to be, offered to open.
@@ -50,6 +51,7 @@ export function ManualForm(props: {
                 title: title.trim() || new URL(normalized).hostname,
                 url: normalized,
                 category: chosen === UNCATEGORIZED ? undefined : chosen,
+                note,
             });
             if (result.duplicate) {
                 setError(result.tab.archivedAt ? strings.archivedAs(result.tab.title) : strings.alreadySavedAs(result.tab.title));
@@ -95,6 +97,18 @@ export function ManualForm(props: {
                     placeholder={strings.titleOptionalLabel}
                     value={title}
                     onInput={(e) => setTitle(e.currentTarget.value)}
+                />
+                <label for="manual-note" class="visually-hidden">
+                    {strings.noteLabel}
+                </label>
+                <input
+                    id="manual-note"
+                    class={controls.field}
+                    type="text"
+                    maxLength={MAX_NOTE_LENGTH}
+                    placeholder={strings.notePlaceholder}
+                    value={note}
+                    onInput={(e) => setNote(e.currentTarget.value)}
                 />
                 <div class={styles.errorRow}>
                     <p class={controls.error} role="alert">

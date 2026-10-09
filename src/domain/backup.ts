@@ -2,6 +2,7 @@ import { SavedTab, Settings, SortOrder, TabGroup, ThemeChoice } from "../types";
 import { DEFAULT_SETTINGS } from "../storage/chromeStorage";
 import { normalizeUrl, urlsMatch } from "../util/url";
 import { CATEGORY_COLOR_PALETTE, UNCATEGORIZED } from "./CategoryRepository";
+import { tidyNote } from "./TabRepository";
 
 /** 2 since v3.2: adds saved windows (`groups`, and `groupId` on their tabs). Version 1 files still import. */
 export const BACKUP_FORMAT_VERSION = 2;
@@ -25,7 +26,7 @@ export function backupFileName(): string {
 }
 
 /** `groupId` here is the id the file used — only for matching tabs to the file's groups; never kept. */
-type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId" | "pinned" | "archivedAt">;
+type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId" | "pinned" | "archivedAt" | "note">;
 
 export interface ParsedImport {
     tabs: ImportedTab[];
@@ -60,6 +61,7 @@ function readImportedTab(raw: unknown): ImportedTab | null {
         savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now(),
         groupId: typeof raw.groupId === "string" ? raw.groupId : undefined,
         ...(raw.pinned === true ? { pinned: true } : {}),
+        ...(typeof raw.note === "string" && tidyNote(raw.note) ? { note: tidyNote(raw.note) } : {}),
         ...(typeof raw.archivedAt === "number" && Number.isFinite(raw.archivedAt) ? { archivedAt: raw.archivedAt } : {}),
     };
 }

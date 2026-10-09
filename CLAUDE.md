@@ -37,14 +37,14 @@ src/
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
-    search.ts              fuzzy-match scoring for search (titles, addresses; category and saved-window
+    search.ts              fuzzy-match scoring for search (titles, addresses, notes; category and saved-window
                             names by word start) — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
@@ -86,10 +86,12 @@ src/
       Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
+                             ("In your archive" and Restore for an archived one); "Add a note" before saving
       SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
                              "tabs" permission the first time), what was saved and skipped, Close the saved tabs
       useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted
-      ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
+      ManualForm.tsx        add a link by hand (with an optional note), shown in place of the save card; an already-saved
+                             link offers Open (an archived one, Restore)
       FilterPills.tsx       All / Waiting / category / Archived pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       SelectionBar.tsx      the Select button after it, and the bar that takes the filter row's place while selecting

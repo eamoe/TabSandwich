@@ -290,7 +290,7 @@ export function App(props: { whatsNew?: string | null }) {
         });
     };
 
-    const onEdit = async (tab: SavedTab, updates: { title: string; url: string; category: string }): Promise<EditOutcome> => {
+    const onEdit = async (tab: SavedTab, updates: { title: string; url: string; category: string; note: string }): Promise<EditOutcome> => {
         let outcome: EditOutcome;
         try {
             const { duplicateOf } = await editTab(tab.id, updates);

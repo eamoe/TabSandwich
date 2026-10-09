@@ -86,3 +86,21 @@ describe("searchTabs", () => {
         });
     });
 });
+
+describe("notes in search", () => {
+    const noted = makeTab({ title: "API reference", url: "https://docs.example.com/api", note: "auth endpoints for the mobile app" });
+    const other = makeTab({ title: "Weather", url: "https://weather.example.com/" });
+
+    it("finds a tab by a word of its note, highlighting it there", () => {
+        const [match, ...rest] = searchTabs([other, noted], "mobile");
+        expect(rest).toEqual([]);
+        expect(match.tab.id).toBe(noted.id);
+        expect(match.noteRanges).toEqual([{ start: 23, end: 29 }]);
+        expect(noted.note!.slice(23, 29)).toBe("mobile");
+    });
+
+    it("ranks a title hit above a note-only hit", () => {
+        const titled = makeTab({ title: "Mobile app store", url: "https://store.example.com/" });
+        expect(searchTabs([noted, titled], "mobile").map((m) => m.tab.id)).toEqual([titled.id, noted.id]);
+    });
+});

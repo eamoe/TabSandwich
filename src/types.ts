@@ -15,6 +15,8 @@ export interface SavedTab {
      * from the Archived filter. Absent: not archived.
      */
     archivedAt?: number;
+    /** A line on why you saved it (v3.3), shown under the row and searched. At most MAX_NOTE_LENGTH characters; absent: no note. */
+    note?: string;
 }
 
 /** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */

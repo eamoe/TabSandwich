@@ -47,6 +47,11 @@ describe("parseBackupFile", () => {
         expect(parsed?.tabs.map((t) => t.archivedAt)).toEqual([1700000000000, undefined]);
     });
 
+    it("keeps a tab's note, tidied; a blank or non-text one is dropped", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", note: "  why  " }, { title: "b", url: "https://b.com", note: " " }, { title: "c", url: "https://c.com", note: 7 }] }));
+        expect(parsed?.tabs.map((t) => t.note)).toEqual(["why", undefined, undefined]);
+    });
+
     it("keeps a tab's pin, and nothing but true counts as pinned", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", pinned: true }, { title: "b", url: "https://b.com", pinned: "yes" }] }));
         expect(parsed?.tabs.map((t) => t.pinned)).toEqual([true, undefined]);

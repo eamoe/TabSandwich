@@ -47,6 +47,19 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("a row with a note, being edited, and the save card's note open", async ({ context, popup }) => {
+            await openSiteTab(context, popup, "Example Article");
+            await seedLibrary(popup, [
+                { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", note: "numbers for the board meeting" },
+                { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20, note: "read later" },
+            ]);
+            await popup.getByRole("button", { name: "Add a note" }).click();
+            expect(await scan(popup)).toEqual([]);
+            await popup.getByRole("button", { name: "Edit Q3 Roadmap" }).click();
+            await expect(tabList(popup).getByRole("textbox", { name: "Note" })).toHaveValue("numbers for the board meeting");
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("first run: nothing saved yet", async ({ popup }) => {
             await seedLibrary(popup, []);
             await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();

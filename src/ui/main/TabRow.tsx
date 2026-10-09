@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
 import type { MatchRange, SearchMatch } from "../../domain/search";
 import { normalizeUrl } from "../../util/url";
+import { MAX_NOTE_LENGTH } from "../../domain/TabRepository";
 import { daysSince } from "../../util/time";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
@@ -49,7 +50,7 @@ export interface RowProps {
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: () => void;
-    onEdit: (updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
+    onEdit: (updates: { title: string; url: string; category: string; note: string }) => Promise<EditOutcome>;
     onTogglePin: () => void;
     /**
      * In the list: Archive. In the archive (`inArchive`): Delete for good. Resolves false when it
@@ -131,6 +132,7 @@ export function TabRow(props: RowProps) {
     const days = daysSince(tab.savedAt);
     const classes = [
         styles.row,
+        tab.note ? styles.withNote : "",
         entrance === "rise" ? styles.rise : entrance === "drop" ? styles.drop : "",
         props.draggable ? styles.draggable : "",
         props.dragging ? styles.dragging : "",
@@ -197,6 +199,12 @@ export function TabRow(props: RowProps) {
                     <span class={styles.site}>{siteName(tab.url)}</span>
                     {tab.pinned && <span class="visually-hidden">{strings.pinnedForScreenReaders}</span>}
                 </span>
+                {tab.note && (
+                    <span class={styles.note} title={tab.note}>
+                        <span class="visually-hidden">{`${strings.noteLabel}: `}</span>
+                        {highlighted(tab.note, props.match?.noteRanges ?? [])}
+                    </span>
+                )}
             </div>
             {props.outdated && (
                 <span class={styles.age} title={strings.savedDaysAgo(days)}>
@@ -284,6 +292,7 @@ function EditForm(props: RowProps & { onDone: () => void }) {
     const [title, setTitle] = useState(tab.title);
     const [url, setUrl] = useState(tab.url);
     const [category, setCategory] = useState(props.category);
+    const [note, setNote] = useState(tab.note ?? "");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
     const titleInput = useRef<HTMLInputElement>(null);
@@ -307,7 +316,7 @@ function EditForm(props: RowProps & { onDone: () => void }) {
         // Waits for the write before closing: the save can be refused (the new URL is already
         // saved as another tab), and closing first would throw away what was typed.
         setBusy(true);
-        const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category });
+        const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category, note });
         setBusy(false);
         if (outcome.status === "duplicate") {
             setError(strings.alreadySavedAs(outcome.existingTitle));
@@ -357,6 +366,18 @@ function EditForm(props: RowProps & { onDone: () => void }) {
                     setUrl(e.currentTarget.value);
                     setError("");
                 }}
+            />
+            <label for={`${idPrefix}-note`} class="visually-hidden">
+                {strings.noteLabel}
+            </label>
+            <input
+                id={`${idPrefix}-note`}
+                class={controls.field}
+                type="text"
+                maxLength={MAX_NOTE_LENGTH}
+                placeholder={strings.notePlaceholder}
+                value={note}
+                onInput={(e) => setNote(e.currentTarget.value)}
             />
             <p class={controls.error} role="alert">
                 {error}

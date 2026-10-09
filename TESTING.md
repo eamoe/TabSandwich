@@ -994,3 +994,15 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-270 — Archive every waiting tab at once (P1)** **[auto]**
 - Steps: Pick the Waiting pill; click **Archive all N waiting tabs** above the list; then **Undo**.
 - Expected: Every waiting tab goes to the archive in one step ("Archived N tabs"); the hint says they stay restorable. With nothing waiting the list goes back to All. Undo brings them back, and with them the Waiting filter.
+
+**TC-271 — A note on the save card (P1)** **[auto]**
+- Steps: On a page not saved yet, click **Add a note** (next to the site's name); type; press Enter. On another page, open the note and press Escape.
+- Expected: The note field opens on its own row, focused; Enter saves the page with the note, which shows as a quiet italic third line under the row (cut to one line; the full note on hover). The note field closes after saving; a saved page offers no Add a note. Escape puts the note away, saving nothing.
+
+**TC-272 — Notes in the edit form and the + form (P1)** **[auto]**
+- Steps: Edit a row: type a note, Save; edit again and clear it, Save. Open **+**, fill a URL and a note, Add.
+- Expected: The edit form's Note field shows the current note; saving changes it, and an emptied note is removed (the row goes back to two lines). The + form saves its note with the link. Notes are one line of at most 120 characters.
+
+**TC-273 — Search finds notes (P1)** **[auto]**
+- Steps: Search for a word that's only in a tab's note.
+- Expected: That tab is found, the word highlighted in its note line; a title match still ranks above a note-only one.

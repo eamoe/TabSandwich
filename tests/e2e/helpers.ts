@@ -12,6 +12,7 @@ export interface SeedTab {
     pinned?: boolean;
     /** Archived this many days ago. */
     archivedDaysAgo?: number;
+    note?: string;
 }
 
 export interface SeedGroup {
@@ -53,6 +54,7 @@ export async function seedLibrary(
                     savedAt: now - (t.daysAgo ?? 0) * day,
                     ...(t.groupId ? { groupId: t.groupId } : {}),
                     ...(t.pinned ? { pinned: true } : {}),
+                    ...(t.note ? { note: t.note } : {}),
                     ...(t.archivedDaysAgo !== undefined ? { archivedAt: now - t.archivedDaysAgo * day } : {}),
                 })),
                 "tabSandwich.groups": groups.map((g) => ({ id: g.id, name: g.name, createdAt: now, collapsed: g.collapsed ?? true })),

@@ -61,7 +61,7 @@ export function TabList(props: {
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: (tab: SavedTab) => void;
-    onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
+    onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string; note: string }) => Promise<EditOutcome>;
     onDelete: (tab: SavedTab) => Promise<boolean>;
     onTogglePin: (tab: SavedTab) => void;
     /** Showing the archive: rows offer Restore and Delete for good; nothing moves or pins. */

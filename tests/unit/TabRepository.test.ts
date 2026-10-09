@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -390,5 +390,28 @@ describe("archiveTabs / unarchiveTabs", () => {
         seedGroups([group]);
         await setPinned(m1.id, true);
         expect(storedTabs().map((t) => t.id)).toEqual([m1.id, a.id, m2.id]);
+    });
+});
+
+describe("notes", () => {
+    it("are one tidy line, at most MAX_NOTE_LENGTH characters; blank is no note", () => {
+        expect(tidyNote("  auth   endpoints\nfor mobile ")).toBe("auth endpoints for mobile");
+        expect(tidyNote("x".repeat(200))).toHaveLength(MAX_NOTE_LENGTH);
+        expect(tidyNote("   ")).toBeUndefined();
+        expect(tidyNote(undefined)).toBeUndefined();
+    });
+
+    it("are saved with a new tab, changed or cleared by an edit, and kept by edits that don't touch them", async () => {
+        seed([]);
+        const { tab } = await addTab({ title: "API", url: "https://api.example.com/", note: " why: auth " });
+        expect(storedTabs()[0].note).toBe("why: auth");
+        await editTab(tab.id, { title: "API docs" });
+        expect(storedTabs()[0]).toMatchObject({ title: "API docs", note: "why: auth" });
+        await editTab(tab.id, { note: "for the mobile app" });
+        expect(storedTabs()[0].note).toBe("for the mobile app");
+        await editTab(tab.id, { note: "  " });
+        expect(storedTabs()[0]).not.toHaveProperty("note");
+        const { tab: plain } = await addTab({ title: "Plain", url: "https://plain.example.com/", note: "" });
+        expect(plain).not.toHaveProperty("note");
     });
 });

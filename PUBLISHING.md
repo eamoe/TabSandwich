@@ -45,13 +45,13 @@ SAVE INSTANTLY
 Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button. Already saved the page? The popup says so, and one click updates the saved copy.
 
 FIND IT AGAIN, FAST
-Search matches titles and sites as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. Sort by newest, oldest, title or site, and switch back to your own order any time.
+Search matches titles, sites and your notes as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. Sort by newest, oldest, title or site, and switch back to your own order any time.
 
 ORGANIZE WITH CATEGORIES
 Give any saved tab a color-coded category. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
 
 READ LATER, OR KEEP
-Pick the categories you save things to read later: once a tab there has waited a week (or however long you like), it gets a small moon badge, and a "Waiting" filter rounds them all up. Everything else, like dev tools, docs and accounts, is kept and never nags. Pin the ones you use most to keep them on top.
+Pick the categories you save things to read later: once a tab there has waited a week (or however long you like), it gets a small moon badge, and a "Waiting" filter rounds them all up. Everything else, like dev tools, docs and accounts, is kept and never nags. Pin the ones you use most to keep them on top, and add a note on why you saved something.
 
 SAVE A WHOLE WINDOW
 Forty tabs open? One click saves every page in the window into a category, skipping browser pages and anything already saved, with an exact count. Then close them all with one more click, or keep them open. A saved window stays together in your list under a name like "Toasted Rye": open it, rename it, reopen all its tabs in a new window, or break it apart.

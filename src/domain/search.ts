@@ -25,6 +25,8 @@ export interface SearchMatch {
     categoryRanges: MatchRange[];
     /** Ranges into the saved window's name, when a term matched it. */
     windowRanges: MatchRange[];
+    /** Ranges into the tab's note, when a term matched it. */
+    noteRanges: MatchRange[];
 }
 
 /**
@@ -47,6 +49,8 @@ const MAX_GAP_PENALTY = 8;
 const WEIGHT_TITLE = 1;
 const WEIGHT_HOST = 0.9;
 const WEIGHT_PATH = 0.55;
+/** Your own note on why you saved it: a strong hint, just below the title. */
+const WEIGHT_NOTE = 0.85;
 /** A category or saved-window name: what you'd type to find a project's tabs, as strong as the site. */
 const WEIGHT_LABEL = 0.9;
 
@@ -140,10 +144,11 @@ interface TabFields {
     path: string;
     category?: string;
     window?: string;
+    note: string;
 }
 
 function fieldsFor(tab: SavedTab, labels?: TabLabels): TabFields {
-    const named = { category: labels?.category, window: labels?.window };
+    const named = { category: labels?.category, window: labels?.window, note: tab.note ?? "" };
     try {
         const url = new URL(tab.url);
         return { title: tab.title, host: url.hostname, path: url.pathname + url.search, ...named };
@@ -170,6 +175,7 @@ interface TermResult {
     titleRanges: MatchRange[];
     categoryRanges: MatchRange[];
     windowRanges: MatchRange[];
+    noteRanges: MatchRange[];
 }
 
 function scoreTerm(fields: TabFields, term: string): TermResult | null {
@@ -178,14 +184,16 @@ function scoreTerm(fields: TabFields, term: string): TermResult | null {
     const path = matchTerm(fields.path, term);
     const category = matchLabel(fields.category, term);
     const window = matchLabel(fields.window, term);
-    if (!title && !host && !path && !category && !window) return null;
+    const note = matchTerm(fields.note, term);
+    if (!title && !host && !path && !category && !window && !note) return null;
 
     const score = Math.max(
         title ? title.score * WEIGHT_TITLE : 0,
         host ? host.score * WEIGHT_HOST : 0,
         path ? path.score * WEIGHT_PATH : 0,
         category ? category.score * WEIGHT_LABEL : 0,
-        window ? window.score * WEIGHT_LABEL : 0
+        window ? window.score * WEIGHT_LABEL : 0,
+        note ? note.score * WEIGHT_NOTE : 0
     );
 
     // Highlight wherever a term matched something the row shows (title, category, window name),
@@ -195,6 +203,7 @@ function scoreTerm(fields: TabFields, term: string): TermResult | null {
         titleRanges: title?.ranges ?? [],
         categoryRanges: category?.ranges ?? [],
         windowRanges: window?.ranges ?? [],
+        noteRanges: note?.ranges ?? [],
     };
 }
 
@@ -209,7 +218,7 @@ function scoreTerm(fields: TabFields, term: string): TermResult | null {
 export function searchTabs(tabs: SavedTab[], rawQuery: string, labelsOf?: (tab: SavedTab) => TabLabels): SearchMatch[] {
     const terms = rawQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (terms.length === 0) {
-        return tabs.map((tab) => ({ tab, score: 0, titleRanges: [], categoryRanges: [], windowRanges: [] }));
+        return tabs.map((tab) => ({ tab, score: 0, titleRanges: [], categoryRanges: [], windowRanges: [], noteRanges: [] }));
     }
 
     const matches: SearchMatch[] = [];
@@ -219,6 +228,7 @@ export function searchTabs(tabs: SavedTab[], rawQuery: string, labelsOf?: (tab: 
         let titleRanges: MatchRange[] = [];
         let categoryRanges: MatchRange[] = [];
         let windowRanges: MatchRange[] = [];
+        let noteRanges: MatchRange[] = [];
         let matchedEveryTerm = true;
 
         for (const term of terms) {
@@ -231,6 +241,7 @@ export function searchTabs(tabs: SavedTab[], rawQuery: string, labelsOf?: (tab: 
             titleRanges = titleRanges.concat(result.titleRanges);
             categoryRanges = categoryRanges.concat(result.categoryRanges);
             windowRanges = windowRanges.concat(result.windowRanges);
+            noteRanges = noteRanges.concat(result.noteRanges);
         }
 
         if (matchedEveryTerm && total > 0) {
@@ -240,6 +251,7 @@ export function searchTabs(tabs: SavedTab[], rawQuery: string, labelsOf?: (tab: 
                 titleRanges: mergeRanges(titleRanges),
                 categoryRanges: mergeRanges(categoryRanges),
                 windowRanges: mergeRanges(windowRanges),
+                noteRanges: mergeRanges(noteRanges),
             });
         }
     }
