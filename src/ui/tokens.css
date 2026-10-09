@@ -51,6 +51,9 @@
     --card-shadow: 0 2px 4px rgba(42,36,71,.08),0 10px 24px rgba(42,36,71,.14);
     --chip-mix: 18%;
     --fav-mix: 24%;
+    /* One-color site icons that would vanish on this theme's tile are flipped (src/util/iconInk.ts). */
+    --fav-dark-ink: none;
+    --fav-light-ink: invert(0.85);
     --ground: #EAE8F3;
     --row-mix: 8%;
     --row-edge: 30%;
@@ -101,6 +104,8 @@
         --card-shadow: 0 2px 4px rgba(0,0,0,.3),0 10px 24px rgba(0,0,0,.35);
         --chip-mix: 28%;
         --fav-mix: 34%;
+        --fav-dark-ink: invert(0.92);
+        --fav-light-ink: none;
         --ground: #110F18;
         --row-mix: 14%;
         --row-edge: 38%;
@@ -146,6 +151,8 @@
     --card-shadow: 0 2px 4px rgba(0,0,0,.3),0 10px 24px rgba(0,0,0,.35);
     --chip-mix: 28%;
     --fav-mix: 34%;
+    --fav-dark-ink: invert(0.92);
+    --fav-light-ink: none;
     --ground: #110F18;
     --row-mix: 14%;
     --row-edge: 38%;

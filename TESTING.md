@@ -937,3 +937,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: a category "ProjX" holding a repo and a docs page whose titles and addresses don't all say "projx"; a saved window "Toasted Rye" with two tabs.
 - Steps: Search `projx`; then `projx api`; then `rye`; then `prsnl` (scattered letters of "Personal").
 - Expected: `projx` lists every tab in ProjX, the category's name highlighted on rows found only by it; `projx api` narrows to the docs page. `rye` lists both tabs of the window (search shows every tab on its own row), each naming the window next to a small stack icon, "Rye" highlighted. A name matches only where a word of it starts, so `prsnl` finds nothing. Searching inside a category filter still searches only that category (TC-115).
+
+**TC-258 — One-color site icons stay visible in dark mode (P2)**
+- Preconditions: GitHub and a colorful site (e.g. Figma, Hacker News) visited in Chrome and saved; Wikipedia saved too.
+- Steps: Look at the list in Light, then in Dark (Settings › General).
+- Expected: GitHub's black cat shows dark on its tile in Light and light in Dark; colorful icons, icons with their own background (Wikipedia, MDN) and Chrome's gray globe look the same in both. (The pixel check itself is logic-tested in `tests/unit/iconInk.test.ts`; robot tests can't plant a real site's icon in Chrome's cache.)

@@ -58,6 +58,8 @@ src/
     time.ts                daysSince, isOutdated
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
+    iconInk.ts             whether an icon is one dark or one light color on transparency (GitHub's cat),
+                            from its pixels — so the tile can flip it where it would vanish — pure
   ui/                       Preact screens and building blocks of the v3.0 look
     tokens.css              every color/shadow/size, light + dark; "System" = no data-theme attribute
                             (CSS follows the OS, even while open), Light/Dark = data-theme on <html>
@@ -70,7 +72,8 @@ src/
                             when the popup is too short, never clipped by the list
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
-    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
+    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
+                             a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
     CategoryPicker.tsx      native <select> with the chosen category's color dot
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
     main/                   the main screen
