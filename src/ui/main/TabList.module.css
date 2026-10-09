@@ -81,13 +81,22 @@
 .title::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
 .title:focus-visible { outline: none; }
 .title:focus-visible::after { outline: 2px solid var(--accent); outline-offset: 1px; }
-.title mark { background: color-mix(in srgb, var(--save) 55%, transparent); color: inherit; border-radius: 3px; }
+.title mark,
+.meta mark { background: var(--mark-bg); color: var(--mark-ink); border-radius: 3px; }
 
+/* A row with a note is a line taller: the note, quiet, cut to one line (the whole of it on hover). */
+.withNote { height: calc(var(--row-h) + 15px); }
+.note { max-width: 100%; font-size: 11.5px; line-height: 14px; font-style: italic; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note mark { background: var(--mark-bg); color: var(--mark-ink); border-radius: 3px; font-style: normal; }
 .meta { max-width: 100%; display: flex; align-items: center; gap: 6px; font-size: 11.5px; line-height: 15px; color: var(--ink-3); white-space: nowrap; overflow: hidden; }
 .category { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-2); font-weight: 600; flex-shrink: 0; }
 .category > span:first-child { width: 7px; height: 7px; }
 .separator { opacity: 0.7; }
 .site { overflow: hidden; text-overflow: ellipsis; }
+/* A search result's saved window: shares the line with the site, each giving way when space is short. */
+.window { display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex-shrink: 1; color: var(--ink-2); }
+.window > svg { flex-shrink: 0; }
+.windowName { overflow: hidden; text-overflow: ellipsis; }
 
 .age {
     flex-shrink: 0;
@@ -121,6 +130,10 @@
 /* Invisible but still clickable while hidden: the pointer is over the row by then, which shows them. */
 .row:hover .actions, .row:focus-within .actions { opacity: 1; transform: none; }
 .row:hover .age, .row:focus-within .age { visibility: hidden; }
+/* A pinned row's pin, where an age badge would be (a pinned tab never ages). */
+.pinMark { flex-shrink: 0; display: inline-flex; color: var(--accent); transform: rotate(35deg); }
+.row:hover .pinMark, .row:focus-within .pinMark { visibility: hidden; }
+.pinned { color: var(--accent); }
 .delete:hover { color: var(--danger); }
 
 .editing { height: auto; display: block; padding: 8px; background: var(--surface) !important; box-shadow: var(--row-lift); transform: none; }

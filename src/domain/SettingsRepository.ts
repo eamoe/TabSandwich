@@ -27,9 +27,11 @@ export function setSort(sort: SortOrder): Promise<void> {
     });
 }
 
-export function setOutdatedEnabled(enabled: boolean): Promise<void> {
+/** Turns aging on or off for one category (or "Uncategorized"): whether its tabs show as Waiting. */
+export function setCategoryWaiting(category: string, waiting: boolean): Promise<void> {
     return update((s) => {
-        s.outdatedEnabled = enabled;
+        const others = s.waitingCategories.filter((c) => c !== category);
+        s.waitingCategories = waiting ? [...others, category] : others;
     });
 }
 

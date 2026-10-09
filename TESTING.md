@@ -26,8 +26,9 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 is the first that does).
-9. Anything new in this release that isn't marked **[auto]** yet.
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 does: which categories age).
+9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
+10. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -185,13 +186,13 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Enter edit mode → change fields → **Cancel**.
 - Expected: Original values remain; nothing persisted.
 
-**TC-043 — Delete a tab (P1)** **[auto]**
-- Steps: Hover a row → click its trash icon.
-- Expected: The row slides away and is removed from the list and from storage (still gone after reopening the popup). A toast ("Deleted") appears at the bottom with an **Undo** button.
+**TC-043 — Archive a tab, and delete it for good from the archive (P1)** **[auto]**
+- Steps: Hover a row → click its archive icon (since 3.3 a row's own button archives). Then pick the **Archived** pill and click the row's trash icon.
+- Expected: Archiving: the row slides away and leaves the list, still saved (it's under Archived); a toast ("Archived") offers **Undo**. In the archive, the trash deletes it for good: gone from storage (still gone after reopening the popup), with a "Deleted" toast and **Undo**. The Archived pill disappears once the archive is empty.
 
 **TC-044 — Undo restores the tab to its exact original position (P1)** **[auto]**
 - Preconditions: 3+ saved tabs in manual order.
-- Steps: Delete the middle tab → click **Undo** in the toast before it disappears.
+- Steps: Archive the middle tab → click **Undo** in the toast before it disappears.
 - Expected: The tab reappears at the same position it was deleted from (not at the top or bottom of the list), scrolled into view and briefly highlighted, same as a fresh save.
 
 **TC-045 — Undo toast auto-dismisses and the deletion becomes permanent (P2)**
@@ -236,29 +237,31 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 ---
 
-## 7. Outdated Tracking
+## 7. Waiting Tabs (called "Outdated" before 3.3)
 
-**TC-060 — Outdated badge appears past threshold (P1)** **[auto]**
-- Preconditions: Settings → outdated threshold set to 1 day; a tab's `savedAt` backdated via console (`chrome.storage.local.get('tabSandwich.tabs', r => {...})`) to 2+ days ago.
+Since 3.3 only tabs in the categories whose moon is lit in Settings › Categories age (Reading and Uncategorized on a fresh install); every other category is kept and never shows as waiting (TC-259).
+
+**TC-060 — Waiting badge appears past threshold (P1)** **[auto]**
+- Preconditions: Settings → days set to 1; a tab in an aging category (e.g. Reading) with its `savedAt` backdated via console (`chrome.storage.local.get('tabSandwich.tabs', r => {...})`) to 2+ days ago.
 - Steps: Reopen popup.
 - Expected: That row shows a small moon badge with its age (e.g. "☾ 2d"); hovering it says "Saved 2 days ago".
 
-**TC-061 — Outdated quick filter (P1)** **[auto]**
-- Preconditions: at least one outdated tab exists.
-- Steps: Click the moon "Outdated N" pill (appears right after "All"; screen readers hear "Outdated (N)").
-- Expected: List narrows to only outdated tabs, regardless of position in the full list.
+**TC-061 — Waiting quick filter (P1)** **[auto]**
+- Preconditions: at least one waiting tab exists.
+- Steps: Click the moon "Waiting N" pill (appears right after "All"; screen readers hear "Waiting (N)").
+- Expected: List narrows to only waiting tabs, regardless of position in the full list.
 
-**TC-062 — Disabling outdated tracking hides badges and filter (P1)** **[auto]**
-- Steps: Settings → **General** → switch "Outdated tabs" off.
-- Expected: All age badges disappear; the "Outdated" pill is no longer offered.
+**TC-062 — Dimming every category's moon hides badges and filter (P1)** **[auto]**
+- Steps: Settings → **Categories** → click every lit ☾ (Uncategorized's row included) to dim it.
+- Expected: All age badges disappear; the "Waiting" pill is no longer offered.
 
-**TC-063 — Default threshold is 7 days on fresh install (P2)**
+**TC-063 — Defaults on a fresh install (P2)**
 - Steps: Clear storage, reopen popup, check Settings.
-- Expected: Toggle is on, day input reads 7.
+- Expected: Settings › Categories: the days field under the list reads 7; the ☾ is lit on Reading and Uncategorized, dim on the others.
 
 **TC-064 — Changing the day threshold updates badges live (P2)** **[auto]**
-- Steps: Change the day-threshold input to a smaller/larger value (press Enter or click away).
-- Expected: Badges and the Outdated pill count update; a value outside 1–365 is corrected to the nearest limit.
+- Steps: In Settings › Categories, change the days field under the list to a smaller/larger value (press Enter or click away).
+- Expected: Badges and the Waiting pill count update; a value outside 1–365 is corrected to the nearest limit.
 
 ---
 
@@ -306,11 +309,11 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
-- Steps: Tab to a category pill and the Outdated pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
+- Steps: Tab to a category pill and the Waiting pill and activate each; Tab into the list (it's one stop: the current row's title, then its pin, edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
 - Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable, Escape cancels.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
-- Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; operate the outdated switch and day input; on **Categories** add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
+- Steps: Tab into Settings; move between the four tabs with the arrow keys; choose a theme; on **Categories** toggle a ☾ and change the days field, add and remove a category, open a color dot and select a color with Enter/Space (Escape closes it); reach the shortcut **Customize** button; return via **Back**.
 - Expected: All operable via keyboard with visible focus indicators throughout.
 
 **TC-093 — No control relies on color alone (P2)**
@@ -361,7 +364,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-110 — Basic substring match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub" (`github.com`) among several others.
 - Steps: Type `git` into the search box in the header (`#search-input`).
-- Expected: Only tabs matching on title/domain/path remain; matched characters in the title are visually highlighted.
+- Expected: Only tabs matching on title/domain/path (or category or saved-window name, TC-257) remain; matched characters in the title are visually highlighted.
 
 **TC-111 — Non-contiguous (fuzzy) match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub".
@@ -380,9 +383,9 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-114 — No results state (P1)** **[auto]**
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
-- Expected: The list says "No saved tabs match “zzzzz”" with a hint to try fewer letters or part of the site's name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
+- Expected: The list says "No saved tabs match “zzzzz”" with a hint that search looks at titles, sites, categories and saved windows, and to try fewer letters or part of a name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
 
-**TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
+**TC-115 — Search composes with an active category/Waiting pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
 - Steps: Click a category pill → then type a query that matches tabs both inside and outside that category.
 - Expected: Only matches within the selected pill's tabs appear. Pills themselves are unaffected by the query (all pills with any tabs in the full library stay visible).
@@ -447,7 +450,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-134 — Merge preserves existing settings and adds only missing categories (P1)**
 - Preconditions: an imported tab references a category not currently configured.
 - Steps: Merge the file.
-- Expected: The new category appears in Settings with an assigned color; existing categories, colors, and the outdated toggle/threshold are unchanged.
+- Expected: The new category appears in Settings with an assigned color; existing categories, colors, and which categories age (☾) and after how many days are unchanged.
 
 **TC-135 — Merge restores a category even when zero tabs are re-added (P1)**
 - Preconditions: export a backup, then locally remove only a category that currently has no tabs on it (no tab deletion) — e.g. export, then delete an empty "Reading" category in Settings without touching any tab.
@@ -466,7 +469,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-138 — Replace overwrites everything (P1)** **[auto]**
 - Preconditions: current tabs/settings differ from the backup file being imported.
 - Steps: Import a file → click **Replace all**.
-- Expected: The saved list and settings (categories, colors, outdated toggle/threshold) become exactly what the file contained (missing settings fields fall back to defaults). A toast confirms the replace, with **Undo**.
+- Expected: The saved list and settings (categories, colors, which categories age and after how many days) become exactly what the file contained (missing settings fields fall back to defaults). A toast confirms the replace, with **Undo**.
 
 **TC-139 — Replace is undoable (P1)** **[auto]**
 - Steps: Replace → click **Undo** in the toast before it times out.
@@ -527,7 +530,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-158 — Reordering categories reorders their filter pills (P2)**
 - Preconditions: 2+ categories, each with at least one tab.
 - Steps: Reorder categories in Settings, then check the filter pill order on the main view.
-- Expected: Category pills appear in the same order as Settings' category list. **All** and **Outdated** (when shown) always come first, in that fixed order, and **Uncategorized**'s pill (when shown) always comes last — reordering never moves those three.
+- Expected: Category pills appear in the same order as Settings' category list. **All** and **Waiting** (when shown) always come first, in that fixed order, and **Uncategorized**'s pill (when shown) always comes last — reordering never moves those three.
 
 **TC-159 — Drag-and-drop also reorders categories (P2)** **[auto]**
 - Preconditions: 3+ configured categories.
@@ -564,10 +567,10 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Edit a tab's title, click **Save**.
 - Expected: An error toast appears and the row closes showing its original, actually-stored title.
 
-**TC-173 — A failed delete shows an error and leaves the row in place (P1)** **[auto]**
+**TC-173 — A failed archive shows an error and leaves the row in place (P1)** **[auto]**
 - Preconditions: write patched to reject; at least one saved tab.
-- Steps: Delete a tab.
-- Expected: An error toast appears; the row starts to slide away but comes straight back at full size (no undo toast either — nothing was deleted to undo).
+- Steps: Archive a tab.
+- Expected: An error toast appears; the row starts to slide away but comes straight back at full size (no undo toast either — nothing was archived to undo).
 
 **TC-174 — A failed tab reorder shows an error and leaves the order unchanged (P2)**
 - Preconditions: write patched to reject; 2+ saved tabs.
@@ -584,9 +587,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Add a new category.
 - Expected: An error toast appears; the typed name stays in the input (nothing is cleared, since nothing was saved).
 
-**TC-177 — A failed outdated-settings change shows an error and reverts the control (P3)** **[auto]** (TC-199)
+**TC-177 — A failed waiting-settings change shows an error and reverts the control (P3)** **[auto]** (TC-199)
 - Preconditions: write patched to reject.
-- Steps: Settings → **General** → flip the outdated switch, or change the days field.
+- Steps: Settings → **Categories** → click a ☾, or change the days field.
 - Expected: An error toast appears and the control snaps back to its actual stored value (not left showing the un-saved change).
 
 **TC-178 — A failed import shows an error without discarding what was there before (P2)**
@@ -691,8 +694,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-199 — A settings change that fails to save is undone on screen (P2)** **[auto]**
 - Preconditions: writes patched to fail (see section 15).
-- Steps: Settings → **General** → change the day count, choose **Dark**, flip the outdated switch.
-- Expected: Each shows "Couldn't save your changes. Try again." in a toast, and each control goes back to what's actually stored (the day count, the theme, the switch).
+- Steps: Settings → **General** → choose **Dark**; then **Categories** → change the day count, click a ☾.
+- Expected: Each shows "Couldn't save your changes. Try again." in a toast, and each control goes back to what's actually stored (the theme, the day count, the moon).
 
 **TC-200 — Every screen matches its approved screenshot (P1, release gate)** **[auto]**
 - Steps: `pnpm visual` (or CI's `visual` job).
@@ -785,8 +788,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Enter opens the tab in a new browser tab. E opens the edit form with the title selected; Escape cancels it and focus returns to the row; saving with Enter also returns focus to the row.
 
 **TC-222 — Delete from the keyboard, and undo (P1)** **[auto]**
-- Steps: On a row press Delete (on a Mac, the delete key, which is Backspace). Then Ctrl+Z (⌘Z on a Mac).
-- Expected: The row is deleted with the usual Undo toast, and focus moves to the next row (or the one before, at the end of the list). Ctrl+Z / ⌘Z undoes it while Undo is showing.
+- Steps: On a row press Delete (on a Mac, the delete key, which is Backspace). Then Ctrl+Z (⌘Z on a Mac). In the archive, Delete on a row.
+- Expected: In the list, the row is archived with the usual Undo toast; in the archive, Delete deletes for good (with Undo); and focus moves to the next row (or the one before, at the end of the list). Ctrl+Z / ⌘Z undoes it while Undo is showing.
 
 **TC-223 — Move a tab with Alt+arrows (P1)** **[auto]**
 - Steps: On a row press Alt+↓ (⌥↓), then Alt+↑. Try it under a category filter, and with a sort on.
@@ -852,13 +855,13 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: ⋯ → **Break apart**; then **Undo** in the toast.
 - Expected: The window goes, its tabs stay saved, in place, as ordinary rows. Undo brings the window back with the same tabs.
 
-**TC-238 — Remove a window and its tabs from the list (P1)** **[auto]**
-- Steps: ⋯ → **Remove from list**; then **Undo**.
-- Expected: The toast says "Removed N tabs" and they're gone. Undo puts the window and every tab back where they were.
+**TC-238 — Archive a window with its tabs (P1)** **[auto]**
+- Steps: ⋯ → **Archive**; then **Undo**. Archive it again; on the Archived pill select all its tabs and **Restore**.
+- Expected: The toast says "Archived N tabs" and they leave the list (still saved, under Archived). Undo puts them back. Restoring them from the archive puts the window back together, in its place.
 
 **TC-239 — Open a window's tabs (P1)** **[auto]**
-- Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and remove from list**.
-- Expected: Each opens the window's tabs in one new browser window. The first keeps them saved; the second removes them (and the window) from the list, with Undo while the popup is open.
+- Steps: ⋯ → **Open all in a new window**. Then ⋯ → **Open all and archive them**.
+- Expected: Each opens the window's tabs in one new browser window. The first keeps them in the list; the second archives them (the window leaves the list, restorable from Archived), with Undo while the popup is open.
 
 **TC-240 — The ⋯ menu from the keyboard (P2)** **[auto]**
 - Steps: Tab to a window's ⋯ button and press Enter; use the arrow keys, Home and End; press Escape.
@@ -881,8 +884,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: The last tab shows as an ordinary row; no window row with a single tab.
 
 **TC-245 — Saved windows in real Chrome (P1, release gate)**
-- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and remove from list**; drag tabs within the open window, out of it, and into it.
-- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list when you reopen the popup. Dragging feels like the rest of the list: a tab dropped on a loose tab leaves its window, one dropped on a window's tab joins it, each with a toast and Undo. Export a backup, delete the window, import it with **Replace all**: the window comes back with its name and tabs.
+- Steps: In a normal Chrome with the release build: save a window of 5+ tabs; open the popup from the toolbar; ⋯ → **Open all in a new window**; reopen the popup; ⋯ → **Open all and archive them**; drag tabs within the open window, out of it, and into it.
+- Expected: Opening a new window may close the popup (it takes focus); either way the tabs open in one new window and, for the second action, are gone from the list (under Archived) when you reopen the popup. Dragging feels like the rest of the list: a tab dropped on a loose tab leaves its window, one dropped on a window's tab joins it, each with a toast and Undo. Export a backup, archive the window and delete its tabs for good from Archived, import it with **Replace all**: the window comes back with its name and tabs.
 
 **TC-246 — A window's menu always fits (P1)** **[auto]**
 - Preconditions: Nothing saved but one saved window (so the popup is short).
@@ -900,7 +903,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-249 — Selecting starts and stops without moving anything (P1)** **[auto]**
 - Steps: Click the ☑ button at the end of the filter row. Pick a row by clicking it, another by clicking its checkbox. Click ✕. Start again and press Escape.
-- Expected: The popup doesn't change size or jump: the bar ("N selected · Select all · Move to… · 🗑 · ✕") takes the filter row's place at the same height, and focus moves to ✕. Rows become checkboxes; clicking anywhere on a row (checkbox included) picks it without opening the tab; rows' own edit and delete step aside, and dragging is off. Move to… and 🗑 wait until something is picked. ✕ or Escape stops (Escape doesn't close the popup) and forgets the picks.
+- Expected: The popup doesn't change size or jump: the bar ("N selected · Select all · Move to… · archive · ✕"; on the Archived pill "Restore · 🗑 for good" instead of the last two) takes the filter row's place at the same height, and focus moves to ✕. Rows become checkboxes; clicking anywhere on a row (checkbox included) picks it without opening the tab; rows' own edit and delete step aside, and dragging is off. Move to… and Archive (Restore and 🗑 in the archive) wait until something is picked. ✕ or Escape stops (Escape doesn't close the popup) and forgets the picks.
 
 **TC-250 — Pick a range (P2)** **[auto]**
 - Steps: Pick one row, then Shift-click another further down. Then Shift-click a picked row in between.
@@ -918,16 +921,111 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Pick a few tabs (and a window); choose a category in **Move to…**; then **Undo**.
 - Expected: All of them move in one step ("Moved N tabs to …") and selecting ends. Undo puts each back in the category it had.
 
-**TC-254 — Delete picked tabs (P1)** **[auto]**
-- Steps: Pick a few tabs (and a window); click 🗑; then **Undo**.
-- Expected: All of them are deleted in one step ("Deleted N tabs") and selecting ends. Undo puts every one back where it was, the window included.
+**TC-254 — Archive picked tabs (P1)** **[auto]**
+- Steps: Pick a few tabs (and a window); click the archive button; then **Undo**.
+- Expected: All of them leave the list in one step ("Archived N tabs", still saved) and selecting ends. Undo puts every one back where it was, the window included.
 
 **TC-255 — Selecting from the keyboard (P1)** **[auto]**
 - Steps: Start selecting; Tab into the list; Space; ↓; Space; press E and Delete; → on a window.
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (3.1.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (3.2.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
-- Expected: Every tab, category, color, theme and sort is as it was; "New in 3.2" shows once. Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 2, with a backup copy; the robot tests cover the upgrade itself (TC-184), but not an existing install updating in place.)
+- Expected: Every tab, window, category, color, theme and sort is as it was; "New in 3.3" shows once. Only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
+## 21. Stay Organized (v3.3)
+
+**TC-257 — Search finds a category's or saved window's tabs by its name (P1)** **[auto]**
+- Preconditions: a category "ProjX" holding a repo and a docs page whose titles and addresses don't all say "projx"; a saved window "Toasted Rye" with two tabs.
+- Steps: Search `projx`; then `projx api`; then `rye`; then `prsnl` (scattered letters of "Personal").
+- Expected: `projx` lists every tab in ProjX, the category's name highlighted on rows found only by it; `projx api` narrows to the docs page. `rye` lists both tabs of the window (search shows every tab on its own row), each naming the window next to a small stack icon, "Rye" highlighted. A name matches only where a word of it starts, so `prsnl` finds nothing. Searching inside a category filter still searches only that category (TC-115).
+
+**TC-258 — One-color site icons stay visible in dark mode (P2)**
+- Preconditions: GitHub and a colorful site (e.g. Figma, Hacker News) visited in Chrome and saved; Wikipedia saved too; a page Chrome has no icon for (shows Chrome's gray globe).
+- Steps: Look at the list in Light, then in Dark (Settings › General).
+- Expected: GitHub's black cat and Chrome's gray globe show dark on their tiles in Light and light in Dark; colorful icons and icons with their own background (Wikipedia, MDN) look the same in both. (The pixel check itself is logic-tested in `tests/unit/iconInk.test.ts`; the approved dark screenshots show the flipped globe.)
+
+**TC-259 — Kept and waiting categories (P1)** **[auto]**
+- Preconditions: tabs saved 10–30 days ago in Work, Reading and Uncategorized; days set to 7.
+- Steps: Look at the list; open Settings › Categories; click Reading's ☾ (dims) and Work's (lights); hover each to read what it means; go Back.
+- Expected: At first only the Reading and Uncategorized tabs have the ☾ age badge and are counted in "Waiting (N)"; Work's 30-day-old tab has neither. After the change Work's tab is waiting and Reading's isn't. A lit moon's tooltip says "Its tabs show as waiting after 7 days", a dim one "Kept: its tabs never show as waiting". Uncategorized has its own last row with only the ☾. A category added later starts kept (☾ dim); renaming a category keeps its ☾. Updating from 3.2: every category is kept except Uncategorized (none at all if "Outdated tabs" was switched off), checked by the robot tests on stored 3.2 data.
+
+**TC-260 — Pin a tab (P1)** **[auto]**
+- Steps: Hover a row (an old one in an aging category, e.g. Reading) and click its pin; pin a second tab; then click the first one's pin again.
+- Expected: The pinned tab jumps to the top and flashes; a small pin shows on it where the age badge was (a pinned tab never ages, and leaves the Waiting filter). The second pinned tab lands below the first. Unpinning puts it just below the pinned ones, its age badge back. Screen readers hear "Pinned “…” to the top" / "Unpinned “…”", and "Pinned" with the row.
+
+**TC-261 — P pins from the keyboard (P2)** **[auto]**
+- Steps: Arrow to a row; press P; press P again.
+- Expected: The row pins (moves to the top) and unpins, keeping the keyboard focus. While selecting, P does nothing.
+
+**TC-262 — Pinned tabs stay on top in every sort (P1)** **[auto]**
+- Steps: Pin a loose tab and a tab inside an open saved window; sort by Title, then Newest; pick a category filter.
+- Expected: The loose pinned tab stays first in every sort; the window's pinned tab sits at the top of its window. Under a filter (windows show as plain rows), every pinned tab comes first.
+
+**TC-263 — Moving stops at the pinned line (P2)** **[auto]**
+- Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
+- Expected: Alt+↑ doesn't move it, and screen readers hear "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
+
+**TC-264 — Archived tabs are out of the list (P1)** **[auto]**
+- Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
+- Steps: Look at the list, the pills and the search field; search for an archived tab's title; click **Search the archive**; on the Archived pill press P and Alt+↑ on a row.
+- Expected: Archived tabs aren't in All, any category's count, the Waiting count, the search field's "Search N saved tabs", or the window's tab count. A search that only the archive matches says so and offers **Search the archive**, which picks the **Archived (N)** pill (last in the row, with a box icon); there the field reads "Search N archived tabs". Archived rows show no age badge or pin; P does nothing; Alt+arrows say "Restore a tab to move it."
+
+**TC-265 — Restore puts it back where it was (P1)** **[auto]**
+- Steps: On the Archived pill, click a row's Restore (box with an arrow) for a tab that was inside a saved window; go to All; then Undo.
+- Expected: "Restored", and the tab is back in exactly its old place in your order, inside its window. Undo archives it again.
+
+**TC-266 — Everything archived (P2)** **[auto]**
+- Steps: Archive the last tab in the list.
+- Expected: All shows "Everything's in the archive" with **Show the archive** (not the first-run welcome); the filter row stays, with the Archived pill.
+
+**TC-267 — A category only the archive uses (P2)** **[auto]**
+- Steps: Settings › Categories: look at a category whose only tabs are archived, and click its remove button.
+- Expected: Its count says 0 tabs (counted as the list shows them); removing it is refused with "Tabs in your archive still use it — delete them there first."
+
+**TC-268 — An archived page on the save card and in the + form (P2)** **[auto]**
+- Steps: Open a page whose saved copy is archived; click **Restore** on the save card. Archive it again and click **Update** instead, then **Undo**. Then type its link into the + form and **Add**.
+- Expected: The card says "In your archive" and offers **Restore** (instead of Show): the tab is back in the list ("Restored", with Undo). **Update** brings it back too, up to date; its Undo puts it back in the archive as it was. The + form says "In your archive, as “…”." with **Restore**.
+
+**TC-269 — Selecting in the archive (P1)** **[auto]**
+- Steps: On the Archived pill, start selecting; pick two; delete them for good; Undo; then Select all and **Restore**.
+- Expected: The bar offers Restore and "Delete N selected tabs for good" (no Move to…). Deleting says "Deleted N tabs", with Undo; restoring says "Restored N tabs" and puts every one back where it was, saved windows reassembled.
+
+**TC-270 — Archive every waiting tab at once (P1)** **[auto]**
+- Steps: Pick the Waiting pill; click **Archive all N waiting tabs** above the list; then **Undo**.
+- Expected: Every waiting tab goes to the archive in one step ("Archived N tabs"); the hint says they stay restorable. With nothing waiting the list goes back to All. Undo brings them back, and with them the Waiting filter.
+
+**TC-271 — A note on the save card (P1)** **[auto]**
+- Steps: On a page not saved yet, click **Add a note** (next to the site's name); type; press Enter. On another page, open the note and press Escape.
+- Expected: The note field opens on its own row, focused; Enter saves the page with the note, which shows as a quiet italic third line under the row (cut to one line; the full note on hover). The note field closes after saving; a saved page offers no Add a note. Escape puts the note away, saving nothing.
+
+**TC-272 — Notes in the edit form and the + form (P1)** **[auto]**
+- Steps: Edit a row: type a note, Save; edit again and clear it, Save. Open **+**, fill a URL and a note, Add.
+- Expected: The edit form's Note field shows the current note; saving changes it, and an emptied note is removed (the row goes back to two lines). The + form saves its note with the link. Notes are one line of at most 120 characters.
+
+**TC-273 — Search finds notes (P1)** **[auto]**
+- Steps: Search for a word that's only in a tab's note.
+- Expected: That tab is found, the word highlighted in its note line; a title match still ranks above a note-only one.
+
+**TC-274 — Opens are counted, and sort by them (P2)** **[auto]**
+- Steps: Open a tab from the list (click its title, or Enter); open the sort menu and pick **Recently opened**, then **Most opened**.
+- Expected: The tab opened just now is first under Recently opened; Most opened puts the most often opened first (ties: the more recent). Tabs never opened from Tab Sandwich come last. Only opens from Tab Sandwich count (a row, Enter, a saved window's Open all).
+
+**TC-275 — The cleanup tip (P2)** **[auto]**
+- Preconditions: 3+ tabs in categories whose moon is off, not pinned, not opened from Tab Sandwich in 6 months — and Tab Sandwich counting opens for at least that long (it starts the day 3.3 is installed).
+- Steps: Look at All; click **Archive them**. Set it up again and click **Not now**; reopen the popup.
+- Expected: A line above the list: "N kept tabs not opened in 6 months", **Archive them**, **Not now**. Archive them archives exactly those (pinned ones, aging categories' and recently opened ones stay), with one Undo. Not now hides the tip for 30 days, across reopening. With counting begun less than 6 months ago, no tip at all.
+
+**TC-276 — The save card suggests a category (P1)** **[auto]**
+- Preconditions: pages from the current page's site saved in a category (e.g. Work); for a GitHub repo, its pages saved in that project's category.
+- Steps: Open the popup on a new page from that site; look at the picker; save. Then on another new page, pick a different category yourself and save.
+- Expected: The picker starts on the suggested category with a small sparkle (screen readers hear "suggested from where you saved pages like it"); saving keeps it. Picking yourself removes the sparkle and saves your pick. A repo's page is suggested that repo's category, not just the site's. Correcting a site's suggestion twice makes the new category the suggestion from then on (logic-tested); with no history for a site the picker starts on Uncategorized.
+
+**TC-277 — Saving a window suggests per page (P2)** **[auto]**
+- Steps: Without picking a category, Save all tabs in this window; then again with a category picked.
+- Expected: Without a pick, each page goes to its own suggestion (or Uncategorized); with a pick, every page goes there.
+
+**TC-278 — The + form suggests (P2)** **[auto]**
+- Steps: Open **+**, type a link from a site you've saved before, Tab out of the field; Add.
+- Expected: The picker moves to the suggestion, with the sparkle; Add saves it there. Pressing Enter straight from the URL field applies the suggestion too; a category picked by hand is never changed.

@@ -2,6 +2,7 @@ import { SavedTab, Settings, SortOrder, TabGroup, ThemeChoice } from "../types";
 import { DEFAULT_SETTINGS } from "../storage/chromeStorage";
 import { normalizeUrl, urlsMatch } from "../util/url";
 import { CATEGORY_COLOR_PALETTE, UNCATEGORIZED } from "./CategoryRepository";
+import { tidyNote } from "./TabRepository";
 
 /** 2 since v3.2: adds saved windows (`groups`, and `groupId` on their tabs). Version 1 files still import. */
 export const BACKUP_FORMAT_VERSION = 2;
@@ -25,7 +26,7 @@ export function backupFileName(): string {
 }
 
 /** `groupId` here is the id the file used — only for matching tabs to the file's groups; never kept. */
-type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId">;
+type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId" | "pinned" | "archivedAt" | "note" | "lastOpenedAt" | "openCount">;
 
 export interface ParsedImport {
     tabs: ImportedTab[];
@@ -43,7 +44,7 @@ function isThemeChoice(x: unknown): x is ThemeChoice {
 }
 
 function isSortOrder(x: unknown): x is SortOrder {
-    return x === "custom" || x === "newest" || x === "oldest" || x === "title" || x === "site";
+    return x === "custom" || x === "newest" || x === "oldest" || x === "title" || x === "site" || x === "opened" || x === "openedMost";
 }
 
 /** Rejects the entry (not just a field) on any type mismatch — a foreign JSON file should fail loudly, not get silently reinterpreted. */
@@ -59,6 +60,11 @@ function readImportedTab(raw: unknown): ImportedTab | null {
         category: typeof raw.category === "string" ? raw.category : undefined,
         savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now(),
         groupId: typeof raw.groupId === "string" ? raw.groupId : undefined,
+        ...(raw.pinned === true ? { pinned: true } : {}),
+        ...(typeof raw.lastOpenedAt === "number" && Number.isFinite(raw.lastOpenedAt) ? { lastOpenedAt: raw.lastOpenedAt } : {}),
+        ...(typeof raw.openCount === "number" && Number.isInteger(raw.openCount) && raw.openCount > 0 ? { openCount: raw.openCount } : {}),
+        ...(typeof raw.note === "string" && tidyNote(raw.note) ? { note: tidyNote(raw.note) } : {}),
+        ...(typeof raw.archivedAt === "number" && Number.isFinite(raw.archivedAt) ? { archivedAt: raw.archivedAt } : {}),
     };
 }
 
@@ -105,7 +111,12 @@ export function parseBackupFile(raw: string): ParsedImport | null {
     const settingsFields: Partial<Settings> = {};
     if (isPlainObject(data.settings)) {
         const s = data.settings;
-        if (typeof s.outdatedEnabled === "boolean") settingsFields.outdatedEnabled = s.outdatedEnabled;
+        if (Array.isArray(s.waitingCategories) && s.waitingCategories.every((c) => typeof c === "string")) {
+            settingsFields.waitingCategories = s.waitingCategories as string[];
+        } else if (s.outdatedEnabled === false) {
+            // A backup from before 3.3 with reminders switched off: still no reminders.
+            settingsFields.waitingCategories = [];
+        }
         if (typeof s.outdatedDays === "number" && s.outdatedDays >= 1 && s.outdatedDays <= 365) {
             settingsFields.outdatedDays = s.outdatedDays;
         }

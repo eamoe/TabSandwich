@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
     DEFAULT_SETTINGS,
     StorageWriteError,
+    getCleanupTipHiddenUntil,
+    getOpenTrackingSince,
     getSettings,
     getStorageUsage,
+    setCleanupTipHiddenUntil,
     getTabs,
     setSettings,
     setTabs,
@@ -33,9 +36,9 @@ describe("chromeStorage", () => {
     it("round-trips tabs and settings", async () => {
         const tabs = [makeTab(), makeTab()];
         await setTabs(tabs);
-        await setSettings({ ...DEFAULT_SETTINGS, outdatedEnabled: false });
+        await setSettings({ ...DEFAULT_SETTINGS, waitingCategories: [] });
         expect(await getTabs()).toEqual(tabs);
-        expect((await getSettings()).outdatedEnabled).toBe(false);
+        expect((await getSettings()).waitingCategories).toEqual([]);
     });
 
     it("recognizes a quota rejection as storage being full", async () => {
@@ -87,5 +90,22 @@ describe("withStorageLock", () => {
         expect(titles).toContain("After");
         expect(titles).toContain("New");
         expect(storedSettings().categories).toContain("Fresh");
+    });
+});
+
+describe("install-level dates", () => {
+    it("records since when opens are counted the first time it's asked, then keeps it", async () => {
+        const before = Date.now();
+        const first = await getOpenTrackingSince();
+        expect(first).toBeGreaterThanOrEqual(before);
+        expect(storage.data["tabSandwich.openTrackingSince"]).toBe(first);
+        storage.data["tabSandwich.openTrackingSince"] = 1;
+        expect(await getOpenTrackingSince()).toBe(1);
+    });
+
+    it("keeps the cleanup tip's Not now until a date (none: shown)", async () => {
+        expect(await getCleanupTipHiddenUntil()).toBe(0);
+        await setCleanupTipHiddenUntil(1234);
+        expect(await getCleanupTipHiddenUntil()).toBe(1234);
     });
 });

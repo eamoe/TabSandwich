@@ -9,6 +9,8 @@ export function Header(props: {
     showSearch: boolean;
     query: string;
     tabCount: number;
+    /** Searching the archive: the field says so. */
+    inArchive: boolean;
     onQuery: (query: string) => void;
     onSubmitSearch: () => void;
     /** ↓ in the search box: into the list. */
@@ -50,7 +52,7 @@ export function Header(props: {
                         class={styles.searchInput}
                         type="text"
                         autoComplete="off"
-                        placeholder={strings.searchPlaceholder(props.tabCount)}
+                        placeholder={props.inArchive ? strings.searchArchivePlaceholder(props.tabCount) : strings.searchPlaceholder(props.tabCount)}
                         value={props.query}
                         onInput={(e) => props.onQuery(e.currentTarget.value)}
                         onKeyDown={(e) => {

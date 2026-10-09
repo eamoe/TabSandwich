@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
-import { addTab, type AddTabResult } from "../../domain/TabRepository";
+import { addTab, MAX_NOTE_LENGTH, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
+import { suggestCategory } from "../../domain/suggest";
 import { normalizeUrl } from "../../util/url";
 import { writeErrorMessage } from "../errors";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
@@ -15,15 +16,30 @@ import styles from "./Hero.module.css";
  * stays open with what was typed so it can be fixed.
  */
 export function ManualForm(props: {
+    /** Everything saved: where pages like the typed link went (suggestions). */
+    tabs: SavedTab[];
     categoryOptions: PickerOption[];
     colorOf: (category: string) => string;
     onAdded: (result: AddTabResult) => void;
     onDuplicate: (existingId: string) => void;
+    /** The link is an archived tab: Restore brings it back to the list. */
+    onRestore: (existingId: string) => void;
     onClose: () => void;
 }) {
     const [url, setUrl] = useState("");
     const [title, setTitle] = useState("");
+    const [note, setNote] = useState("");
     const [category, setCategory] = useState(UNCATEGORIZED);
+    // The category shown is a suggestion until you pick one yourself (then it's left alone).
+    const [suggested, setSuggested] = useState(false);
+    const [pickedByHand, setPickedByHand] = useState(false);
+    const suggest = () => {
+        if (pickedByHand) return;
+        const normalized = normalizeUrl(url);
+        const suggestion = normalized ? suggestCategory(normalized, props.tabs, props.categoryOptions.map((o) => o.value)) : undefined;
+        setCategory(suggestion ?? UNCATEGORIZED);
+        setSuggested(suggestion !== undefined);
+    };
     const [error, setError] = useState("");
     // The saved tab the typed link turned out to be, offered to open.
     const [duplicateOf, setDuplicateOf] = useState<SavedTab | null>(null);
@@ -42,15 +58,18 @@ export function ManualForm(props: {
             urlInput.current?.focus();
             return;
         }
+        // Submitted straight from the URL field (Enter, no blur yet): the suggestion still applies.
+        const target = pickedByHand ? chosen : (suggestCategory(normalized, props.tabs, props.categoryOptions.map((o) => o.value)) ?? chosen);
         setBusy(true);
         try {
             const result = await addTab({
                 title: title.trim() || new URL(normalized).hostname,
                 url: normalized,
-                category: chosen === UNCATEGORIZED ? undefined : chosen,
+                category: target === UNCATEGORIZED ? undefined : target,
+                note,
             });
             if (result.duplicate) {
-                setError(strings.alreadySavedAs(result.tab.title));
+                setError(result.tab.archivedAt ? strings.archivedAs(result.tab.title) : strings.alreadySavedAs(result.tab.title));
                 setDuplicateOf(result.tab);
                 props.onDuplicate(result.tab.id);
                 return;
@@ -82,6 +101,7 @@ export function ManualForm(props: {
                         setError("");
                         setDuplicateOf(null);
                     }}
+                    onBlur={suggest}
                 />
                 <label for="manual-title" class="visually-hidden">
                     {strings.titleOptionalLabel}
@@ -94,11 +114,28 @@ export function ManualForm(props: {
                     value={title}
                     onInput={(e) => setTitle(e.currentTarget.value)}
                 />
+                <label for="manual-note" class="visually-hidden">
+                    {strings.noteLabel}
+                </label>
+                <input
+                    id="manual-note"
+                    class={controls.field}
+                    type="text"
+                    maxLength={MAX_NOTE_LENGTH}
+                    placeholder={strings.notePlaceholder}
+                    value={note}
+                    onInput={(e) => setNote(e.currentTarget.value)}
+                />
                 <div class={styles.errorRow}>
                     <p class={controls.error} role="alert">
                         {error}
                     </p>
-                    {duplicateOf && (
+                    {duplicateOf?.archivedAt !== undefined && (
+                        <button type="button" class={styles.inlineLink} title={strings.restoreSavedTooltip} onClick={() => props.onRestore(duplicateOf.id)}>
+                            {strings.restore}
+                        </button>
+                    )}
+                    {duplicateOf && duplicateOf.archivedAt === undefined && (
                         <button
                             type="button"
                             class={styles.inlineLink}
@@ -116,8 +153,13 @@ export function ManualForm(props: {
                         value={chosen}
                         options={props.categoryOptions}
                         color={props.colorOf(chosen)}
-                        onChange={setCategory}
+                        onChange={(value) => {
+                            setCategory(value);
+                            setPickedByHand(true);
+                            setSuggested(false);
+                        }}
                         onSurface
+                        suggested={suggested}
                     />
                     <button type="button" class={controls.btn} onClick={props.onClose}>
                         {strings.cancel}

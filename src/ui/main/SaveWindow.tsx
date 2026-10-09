@@ -26,7 +26,9 @@ type Phase =
  */
 export function SaveWindow(props: {
     tabs: SavedTab[];
-    category: string | undefined;
+    /** Every page into this category (null: Uncategorized); undefined: each into its suggested one (or Uncategorized). */
+    category: string | null | undefined;
+    suggest: (url: string) => string | undefined;
     onSaved: (added: SavedTab[], group: TabGroup | null) => void;
 }) {
     const windowTabs = useWindowTabs();
@@ -44,7 +46,8 @@ export function SaveWindow(props: {
                 const open = await chrome.tabs.query({ currentWindow: true });
                 const plan = planWindowSave(open, props.tabs);
                 // Two or more new pages stay together as one saved window, named at random.
-                const result = await addTabs(plan.toSave, props.category, (taken) => newGroupName(taken));
+                const pages = props.category === undefined ? plan.toSave.map((p) => ({ ...p, category: props.suggest(p.url) })) : plan.toSave;
+                const result = await addTabs(pages, props.category ?? undefined, (taken) => newGroupName(taken));
                 setPhase({ kind: "saved", count: result.added.length, alreadySaved: plan.alreadySaved + result.duplicates, browserPages: plan.browserPages });
                 if (result.added.length > 0) props.onSaved(result.added, result.group);
             } catch (err) {

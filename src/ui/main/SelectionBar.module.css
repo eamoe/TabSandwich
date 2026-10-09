@@ -40,6 +40,24 @@
 .move:hover:not(:disabled) { background: var(--hover); }
 .move:disabled { opacity: 0.55; cursor: default; }
 .chevron { position: absolute; right: 8px; pointer-events: none; color: var(--ink-3); display: flex; }
-.delete { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; }
+.action, .delete { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; }
 .delete:hover:not(:disabled) { color: var(--danger); }
-.delete:disabled { opacity: 0.45; cursor: default; }
+.action:disabled, .delete:disabled, .textButton:disabled { opacity: 0.45; cursor: default; }
+/* In the archive: Restore, shaped like Move to… in the list. */
+.textButton {
+    flex-shrink: 0;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.textButton:hover:not(:disabled) { background: var(--hover); }

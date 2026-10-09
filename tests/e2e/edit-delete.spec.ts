@@ -50,22 +50,36 @@ test.describe("Editing and deleting", () => {
         expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
     });
 
-    test("TC-043/TC-044: delete, then Undo puts the tab back in the same place", async ({ popup }) => {
-        await popup.getByRole("button", { name: "Delete Bravo" }).click();
+    test("TC-043/TC-044: a row's own button archives it (still saved), and Undo puts it back in the same place", async ({ popup }) => {
+        await popup.getByRole("button", { name: "Archive Bravo" }).click();
         await expect(row(popup, "Bravo")).toHaveCount(0);
-        await expect(popup.getByRole("status").filter({ hasText: "Deleted" })).toBeVisible();
-        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Charlie"]);
+        await expect(popup.getByRole("status").filter({ hasText: "Archived" })).toBeVisible();
+        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
 
         await popup.getByRole("button", { name: "Undo" }).click();
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Bravo", "Charlie"]);
-        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
+        expect((await storedTabs(popup)).some((t) => "archivedAt" in t)).toBe(false);
     });
 
-    test("TC-173: a delete that fails to save leaves the row in place", async ({ popup }) => {
+    test("TC-043: deleting for good happens in the archive, also with Undo", async ({ popup }) => {
+        await popup.getByRole("button", { name: "Archive Bravo" }).click();
+        await popup.getByRole("button", { name: "Archived (1)" }).click();
+        await popup.getByRole("button", { name: "Delete Bravo for good" }).click();
+        await expect(popup.getByRole("status").filter({ hasText: "Deleted" })).toBeVisible();
+        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Charlie"]);
+        // The archive is empty now: back to All.
+        await expect(popup.getByRole("button", { name: /^Archived/ })).toHaveCount(0);
+
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
+        await expect(popup.getByRole("button", { name: "Archived (1)" })).toBeVisible();
+    });
+
+    test("TC-173: an archive that fails to save leaves the row in place", async ({ popup }) => {
         await popup.evaluate(() => {
             chrome.storage.local.set = () => Promise.reject(new Error("disk unavailable"));
         });
-        await popup.getByRole("button", { name: "Delete Bravo" }).click();
+        await popup.getByRole("button", { name: "Archive Bravo" }).click();
         await expect(popup.getByRole("status").filter({ hasText: "Couldn't save your changes. Try again." })).toBeVisible();
         await expect(popup.getByRole("button", { name: "Undo" })).toHaveCount(0);
         await expect(row(popup, "Bravo")).toBeVisible();

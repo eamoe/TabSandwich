@@ -1,6 +1,6 @@
 # Privacy Policy — Tab Sandwich
 
-**Last updated:** 2026-10-07
+**Last updated:** 2026-10-09
 
 Tab Sandwich is a Chrome extension for saving and organizing browser tabs. This policy explains what data the extension handles and what it does with it.
 
@@ -13,10 +13,14 @@ When you save a tab, Tab Sandwich stores:
 - A category you assign (optional)
 - The date and time you saved it
 - Which saved window it belongs to, if you saved it as part of a whole window
+- Whether you've pinned it
+- Whether, and when, you archived it
+- A note you write about it (optional)
+- When you last opened it from Tab Sandwich, and how many times (only opens from Tab Sandwich's own list are counted; it can't see your browsing)
 
 For each saved window, Tab Sandwich stores its name (a random one like "Toasted Rye", which you can change), when it was saved, and whether you've left it open or closed in the list.
 
-Tab Sandwich also stores your settings: your categories and their colors, the outdated-tab setting, your light/dark theme choice, and how you sort the list.
+Tab Sandwich also stores your settings: your categories and their colors, the waiting reminder (after how many days, and which categories it covers), your light/dark theme choice, and how you sort the list. It also notes, for this browser only, since when it has counted opens and until when you've put off the cleanup tip.
 
 This data is stored **only on your own device**, using Chrome's built-in `chrome.storage.local` API — the same mechanism Chrome itself uses for extension settings. Tab Sandwich itself never transmits it anywhere.
 
@@ -30,7 +34,7 @@ With the permission granted, the popup reads the titles and addresses of the tab
 
 ## Favicons
 
-No favicon data is stored at all. To show a saved tab's icon, the popup asks Chrome's built-in favicon cache for whatever it already has locally for that page's URL — the `favicon` permission is what allows this. The sites behind your saved tabs never see a request for their favicon: nothing is fetched over the network for this. A page Chrome has no cached icon for just shows a generic placeholder instead.
+No favicon data is stored at all. To show a saved tab's icon, the popup asks Chrome's built-in favicon cache for whatever it already has locally for that page's URL — the `favicon` permission is what allows this. The sites behind your saved tabs never see a request for their favicon: nothing is fetched over the network for this. A page Chrome has no cached icon for just shows a generic placeholder instead. So that one-color icons (such as GitHub's black cat) stay visible in dark mode, the popup looks at each icon's colors on your device while it's open; the result is kept only until the popup closes, never stored or sent anywhere.
 
 ## Export & import
 

@@ -9,7 +9,9 @@ import {
     renameCategory,
     reorderCategories,
     setCategoryColor,
+    UNCATEGORIZED,
 } from "../../domain/CategoryRepository";
+import { clampOutdatedDays, MAX_OUTDATED_DAYS, MIN_OUTDATED_DAYS, setCategoryWaiting, setOutdatedDays } from "../../domain/SettingsRepository";
 import { removeRefusalMessage, renameRefusalMessage, writeErrorMessage } from "../errors";
 import { Icon } from "../Icon";
 import { showErrorToast } from "../toastStore";
@@ -22,11 +24,41 @@ const MAX_NAME_LENGTH = 15;
 const MESSAGE_MS = 3000;
 
 export function CategoriesTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
-    const { settings, tabs } = library;
+    const { settings } = library;
+    // Counted as the list shows them: archived tabs aren't in it (removing a category they use explains).
+    const tabs = library.tabs.filter((t) => !t.archivedAt);
     const [newName, setNewName] = useState("");
     const [paletteFor, setPaletteFor] = useState<string | null>(null);
     const [dragName, setDragName] = useState<string | null>(null);
     const [dragOver, setDragOver] = useState<string | null>(null);
+    const [days, setDays] = useState(String(settings.outdatedDays));
+    // Every load resets the field to what's stored, so a change that failed to save doesn't linger.
+    useEffect(() => setDays(String(library.settings.outdatedDays)), [library]);
+
+    const commitDays = async () => {
+        const clamped = clampOutdatedDays(days);
+        setDays(String(clamped));
+        if (clamped === settings.outdatedDays) return;
+        try {
+            await setOutdatedDays(clamped);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
+    };
+
+    const waitingProps = (name: string) => ({
+        waiting: settings.waitingCategories.includes(name),
+        days: settings.outdatedDays,
+        onToggleWaiting: async (waiting: boolean) => {
+            try {
+                await setCategoryWaiting(name, waiting);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
+        },
+    });
 
     const add = async (e: Event) => {
         e.preventDefault();
@@ -106,14 +138,74 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                             },
                         }}
                         reload={reload}
+                        {...waitingProps(name)}
                     />
                 ))}
+                <UncategorizedRow tabCount={tabs.filter((t) => getTabCategory(t) === UNCATEGORIZED).length} color={getCategoryColorHex(UNCATEGORIZED, settings.categoryColors)} {...waitingProps(UNCATEGORIZED)} />
             </ul>
+            <div class={styles.waitingDays}>
+                <Icon name="moon" size={14} />
+                <label for="outdated-days">{strings.waitingAfter}</label>
+                <input
+                    id="outdated-days"
+                    class={controls.field}
+                    type="number"
+                    min={MIN_OUTDATED_DAYS}
+                    max={MAX_OUTDATED_DAYS}
+                    aria-describedby="outdated-days-hint"
+                    value={days}
+                    onInput={(e) => setDays(e.currentTarget.value)}
+                    onChange={() => void commitDays()}
+                />
+                <span>{strings.days}</span>
+            </div>
+            <p id="outdated-days-hint" class={styles.hint}>
+                {strings.waitingAfterHint}
+            </p>
         </section>
     );
 }
 
-function CategoryRow(props: {
+interface WaitingProps {
+    waiting: boolean;
+    days: number;
+    onToggleWaiting: (waiting: boolean) => Promise<void>;
+}
+
+/** The moon on a category's row: lit, its tabs age and show as Waiting; dim, they're kept. */
+function WaitingToggle({ name, waiting, days, onToggleWaiting }: WaitingProps & { name: string }) {
+    return (
+        <button
+            type="button"
+            class={`${controls.iconBtn} ${controls.small} ${styles.moon}`}
+            aria-label={strings.waitingToggle(name)}
+            aria-pressed={waiting}
+            title={waiting ? strings.waitingOnTitle(days) : strings.waitingOffTitle}
+            onClick={() => void onToggleWaiting(!waiting)}
+        >
+            <Icon name="moon" size={14} />
+        </button>
+    );
+}
+
+/**
+ * Uncategorized's own row, last: it can't be renamed, moved, recolored or removed, so all it
+ * offers is the moon, whether tabs saved without a category show as waiting.
+ */
+function UncategorizedRow(props: WaitingProps & { tabCount: number; color: string }) {
+    return (
+        <li class={`${styles.category} ${styles.fixed}`}>
+            <span class={styles.grip} aria-hidden="true" />
+            <span class={styles.colorDot} style={{ background: props.color }} aria-hidden="true" />
+            <span class={styles.fixedName}>{UNCATEGORIZED}</span>
+            <span class={styles.count}>{strings.tabCount(props.tabCount)}</span>
+            <WaitingToggle name={UNCATEGORIZED} {...props} />
+            <span class={styles.actions} aria-hidden="true" />
+        </li>
+    );
+}
+
+function CategoryRow(props: WaitingProps & {
     name: string;
     colorKey: string | undefined;
     color: string;
@@ -270,6 +362,7 @@ function CategoryRow(props: {
                 </button>
             )}
             <span class={styles.count}>{strings.tabCount(props.tabCount)}</span>
+            <WaitingToggle name={name} waiting={props.waiting} days={props.days} onToggleWaiting={props.onToggleWaiting} />
             <span class={styles.actions}>
                 <button type="button" class={`${controls.iconBtn} ${controls.small}`} aria-label={strings.moveUp(name)} disabled={props.isFirst} onClick={() => void run(() => moveCategory(name, "up"))}>
                     <Icon name="chevronUp" size={14} />

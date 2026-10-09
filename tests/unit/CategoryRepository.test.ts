@@ -58,12 +58,31 @@ describe("renameCategory", () => {
     });
 });
 
+describe("which categories age follows renames and removals", () => {
+    it("a renamed category keeps aging; a removed one is forgotten, so a new one by that name starts kept", async () => {
+        seed([], { ...base, waitingCategories: ["Reading", "Uncategorized"] });
+        await renameCategory("Reading", "Articles");
+        expect(storedSettings().waitingCategories).toEqual(["Articles", "Uncategorized"]);
+        await removeCategory("Articles");
+        expect(storedSettings().waitingCategories).toEqual(["Uncategorized"]);
+        await addCategory("Articles");
+        expect(storedSettings().waitingCategories).toEqual(["Uncategorized"]);
+    });
+});
+
 describe("removeCategory", () => {
     it("removes an unused category and its color", async () => {
         seed([makeTab({ category: "Work" })], base);
         expect(await removeCategory("Reading")).toEqual({ removed: true });
         expect(storedSettings().categories).toEqual(["Work", "Personal"]);
         expect(storedSettings().categoryColors).not.toHaveProperty("Reading");
+    });
+
+    it("says so when only archived tabs still use it", async () => {
+        seed([makeTab({ category: "Personal", archivedAt: 1 })], base);
+        expect(await removeCategory("Personal")).toEqual({ removed: false, reason: "archived" });
+        seed([makeTab({ category: "Personal", archivedAt: 1 }), makeTab({ category: "Personal" })], base);
+        expect(await removeCategory("Personal")).toEqual({ removed: false, reason: "in-use" });
     });
 
     it("refuses while any tab still uses it", async () => {

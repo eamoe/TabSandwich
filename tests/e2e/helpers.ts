@@ -9,6 +9,13 @@ export interface SeedTab {
     daysAgo?: number;
     /** The id of a saved window in `groups` (seedLibrary's last argument). */
     groupId?: string;
+    pinned?: boolean;
+    /** Archived this many days ago. */
+    archivedDaysAgo?: number;
+    note?: string;
+    /** Last opened from Tab Sandwich this many days ago, `openCount` times (default 1). */
+    openedDaysAgo?: number;
+    openCount?: number;
 }
 
 export interface SeedGroup {
@@ -28,10 +35,10 @@ export async function seedLibrary(
     popup: Page,
     tabs: SeedTab[],
     settings: Record<string, unknown> = {},
-    { seenVersion = "current", groups = [] }: { seenVersion?: string | null; groups?: SeedGroup[] } = {}
+    { seenVersion = "current", groups = [], trackingSinceDaysAgo }: { seenVersion?: string | null; groups?: SeedGroup[]; trackingSinceDaysAgo?: number } = {}
 ): Promise<void> {
     await popup.evaluate(
-        async ({ tabs, settings, day, seenVersion, groups }) => {
+        async ({ tabs, settings, day, seenVersion, groups, trackingSinceDaysAgo }) => {
             await chrome.storage.local.clear();
             if (seenVersion !== null) {
                 await chrome.storage.local.set({
@@ -49,18 +56,25 @@ export async function seedLibrary(
                     category: t.category,
                     savedAt: now - (t.daysAgo ?? 0) * day,
                     ...(t.groupId ? { groupId: t.groupId } : {}),
+                    ...(t.pinned ? { pinned: true } : {}),
+                    ...(t.note ? { note: t.note } : {}),
+                    ...(t.openedDaysAgo !== undefined ? { lastOpenedAt: now - t.openedDaysAgo * day, openCount: t.openCount ?? 1 } : {}),
+                    ...(t.archivedDaysAgo !== undefined ? { archivedAt: now - t.archivedDaysAgo * day } : {}),
                 })),
+                // Opens counted since long ago (the cleanup tip needs months of history), or from now.
+                ...(trackingSinceDaysAgo !== undefined ? { "tabSandwich.openTrackingSince": now - trackingSinceDaysAgo * day } : {}),
                 "tabSandwich.groups": groups.map((g) => ({ id: g.id, name: g.name, createdAt: now, collapsed: g.collapsed ?? true })),
                 "tabSandwich.settings": {
-                    outdatedEnabled: true,
                     outdatedDays: 7,
+                    // As on a fresh install: Reading and Uncategorized age, the rest are kept.
+                    waitingCategories: ["Reading", "Uncategorized"],
                     categories: ["Work", "Personal", "Reading", "Entertainment"],
                     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
                     ...settings,
                 },
             });
         },
-        { tabs, settings, day: DAY, seenVersion, groups }
+        { tabs, settings, day: DAY, seenVersion, groups, trackingSinceDaysAgo }
     );
     await popup.reload();
     await waitUntilReady(popup);
@@ -73,8 +87,8 @@ export async function storedTabs(popup: Page): Promise<Array<{ title: string; ur
 export interface StoredSettings {
     categories: string[];
     categoryColors: Record<string, string>;
-    outdatedEnabled?: boolean;
     outdatedDays?: number;
+    waitingCategories?: string[];
     theme?: string;
     sort?: string;
 }

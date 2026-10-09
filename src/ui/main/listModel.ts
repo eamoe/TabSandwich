@@ -10,9 +10,18 @@ import { strings } from "../strings";
 
 export const ALL = "All";
 export const OUTDATED = "Outdated";
+/** The Archived filter: never a category's name (those are at most 15 characters, and this one can't be typed). */
+export const ARCHIVED = "\u0000archived";
 
+/** Archived: out of the list, kept for the Archived filter (SavedTab.archivedAt). */
+export function isArchived(tab: SavedTab): boolean {
+    return tab.archivedAt !== undefined;
+}
+
+/** Waiting: not pinned, in a category whose tabs age (Settings.waitingCategories), saved at least the set number of days ago. */
 export function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
-    return isOutdated(tab.savedAt, settings.outdatedEnabled, settings.outdatedDays);
+    if (tab.pinned || isArchived(tab)) return false;
+    return isOutdated(tab.savedAt, settings.waitingCategories.includes(getTabCategory(tab)), settings.outdatedDays);
 }
 
 /**
@@ -36,14 +45,20 @@ export interface FilterOption {
     count: number;
 }
 
-/** All first, then Outdated (only while something is outdated), then each category in use. */
-export function filterOptions(tabs: SavedTab[], settings: Settings): FilterOption[] {
+/**
+ * All first, then Waiting (only while something is waiting), then each category in use, then
+ * Archived (only while something is archived). Everything but Archived counts only tabs in the list.
+ */
+export function filterOptions(all: SavedTab[], settings: Settings): FilterOption[] {
+    const tabs = all.filter((t) => !isArchived(t));
     const outdatedCount = tabs.filter((t) => isTabOutdated(t, settings)).length;
     const options: FilterOption[] = [{ key: ALL, count: tabs.length }];
     if (outdatedCount > 0) options.push({ key: OUTDATED, count: outdatedCount });
     for (const cat of categoriesInUse(tabs, settings.categories)) {
         options.push({ key: cat, count: tabs.filter((t) => getTabCategory(t) === cat).length });
     }
+    const archivedCount = all.length - tabs.length;
+    if (archivedCount > 0) options.push({ key: ARCHIVED, count: archivedCount });
     return options;
 }
 
@@ -52,7 +67,10 @@ export function effectiveFilter(filter: string, options: FilterOption[]): string
     return options.some((o) => o.key === filter) ? filter : ALL;
 }
 
-export function applyFilter(tabs: SavedTab[], settings: Settings, filter: string): SavedTab[] {
+/** What a filter shows: Archived, the archive; every other filter, tabs in the list only. */
+export function applyFilter(all: SavedTab[], settings: Settings, filter: string): SavedTab[] {
+    if (filter === ARCHIVED) return all.filter(isArchived);
+    const tabs = all.filter((t) => !isArchived(t));
     if (filter === ALL) return tabs;
     if (filter === OUTDATED) return tabs.filter((t) => isTabOutdated(t, settings));
     return tabs.filter((t) => getTabCategory(t) === filter);
@@ -72,9 +90,23 @@ export function sortTabs(tabs: SavedTab[], sort: SortOrder): SavedTab[] {
         oldest: (a: SavedTab, b: SavedTab) => a.savedAt - b.savedAt,
         title: (a: SavedTab, b: SavedTab) => byText.compare(a.title, b.title),
         site: (a: SavedTab, b: SavedTab) => byText.compare(siteName(a.url), siteName(b.url)) || byText.compare(a.title, b.title),
+        // Never opened from Tab Sandwich: after every tab that was.
+        opened: (a: SavedTab, b: SavedTab) => (b.lastOpenedAt ?? -1) - (a.lastOpenedAt ?? -1),
+        openedMost: (a: SavedTab, b: SavedTab) => (b.openCount ?? 0) - (a.openCount ?? 0) || (b.lastOpenedAt ?? -1) - (a.lastOpenedAt ?? -1),
     }[sort];
     // Array.prototype.sort is stable, so equal tabs stay in your own order.
     return [...tabs].sort(compare);
+}
+
+/**
+ * Pinned tabs first, in whatever order they're given (your own, or the sort's), then the rest —
+ * except tabs shown inside a saved window (`inWindow`), which keep their place: a window holds
+ * its pinned tabs at its own top instead (groupItems).
+ */
+export function pinnedFirst(tabs: SavedTab[], inWindow: ReadonlySet<string> = new Set()): SavedTab[] {
+    const top = tabs.filter((t) => t.pinned && !inWindow.has(t.id));
+    if (top.length === 0) return tabs;
+    return [...top, ...tabs.filter((t) => !t.pinned || inWindow.has(t.id))];
 }
 
 /** One entry in the list as shown: a saved tab, or a saved window with its tabs. */
@@ -82,9 +114,9 @@ export type ListItem = { kind: "tab"; tab: SavedTab } | { kind: "group"; group: 
 
 /**
  * The list with saved windows put together: each group stands where its first tab falls in the
- * given order, holding its tabs in that same order. A group only shows as one while it has two
- * or more of the given tabs (one left over is just a tab); a tab naming a group that's gone is
- * just a tab.
+ * given order, holding its tabs in that same order, pinned ones first. A group only shows as one
+ * while it has two or more of the given tabs (one left over is just a tab); a tab naming a group
+ * that's gone is just a tab.
  */
 export function groupItems(tabs: SavedTab[], groups: TabGroup[]): ListItem[] {
     const byId = new Map(groups.map((g) => [g.id, g]));
@@ -99,10 +131,23 @@ export function groupItems(tabs: SavedTab[], groups: TabGroup[]): ListItem[] {
         if (!inGroup || inGroup.length < 2) items.push({ kind: "tab", tab });
         else if (!placed.has(tab.groupId!)) {
             placed.add(tab.groupId!);
-            items.push({ kind: "group", group: byId.get(tab.groupId!)!, tabs: inGroup });
+            items.push({ kind: "group", group: byId.get(tab.groupId!)!, tabs: pinnedFirst(inGroup) });
         }
     }
     return items;
+}
+
+/**
+ * Each tab's saved window name, for the tabs that show inside one (a group of two or more of the
+ * given tabs, as in groupItems): what search matches and what a search result names, since
+ * results list every tab as its own row.
+ */
+export function windowNames(tabs: SavedTab[], groups: TabGroup[]): Map<string, string> {
+    const names = new Map<string, string>();
+    for (const item of groupItems(tabs, groups)) {
+        if (item.kind === "group") for (const tab of item.tabs) names.set(tab.id, item.group.name);
+    }
+    return names;
 }
 
 /**
@@ -169,12 +214,16 @@ export function reorderTarget(items: ListItem[], tabId: string, direction: "up" 
     const { index, group } = locate(items, tabId);
     if (index === -1) return null;
     const step = direction === "down" ? 1 : -1;
+    const pinned = !!tabIn(items, tabId)?.pinned;
     if (group) {
         const neighbor = group.tabs[group.tabs.findIndex((t) => t.id === tabId) + step];
+        // Pinned and unpinned tabs each keep to their side of the line (pinning is the pin button's job).
+        if (neighbor && !!neighbor.pinned !== pinned) return null;
         return neighbor ? { to: neighbor.id, group: group.group.id } : { to: tabId, group: null };
     }
     const neighbor = items[index + step];
     if (!neighbor) return null;
+    if (neighbor.kind === "tab" ? !!neighbor.tab.pinned !== pinned : pinned) return null;
     if (neighbor.kind === "tab") return { to: neighbor.tab.id, group: null };
     const edge = direction === "down" ? neighbor.tabs.at(-1) : neighbor.tabs[0];
     return edge ? { to: edge.id, group: null } : null;
@@ -194,17 +243,85 @@ export function dropTarget(
     side: DropSide
 ): Move | null {
     if (locate(items, draggedId).index === -1) return null;
+    const pinned = !!tabIn(items, draggedId)?.pinned;
+    // The list as it stands without the dragged tab; in `loose`, a window's row is null (never pinned).
+    const rest = items.filter((i) => i.kind !== "tab" || i.tab.id !== draggedId);
+    const loose = rest.map((i) => (i.kind === "tab" ? i.tab : null));
     if (target.groupId) {
-        const item = items.find((i) => i.kind === "group" && i.group.id === target.groupId);
+        const at = rest.findIndex((i) => i.kind === "group" && i.group.id === target.groupId);
+        const item = rest[at];
         if (!item || item.kind !== "group") return null;
         const first = item.tabs[0];
         const last = item.tabs.at(-1);
         if (!first || !last) return null;
-        if (side === "before") return { to: first.id, group: null, side: "before" };
-        return item.group.collapsed ? { to: last.id, group: null, side: "after" } : { to: first.id, group: item.group.id, side: "before" };
+        if (side === "before") return keepsLine(loose, at, "before", pinned) ? { to: first.id, group: null, side: "before" } : null;
+        if (item.group.collapsed) return pinned ? null : { to: last.id, group: null, side: "after" };
+        const inside = item.tabs.filter((t) => t.id !== draggedId);
+        return keepsLine(inside, 0, "before", pinned) ? { to: first.id, group: item.group.id, side: "before" } : null;
     }
     if (!target.tabId || target.tabId === draggedId) return null;
     const to = locate(items, target.tabId);
     if (to.index === -1) return null;
+    const run = to.group ? to.group.tabs.filter((t) => t.id !== draggedId) : loose;
+    const at = run.findIndex((t) => t?.id === target.tabId);
+    if (!keepsLine(run, at, side, pinned)) return null;
     return { to: target.tabId, group: to.group?.group.id ?? null, side };
+}
+
+/**
+ * Whether landing before or after `run[at]` keeps a tab on its own side of the pinned line:
+ * a pinned one only where everything above it is pinned too, an unpinned one only where nothing
+ * below it is pinned. (`null` in a run stands for a window's row: never pinned.)
+ */
+/** Whether a keyboard move came to nothing because of the pinned line (rather than the list's end). */
+export function stoppedAtPinLine(items: ListItem[], tabId: string, direction: "up" | "down"): boolean {
+    const { index, group } = locate(items, tabId);
+    if (index === -1) return false;
+    const pinned = !!tabIn(items, tabId)?.pinned;
+    const step = direction === "down" ? 1 : -1;
+    if (group) {
+        const neighbor = group.tabs[group.tabs.findIndex((t) => t.id === tabId) + step];
+        return !!neighbor && !!neighbor.pinned !== pinned;
+    }
+    const neighbor = items[index + step];
+    return !!neighbor && (neighbor.kind === "tab" ? !!neighbor.tab.pinned !== pinned : pinned);
+}
+
+function keepsLine(run: (SavedTab | null)[], at: number, side: DropSide, pinned: boolean): boolean {
+    const above = side === "before" ? run[at - 1] : run[at];
+    const below = side === "before" ? run[at] : run[at + 1];
+    return pinned ? above === undefined || !!above?.pinned : !below?.pinned;
+}
+
+function tabIn(items: ListItem[], tabId: string): SavedTab | undefined {
+    for (const item of items) {
+        if (item.kind === "tab" && item.tab.id === tabId) return item.tab;
+        if (item.kind === "group") {
+            const found = item.tabs.find((t) => t.id === tabId);
+            if (found) return found;
+        }
+    }
+    return undefined;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Not opened for this long, a kept tab is worth a second look. */
+export const STALE_AFTER_DAYS = 182;
+/** The cleanup tip waits until there's enough to tidy. */
+export const CLEANUP_TIP_MIN = 3;
+
+/**
+ * Kept tabs nobody has opened from Tab Sandwich in about six months: in the list, not pinned,
+ * in a category that doesn't age (aging ones have Waiting), and not opened — or saved, or
+ * counted at all (`trackingSince`: opens before then weren't seen) — within STALE_AFTER_DAYS.
+ */
+export function staleKeptTabs(tabs: SavedTab[], settings: Settings, now: number, trackingSince: number): SavedTab[] {
+    const cutoff = now - STALE_AFTER_DAYS * DAY_MS;
+    return tabs.filter(
+        (t) =>
+            !isArchived(t) &&
+            !t.pinned &&
+            !settings.waitingCategories.includes(getTabCategory(t)) &&
+            Math.max(t.lastOpenedAt ?? 0, t.savedAt, trackingSince) <= cutoff
+    );
 }

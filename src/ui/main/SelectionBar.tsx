@@ -28,11 +28,18 @@ export function SelectButton(props: { active: boolean; onToggle: () => void }) {
  * changes size: how many are picked, Select all, Move to a category, Delete, and ✕ to stop.
  * Moving and deleting each take one step and one Undo, and end selecting.
  */
+/**
+ * In the list: Move to… and Archive. In the archive (`inArchive`): Restore and Delete for good,
+ * the only place several tabs can be deleted at once.
+ */
 export function SelectionBar(props: {
     count: number;
+    inArchive: boolean;
     moveOptions: PickerOption[];
     onSelectAll: () => void;
     onMove: (category: string) => void;
+    onArchive: () => void;
+    onRestore: () => void;
     onDelete: () => void;
     onStop: () => void;
 }) {
@@ -48,45 +55,73 @@ export function SelectionBar(props: {
                     {strings.selectAll}
                 </button>
                 <span class={styles.spacer} />
-                <label for="move-selected" class="visually-hidden">
-                    {strings.moveToLabel}
-                </label>
-                {/* A "Move to…" prompt that's never itself a choice: picking a category moves straight away. */}
-                <span class={styles.moveWrap}>
-                    <select
-                        id="move-selected"
-                        class={styles.move}
-                        value=""
-                        disabled={none}
-                        onChange={(e) => {
-                            const category = e.currentTarget.value;
-                            e.currentTarget.value = "";
-                            if (category) props.onMove(category);
-                        }}
-                    >
-                        <option value="" disabled>
-                            {strings.moveTo}
-                        </option>
-                        {props.moveOptions.map((o) => (
-                            <option key={o.value} value={o.value}>
-                                {o.label}
-                            </option>
-                        ))}
-                    </select>
-                    <span class={styles.chevron}>
-                        <Icon name="chevronDown" size={12} />
-                    </span>
-                </span>
-                <button
-                    type="button"
-                    class={`${controls.iconBtn} ${styles.delete}`}
-                    aria-label={strings.deleteSelectedLabel(props.count)}
-                    title={strings.deleteSelectedLabel(props.count)}
-                    disabled={none}
-                    onClick={props.onDelete}
-                >
-                    <Icon name="trash" size={14} />
-                </button>
+                {props.inArchive ? (
+                    <>
+                        <button
+                            type="button"
+                            class={styles.textButton}
+                            aria-label={strings.restoreSelectedLabel(props.count)}
+                            title={strings.restoreSelectedLabel(props.count)}
+                            disabled={none}
+                            onClick={props.onRestore}
+                        >
+                            <Icon name="restore" size={14} />
+                            {strings.restoreSelected}
+                        </button>
+                        <button
+                            type="button"
+                            class={`${controls.iconBtn} ${styles.delete}`}
+                            aria-label={strings.deleteSelectedLabel(props.count)}
+                            title={strings.deleteSelectedLabel(props.count)}
+                            disabled={none}
+                            onClick={props.onDelete}
+                        >
+                            <Icon name="trash" size={14} />
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <label for="move-selected" class="visually-hidden">
+                            {strings.moveToLabel}
+                        </label>
+                        {/* A "Move to…" prompt that's never itself a choice: picking a category moves straight away. */}
+                        <span class={styles.moveWrap}>
+                            <select
+                                id="move-selected"
+                                class={styles.move}
+                                value=""
+                                disabled={none}
+                                onChange={(e) => {
+                                    const category = e.currentTarget.value;
+                                    e.currentTarget.value = "";
+                                    if (category) props.onMove(category);
+                                }}
+                            >
+                                <option value="" disabled>
+                                    {strings.moveTo}
+                                </option>
+                                {props.moveOptions.map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                        {o.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <span class={styles.chevron}>
+                                <Icon name="chevronDown" size={12} />
+                            </span>
+                        </span>
+                        <button
+                            type="button"
+                            class={`${controls.iconBtn} ${styles.action}`}
+                            aria-label={strings.archiveSelectedLabel(props.count)}
+                            title={strings.archiveSelectedLabel(props.count)}
+                            disabled={none}
+                            onClick={props.onArchive}
+                        >
+                            <Icon name="archive" size={14} />
+                        </button>
+                    </>
+                )}
             </div>
             <SelectButton active onToggle={props.onStop} />
         </nav>

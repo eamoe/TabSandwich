@@ -7,6 +7,15 @@ export interface AddTabInput {
     title: string;
     url: string;
     category?: string;
+    note?: string;
+}
+
+export const MAX_NOTE_LENGTH = 120;
+
+/** A note as stored: one line, trimmed, at most MAX_NOTE_LENGTH characters; undefined when nothing's left. */
+export function tidyNote(raw: string | undefined): string | undefined {
+    const note = (raw ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_NOTE_LENGTH).trim();
+    return note || undefined;
 }
 
 export interface AddTabResult {
@@ -27,12 +36,14 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
         // click, or two async saves racing) used to mint identical ids, and every id-keyed
         // lookup below (edit/delete/reorder) would then silently act on whichever matching
         // tab it found first.
+        const note = tidyNote(input.note);
         const newTab: SavedTab = {
             id: crypto.randomUUID(),
             title: input.title,
             url: input.url,
             category: input.category,
             savedAt: Date.now(),
+            ...(note ? { note } : {}),
         };
         await setTabs([newTab, ...tabs]);
         return { tab: newTab, duplicate: false };
@@ -54,23 +65,26 @@ export type NameGroup = (taken: string[]) => string;
 /**
  * Saves several pages in one write (a whole window): the same duplicate rule as addTab, checked
  * again under the lock in case something was saved since the caller looked. The new tabs go to
- * the top of the list, keeping the order they were given in, all into one category. With
+ * the top of the list, keeping the order they were given in, all into `category` — or, without
+ * one, each into its own (an input's category: a suggestion), else Uncategorized. With
  * `nameGroup`, two or more added tabs also become a saved window (collapsed), written together
  * with them; a single tab needs no group.
  */
-export async function addTabs(inputs: { title: string; url: string }[], category?: string, nameGroup?: NameGroup): Promise<AddTabsResult> {
+export async function addTabs(inputs: { title: string; url: string; category?: string }[], category?: string, nameGroup?: NameGroup): Promise<AddTabsResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
         const added: SavedTab[] = [];
         const savedAt = Date.now();
         for (const input of inputs) {
             if (tabs.some((t) => urlsMatch(t.url, input.url)) || added.some((t) => urlsMatch(t.url, input.url))) continue;
-            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category, savedAt });
+            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category: category ?? input.category, savedAt });
         }
         let group: TabGroup | null = null;
         if (nameGroup && added.length >= 2) {
             const groups = await getGroups();
-            group = { id: crypto.randomUUID(), name: nameGroup(groups.map((g) => g.name)), createdAt: savedAt, collapsed: true };
+            // Names in use: a window whose tabs were all deleted for good leaves its record behind, but not its name.
+            const inUse = new Set(tabs.map((t) => t.groupId));
+            group = { id: crypto.randomUUID(), name: nameGroup(groups.filter((g) => inUse.has(g.id)).map((g) => g.name)), createdAt: savedAt, collapsed: true };
             for (const tab of added) tab.groupId = group.id;
             await setTabsAndGroups([...added, ...tabs], [group, ...groups]);
         } else if (added.length > 0) {
@@ -93,7 +107,7 @@ export interface EditTabResult {
  */
 export async function editTab(
     id: string,
-    updates: Partial<Pick<SavedTab, "title" | "url" | "category">>
+    updates: Partial<Pick<SavedTab, "title" | "url" | "category" | "note">>
 ): Promise<EditTabResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
@@ -102,7 +116,13 @@ export async function editTab(
             const other = tabs.find((t) => t.id !== id && urlsMatch(t.url, updates.url!));
             if (other) return { duplicateOf: other };
         }
-        const updated = tabs.map((t) => (t.id === id ? { ...t, ...updates } : t));
+        const updated = tabs.map((t): SavedTab => {
+            if (t.id !== id) return t;
+            const { note: _old, ...rest } = { ...t, ...updates };
+            // A note emptied in the edit form is gone, not stored as "".
+            const note = "note" in updates ? tidyNote(updates.note) : t.note;
+            return note ? { ...rest, note } : rest;
+        });
         await setTabs(updated);
         return { duplicateOf: null };
     });
@@ -111,7 +131,7 @@ export async function editTab(
 /**
  * "Update" in the save card: brings a saved tab up to date with the page it was saved from —
  * the page's title and exact address now, the chosen category, and now as its saved date (so it
- * no longer counts as outdated). The address is a variant of the same page (the card only
+ * no longer counts as waiting, and an archived copy is back in the list). The address is a variant of the same page (the card only
  * offers Update when the two match), so there's no duplicate to check for. Hands back the tab
  * as it was, for Undo; null if it was deleted meanwhile (nothing written).
  */
@@ -120,7 +140,9 @@ export async function refreshTab(id: string, page: { title: string; url: string;
         const tabs = await getTabs();
         const previous = tabs.find((t) => t.id === id);
         if (!previous) return null;
-        const refreshed: SavedTab = { ...previous, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
+        // Brought up to date is current again: an archived copy comes back to the list (Undo puts it back as it was).
+        const { archivedAt: _archived, ...kept } = previous;
+        const refreshed: SavedTab = { ...kept, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
         await setTabs(tabs.map((t) => (t.id === id ? refreshed : t)));
         return previous;
     });
@@ -302,5 +324,86 @@ export async function reorderTabs(draggedId: string, targetId: string): Promise<
         const [moved] = reordered.splice(fromIndex, 1);
         reordered.splice(toIndex, 0, moved);
         await setTabs(reordered);
+    });
+}
+
+/**
+ * Pins or unpins a tab. A loose tab being pinned moves, in your own order, to just after the
+ * pinned loose tabs already there (the end of the pinned ones, as in Chrome's tab strip); a tab
+ * inside a saved window stays where it is (it's shown at the top of its window). Unpinning
+ * leaves it in place: just below the pinned ones. Null if the tab is gone.
+ */
+export async function setPinned(id: string, pinned: boolean): Promise<SavedTab | null> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const index = tabs.findIndex((t) => t.id === id);
+        if (index === -1) return null;
+        const { pinned: _was, ...rest } = tabs[index];
+        const tab: SavedTab = pinned ? { ...rest, pinned: true } : rest;
+        const others = tabs.filter((t) => t.id !== id);
+        const groups = new Set((await getGroups()).map((g) => g.id));
+        // As the list shows windows: archived tabs aren't in it, so they don't count as members.
+        const members = new Map<string, number>();
+        for (const t of tabs) if (t.groupId && groups.has(t.groupId) && !t.archivedAt) members.set(t.groupId, (members.get(t.groupId) ?? 0) + 1);
+        const loose = (t: SavedTab) => !t.groupId || (members.get(t.groupId) ?? 0) < 2;
+        if (pinned && loose(tabs[index])) {
+            let at = 0;
+            others.forEach((t, i) => {
+                if (t.pinned && loose(t)) at = i + 1;
+            });
+            others.splice(at, 0, tab);
+            await setTabs(others);
+        } else {
+            await setTabs(tabs.map((t) => (t.id === id ? tab : t)));
+        }
+        return tab;
+    });
+}
+
+/**
+ * Archives tabs: they leave the list but stay saved, in their place in your order and in their
+ * saved window, so restoring puts each back exactly where it was. Hands back the ids actually
+ * archived (ones gone or already archived are skipped), for one Undo (unarchiveTabs).
+ */
+export async function archiveTabs(ids: string[]): Promise<string[]> {
+    return withStorageLock(async () => {
+        const wanted = new Set(ids);
+        const tabs = await getTabs();
+        const archived = tabs.filter((t) => wanted.has(t.id) && !t.archivedAt).map((t) => t.id);
+        if (archived.length === 0) return [];
+        const now = Date.now();
+        const hit = new Set(archived);
+        await setTabs(tabs.map((t) => (hit.has(t.id) ? { ...t, archivedAt: now } : t)));
+        return archived;
+    });
+}
+
+/** Restores archived tabs to the list, each where it was (and back in its saved window). Hands back the ids restored. */
+export async function unarchiveTabs(ids: string[]): Promise<string[]> {
+    return withStorageLock(async () => {
+        const wanted = new Set(ids);
+        const tabs = await getTabs();
+        const restored = tabs.filter((t) => wanted.has(t.id) && t.archivedAt).map((t) => t.id);
+        if (restored.length === 0) return [];
+        const hit = new Set(restored);
+        await setTabs(
+            tabs.map((t) => {
+                if (!hit.has(t.id)) return t;
+                const { archivedAt: _was, ...rest } = t;
+                return rest;
+            })
+        );
+        return restored;
+    });
+}
+
+/** Counts an open from Tab Sandwich (a row, Enter, or a saved window's "Open all"): when, and how many times. */
+export async function recordOpen(ids: string[]): Promise<void> {
+    return withStorageLock(async () => {
+        const wanted = new Set(ids);
+        const tabs = await getTabs();
+        if (!tabs.some((t) => wanted.has(t.id))) return;
+        const now = Date.now();
+        await setTabs(tabs.map((t) => (wanted.has(t.id) ? { ...t, lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 } : t)));
     });
 }

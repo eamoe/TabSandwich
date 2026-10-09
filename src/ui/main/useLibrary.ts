@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, Settings, TabGroup } from "../../types";
-import { getGroups, getSettings, getStorageUsage, getTabs } from "../../storage/chromeStorage";
+import { getCleanupTipHiddenUntil, getGroups, getOpenTrackingSince, getSettings, getStorageUsage, getTabs } from "../../storage/chromeStorage";
 
 export interface Library {
     tabs: SavedTab[];
@@ -9,6 +9,10 @@ export interface Library {
     groups: TabGroup[];
     /** Share of Chrome's storage allowance in use, 0–100. */
     storagePct: number;
+    /** Since when opens from Tab Sandwich have been counted. */
+    openTrackingSince: number;
+    /** The cleanup tip stays away until then ("Not now"). */
+    cleanupTipHiddenUntil: number;
 }
 
 /**
@@ -22,10 +26,17 @@ export function useLibrary(): { library: Library | null; reload: () => Promise<v
 
     const reload = useCallback(async () => {
         const ticket = ++latest.current;
-        const [tabs, settings, groups, usage] = await Promise.all([getTabs(), getSettings(), getGroups(), getStorageUsage()]);
+        const [tabs, settings, groups, usage, openTrackingSince, cleanupTipHiddenUntil] = await Promise.all([
+            getTabs(),
+            getSettings(),
+            getGroups(),
+            getStorageUsage(),
+            getOpenTrackingSince(),
+            getCleanupTipHiddenUntil(),
+        ]);
         if (ticket !== latest.current) return;
         const storagePct = usage.quotaBytes > 0 ? Math.min((usage.bytesInUse / usage.quotaBytes) * 100, 100) : 0;
-        setLibrary({ tabs, settings, groups, storagePct });
+        setLibrary({ tabs, settings, groups, storagePct, openTrackingSince, cleanupTipHiddenUntil });
     }, []);
 
     useEffect(() => {

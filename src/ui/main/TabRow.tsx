@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
-import type { MatchRange } from "../../domain/search";
+import type { MatchRange, SearchMatch } from "../../domain/search";
 import { normalizeUrl } from "../../util/url";
+import { MAX_NOTE_LENGTH } from "../../domain/TabRepository";
 import { daysSince } from "../../util/time";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
@@ -20,8 +21,11 @@ export interface RowProps {
     color: string;
     tinted: boolean;
     outdated: boolean;
-    titleRanges: MatchRange[];
+    /** While searching: what matched, highlighted in the title, the category and the window name. */
+    match: SearchMatch | null;
     showCategory: boolean;
+    /** The saved window this tab is in, named on the row while searching (results show every tab on its own). */
+    windowName: string | null;
     /** How the row arrives: rising in with the rest on open, dropping in later, or not animated (while searching). */
     entrance: "rise" | "drop" | "none";
     entranceDelayMs: number;
@@ -46,9 +50,17 @@ export interface RowProps {
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: () => void;
-    onEdit: (updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
-    /** Resolves false when the delete couldn't be saved, so the row comes back. */
+    onEdit: (updates: { title: string; url: string; category: string; note: string }) => Promise<EditOutcome>;
+    onTogglePin: () => void;
+    /**
+     * In the list: Archive. In the archive (`inArchive`): Delete for good. Resolves false when it
+     * couldn't be saved, so the row comes back.
+     */
     onDelete: () => Promise<boolean>;
+    /** Showing the archive: the row offers Restore and Delete for good instead of pin, edit and archive. */
+    inArchive: boolean;
+    /** Restore, in the archive. Resolves false when it couldn't be saved, so the row comes back. */
+    onRestore: () => Promise<boolean>;
     dragHandlers: {
         onDragStart: (e: DragEvent) => void;
         onDragEnd: () => void;
@@ -63,7 +75,7 @@ export function leaveDurationMs(): number {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240;
 }
 
-/** Wraps the parts of a title that matched the search in <mark>, as real nodes: a page title is untrusted text, never markup. */
+/** Wraps the parts of a title (or name) that matched the search in <mark>, as real nodes: a page title is untrusted text, never markup. */
 function highlighted(title: string, ranges: MatchRange[]) {
     if (ranges.length === 0) return title;
     const parts = [];
@@ -98,6 +110,10 @@ export function TabRow(props: RowProps) {
         setLeaving(true);
         if (!(await props.onDelete())) setLeaving(false);
     };
+    const startRestore = async () => {
+        setLeaving(true);
+        if (!(await props.onRestore())) setLeaving(false);
+    };
 
     const rowStyle = {
         "--rc": props.color,
@@ -116,6 +132,7 @@ export function TabRow(props: RowProps) {
     const days = daysSince(tab.savedAt);
     const classes = [
         styles.row,
+        tab.note ? styles.withNote : "",
         entrance === "rise" ? styles.rise : entrance === "drop" ? styles.drop : "",
         props.draggable ? styles.draggable : "",
         props.dragging ? styles.dragging : "",
@@ -151,14 +168,14 @@ export function TabRow(props: RowProps) {
                     aria-checked={props.selecting ? props.selected : undefined}
                     onClick={(e) => (props.selecting ? props.onToggleSelect(e.shiftKey) : props.onOpen())}
                 >
-                    {highlighted(tab.title, props.titleRanges)}
+                    {highlighted(tab.title, props.match?.titleRanges ?? [])}
                 </button>
                 <span class={styles.meta}>
                     {props.showCategory ? (
                         <>
                             <span class={styles.category}>
                                 <span class={controls.dot} style={{ background: props.color }} />
-                                {props.category}
+                                {highlighted(props.category, props.match?.categoryRanges ?? [])}
                             </span>
                             <span class={styles.separator} aria-hidden="true">
                                 ·
@@ -167,8 +184,27 @@ export function TabRow(props: RowProps) {
                     ) : (
                         <span class="visually-hidden">{strings.categoryForScreenReaders(props.category)}</span>
                     )}
+                    {props.windowName !== null && (
+                        <>
+                            <span class={styles.window}>
+                                <Icon name="tabs" size={11} />
+                                <span class="visually-hidden">{`${strings.inSavedWindow} `}</span>
+                                <span class={styles.windowName}>{highlighted(props.windowName, props.match?.windowRanges ?? [])}</span>
+                            </span>
+                            <span class={styles.separator} aria-hidden="true">
+                                ·
+                            </span>
+                        </>
+                    )}
                     <span class={styles.site}>{siteName(tab.url)}</span>
+                    {tab.pinned && <span class="visually-hidden">{strings.pinnedForScreenReaders}</span>}
                 </span>
+                {tab.note && (
+                    <span class={styles.note} title={tab.note}>
+                        <span class="visually-hidden">{`${strings.noteLabel}: `}</span>
+                        {highlighted(tab.note, props.match?.noteRanges ?? [])}
+                    </span>
+                )}
             </div>
             {props.outdated && (
                 <span class={styles.age} title={strings.savedDaysAgo(days)}>
@@ -176,8 +212,52 @@ export function TabRow(props: RowProps) {
                     {strings.ageBadge(days)}
                 </span>
             )}
-            {!props.selecting && (
+            {/* A pinned tab never ages, so its pin stands where the age badge would; the actions cover it on hover. */}
+            {tab.pinned && !props.inArchive && (
+                <span class={styles.pinMark} aria-hidden="true">
+                    <Icon name="pin" size={13} />
+                </span>
+            )}
+            {!props.selecting && props.inArchive && (
                 <span class={styles.actions}>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small}`}
+                        aria-label={strings.restoreTab(tab.title)}
+                        title={strings.restoreTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="restore"
+                        onClick={() => void startRestore()}
+                    >
+                        <Icon name="restore" size={14} />
+                    </button>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
+                        aria-label={strings.deleteForeverTab(tab.title)}
+                        title={strings.deleteForeverTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="delete"
+                        onClick={() => void startDelete()}
+                    >
+                        <Icon name="trash" size={14} />
+                    </button>
+                </span>
+            )}
+            {!props.selecting && !props.inArchive && (
+                <span class={styles.actions}>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small} ${tab.pinned ? styles.pinned : ""}`}
+                        aria-label={tab.pinned ? strings.unpinTab(tab.title) : strings.pinTab(tab.title)}
+                        aria-pressed={!!tab.pinned}
+                        title={tab.pinned ? strings.unpinTooltip : strings.pinTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="pin"
+                        onClick={props.onTogglePin}
+                    >
+                        <Icon name="pin" size={14} />
+                    </button>
                     <button
                         type="button"
                         class={`${controls.iconBtn} ${controls.small}`}
@@ -191,14 +271,14 @@ export function TabRow(props: RowProps) {
                     </button>
                     <button
                         type="button"
-                        class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
-                        aria-label={strings.deleteTab(tab.title)}
-                        title={strings.deleteTooltip}
+                        class={`${controls.iconBtn} ${controls.small}`}
+                        aria-label={strings.archiveTab(tab.title)}
+                        title={strings.archiveTooltip}
                         tabIndex={tabIndex}
                         data-row-action="delete"
                         onClick={() => void startDelete()}
                     >
-                        <Icon name="trash" size={14} />
+                        <Icon name="archive" size={14} />
                     </button>
                 </span>
             )}
@@ -212,6 +292,7 @@ function EditForm(props: RowProps & { onDone: () => void }) {
     const [title, setTitle] = useState(tab.title);
     const [url, setUrl] = useState(tab.url);
     const [category, setCategory] = useState(props.category);
+    const [note, setNote] = useState(tab.note ?? "");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
     const titleInput = useRef<HTMLInputElement>(null);
@@ -235,7 +316,7 @@ function EditForm(props: RowProps & { onDone: () => void }) {
         // Waits for the write before closing: the save can be refused (the new URL is already
         // saved as another tab), and closing first would throw away what was typed.
         setBusy(true);
-        const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category });
+        const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category, note });
         setBusy(false);
         if (outcome.status === "duplicate") {
             setError(strings.alreadySavedAs(outcome.existingTitle));
@@ -285,6 +366,18 @@ function EditForm(props: RowProps & { onDone: () => void }) {
                     setUrl(e.currentTarget.value);
                     setError("");
                 }}
+            />
+            <label for={`${idPrefix}-note`} class="visually-hidden">
+                {strings.noteLabel}
+            </label>
+            <input
+                id={`${idPrefix}-note`}
+                class={controls.field}
+                type="text"
+                maxLength={MAX_NOTE_LENGTH}
+                placeholder={strings.notePlaceholder}
+                value={note}
+                onInput={(e) => setNote(e.currentTarget.value)}
             />
             <p class={controls.error} role="alert">
                 {error}

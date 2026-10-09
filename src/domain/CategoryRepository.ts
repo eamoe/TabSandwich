@@ -111,6 +111,7 @@ export async function renameCategory(oldName: string, newName: string): Promise<
         settings.categories = settings.categories.map((c) => (c === oldName ? trimmed : c));
         const { [oldName]: colorKey, ...remainingColors } = settings.categoryColors;
         settings.categoryColors = colorKey ? { ...remainingColors, [trimmed]: colorKey } : remainingColors;
+        settings.waitingCategories = settings.waitingCategories.map((c) => (c === oldName ? trimmed : c));
         await setSettings(settings);
 
         // Re-reads tabs from storage rather than trusting the caller's snapshot: that snapshot
@@ -161,7 +162,8 @@ export async function reorderCategories(draggedName: string, targetName: string)
 }
 
 /** Why a removal was refused; the screens put it into words (src/ui/errors.ts). */
-export type RemoveRefusal = "reserved" | "in-use";
+/** "archived": only tabs in the archive still use it (they don't show in the list, so say where they are). */
+export type RemoveRefusal = "reserved" | "in-use" | "archived";
 
 export interface RemoveCategoryResult {
     removed: boolean;
@@ -180,13 +182,16 @@ export async function removeCategory(name: string): Promise<RemoveCategoryResult
     }
     return withStorageLock(async () => {
         const tabs = await getTabs();
-        if (tabs.some((t) => getTabCategory(t) === name)) {
-            return { removed: false, reason: "in-use" };
+        const using = tabs.filter((t) => getTabCategory(t) === name);
+        if (using.length > 0) {
+            return { removed: false, reason: using.every((t) => t.archivedAt) ? "archived" : "in-use" };
         }
         const settings = await getSettings();
         settings.categories = settings.categories.filter((c) => c !== name);
         const { [name]: _removed, ...remainingColors } = settings.categoryColors;
         settings.categoryColors = remainingColors;
+        // A category added later under the same name starts out kept, like any new one.
+        settings.waitingCategories = settings.waitingCategories.filter((c) => c !== name);
         await setSettings(settings);
         return { removed: true };
     });

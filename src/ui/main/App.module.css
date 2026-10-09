@@ -9,3 +9,28 @@
        overflow, the faded strip is just the padding. */
     mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
 }
+
+/* On the Waiting filter, above the list: every waiting tab to the archive in one click. */
+.archiveAll { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 12px 8px; font-size: 12px; color: var(--ink-2); }
+.archiveAllButton {
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.archiveAllButton:hover { background: var(--hover); }
+.archiveAllHint { color: var(--ink-3); }
+/* The cleanup tip: what it found on the left (wrapping if it must), Archive them and a quiet Not now on the right. */
+.tip { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; margin: 0 12px 8px; font-size: 12px; }
+.tipText { color: var(--ink-2); font-weight: 600; line-height: 1.35; text-wrap: balance; }
+.tipLater { border: 0; padding: 2px 4px; background: transparent; color: var(--ink-2); font: inherit; font-size: 12px; cursor: pointer; border-radius: 4px; }
+.tipLater:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deleteGroup, renameGroup, restoreGroup, setGroupCollapsed, ungroup } from "../../src/domain/GroupRepository";
+import { renameGroup, restoreGroup, setGroupCollapsed, ungroup } from "../../src/domain/GroupRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 
 function library() {
@@ -25,16 +25,6 @@ describe("GroupRepository", () => {
         expect(storedGroups()[1].collapsed).toBe(false);
     });
 
-    it("deletes a group with all its tabs, and Undo puts everything back exactly", async () => {
-        const { g1, g2, tabs } = library();
-        const snapshot = await deleteGroup(g1.id);
-        expect(storedTabs().map((t) => t.id)).toEqual([tabs[0].id, tabs[3].id, tabs[4].id]);
-        expect(storedGroups()).toEqual([g2]);
-        await restoreGroup(snapshot!);
-        expect(storedTabs()).toEqual(tabs);
-        expect(storedGroups()).toEqual([g1, g2]);
-    });
-
     it("breaks a group apart: its tabs stay saved, in place, ungrouped; Undo regroups them", async () => {
         const { g1, g2, tabs } = library();
         const snapshot = await ungroup(g1.id);
@@ -49,7 +39,6 @@ describe("GroupRepository", () => {
 
     it("does nothing for a group that's gone", async () => {
         library();
-        expect(await deleteGroup("nope")).toBeNull();
         expect(await ungroup("nope")).toBeNull();
     });
 });

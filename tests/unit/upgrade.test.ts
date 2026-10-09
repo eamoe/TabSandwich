@@ -49,12 +49,38 @@ describe("upgradeStoredData", () => {
         const tab = makeTab();
         seed([tab]);
         const before = snapshot();
-        expect(CURRENT_SCHEMA_VERSION).toBe(2);
-        expect(await upgradeStoredData()).toEqual({ status: "upgraded", from: 1, to: 2 });
+        expect(CURRENT_SCHEMA_VERSION).toBe(3);
+        expect(await upgradeStoredData()).toEqual({ status: "upgraded", from: 1, to: 3 });
         expect(storage.data[TABS_KEY]).toEqual([tab]);
         expect(storage.data["tabSandwich.groups"]).toEqual([]);
-        expect(storage.data[SCHEMA_VERSION_KEY]).toBe(2);
+        expect(storage.data[SCHEMA_VERSION_KEY]).toBe(3);
         expect(storage.data[UPGRADE_BACKUP_KEY]).toMatchObject({ fromVersion: 1, data: before });
+    });
+
+    describe("v3.3 (version 3): categories are kept unless chosen to age", () => {
+        const step = MIGRATIONS.find((m) => m.from === 2)!;
+        const SETTINGS = "tabSandwich.settings";
+        const old = { outdatedEnabled: true, outdatedDays: 9, categories: ["Work", "Reading"], categoryColors: { Work: "blue" } };
+
+        it("an existing library: only Uncategorized ages (Reading too is kept now), the old switch is gone", () => {
+            const result = step.migrate({ [TABS_KEY]: [], [SETTINGS]: old });
+            expect(result[SETTINGS]).toEqual({ outdatedDays: 9, categories: ["Work", "Reading"], categoryColors: { Work: "blue" }, waitingCategories: ["Uncategorized"] });
+        });
+
+        it("reminders switched off before stay off: nothing ages", () => {
+            const result = step.migrate({ [TABS_KEY]: [], [SETTINGS]: { ...old, outdatedEnabled: false } });
+            expect((result[SETTINGS] as Record<string, unknown>).waitingCategories).toEqual([]);
+        });
+
+        it("a library whose settings were never changed (none stored) still gets only Uncategorized", () => {
+            expect(step.migrate({ [TABS_KEY]: [makeTab()] })[SETTINGS]).toEqual({ waitingCategories: ["Uncategorized"] });
+        });
+
+        it("leaves a fresh install (nothing stored) to the defaults, and keeps a list that's already there", () => {
+            expect(step.migrate({})).toEqual({});
+            const already = { ...old, waitingCategories: ["Work"] };
+            expect((step.migrate({ [SETTINGS]: already })[SETTINGS] as Record<string, unknown>).waitingCategories).toEqual(["Work"]);
+        });
     });
 
     it("the version 2 step keeps saved windows that are somehow already there, and copes with no data", () => {

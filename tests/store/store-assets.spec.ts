@@ -7,13 +7,13 @@ import { answerPermissionPrompt, openSettings, seedLibrary } from "../e2e/helper
 const OUT = "store-assets";
 
 const LIBRARY = [
-    { title: "GitHub: Let's build from here", url: "https://github.com/", category: "Work" },
+    { title: "GitHub: Let's build from here", url: "https://github.com/", category: "Work", pinned: true },
     { title: "MDN Web Docs", url: "https://developer.mozilla.org/en-US/", category: "Work", daysAgo: 2 },
     { title: "Figma: The Collaborative Interface Design Tool", url: "https://www.figma.com/", category: "Work", daysAgo: 12 },
     { title: "Sandwich - Wikipedia", url: "https://en.wikipedia.org/wiki/Sandwich", category: "Reading", daysAgo: 9 },
     { title: "Hacker News", url: "https://news.ycombinator.com/", category: "Reading" },
     { title: "BBC News - Home", url: "https://www.bbc.com/news", category: "Reading", daysAgo: 4 },
-    { title: "Lisbon – Travel guide at Wikivoyage", url: "https://en.wikivoyage.org/wiki/Lisbon", category: "Travel", daysAgo: 15 },
+    { title: "Lisbon – Travel guide at Wikivoyage", url: "https://en.wikivoyage.org/wiki/Lisbon", category: "Travel", daysAgo: 15, note: "for the May trip: day 2 is Belém" },
     { title: "BBC Food – Recipes", url: "https://www.bbc.co.uk/food", category: "Recipes", daysAgo: 2 },
     { title: "Stack Overflow", url: "https://stackoverflow.com/", daysAgo: 1 },
 ];
@@ -92,8 +92,8 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
     };
 
     await compose(canvas, "screenshot-1-main-list.png", await shot("light", async () => {}), "Save the tab you're on, in one click", [
-        "Pick a category as you save — no editing afterwards.",
-        "Colorful categories make your list easy to scan."
+        "Pick a category as you save — it suggests one.",
+        "Pin favorites, add a note, archive the rest."
     ], "light", true);
 
     // A window full of tabs, saved in one click (Chrome's permission prompt answered "Allow"),
@@ -130,7 +130,7 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
 
     await compose(canvas, "screenshot-4-search.png", await shot("light", async () => {
         await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("news");
-    }), "Find any saved tab in a keystroke", ["Search matches titles and sites as you type.", "Sort, select many, and never touch the mouse."], "light");
+    }), "Find any saved tab in a keystroke", ["Search matches titles, sites, categories and notes.", "Sort, select many, and never touch the mouse."], "light");
 
     await compose(canvas, "screenshot-5-private.png", await shot("dark", async () => {
         await openSettings(popup, "About");

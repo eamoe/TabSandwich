@@ -8,14 +8,14 @@ import { strings } from "../strings";
 import controls from "../controls.module.css";
 import styles from "./TabList.module.css";
 
-export type GroupAction = "open" | "openAndRemove" | "rename" | "ungroup" | "delete";
+export type GroupAction = "open" | "openAndRemove" | "rename" | "ungroup" | "archive";
 
 const ACTIONS: { action: GroupAction; label: string; icon: IconName; danger?: boolean }[] = [
     { action: "open", label: strings.openGroup, icon: "external" },
     { action: "openAndRemove", label: strings.openGroupAndRemove, icon: "external" },
     { action: "rename", label: strings.renameGroup, icon: "edit" },
     { action: "ungroup", label: strings.ungroup, icon: "unlink" },
-    { action: "delete", label: strings.deleteGroup, icon: "trash", danger: true },
+    { action: "archive", label: strings.archiveGroup, icon: "archive" },
 ];
 
 /** How many of a window's sites its row shows before "+N". */

@@ -10,10 +10,19 @@ export const GROUPS_KEY = "tabSandwich.groups";
  * back a note you already dismissed.
  */
 const LAST_SEEN_VERSION_KEY = "tabSandwich.lastSeenVersion";
+/**
+ * Since when opens are counted (v3.3: the first open of a version that counts them), and until
+ * when the cleanup tip stays away after "Not now". Kept apart from Settings like the last-seen
+ * version: they're about this install, not choices a backup should carry.
+ */
+const OPEN_TRACKING_SINCE_KEY = "tabSandwich.openTrackingSince";
+const CLEANUP_TIP_HIDDEN_UNTIL_KEY = "tabSandwich.cleanupTipHiddenUntil";
 
 export const DEFAULT_SETTINGS: Settings = {
-    outdatedEnabled: true,
     outdatedDays: 7,
+    // A fresh install: a reading list and quick, unsorted saves are what reminders are for;
+    // everything else is kept. ("Uncategorized" spelled out: CategoryRepository imports this module.)
+    waitingCategories: ["Reading", "Uncategorized"],
     categories: ["Work", "Personal", "Reading", "Entertainment"],
     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
     theme: "system",
@@ -113,6 +122,31 @@ export async function getLastSeenVersion(): Promise<string | undefined> {
 export async function setLastSeenVersion(version: string): Promise<void> {
     try {
         await chrome.storage.local.set({ [LAST_SEEN_VERSION_KEY]: version });
+    } catch (err) {
+        throw writeFailure(err);
+    }
+}
+
+/** Since when opens have been counted; recorded (as now) the first time it's asked for. */
+export async function getOpenTrackingSince(): Promise<number> {
+    const result = await chrome.storage.local.get(OPEN_TRACKING_SINCE_KEY);
+    const value = result[OPEN_TRACKING_SINCE_KEY];
+    if (typeof value === "number") return value;
+    const now = Date.now();
+    // Best effort: if this write fails it's simply tried again next time, from a slightly later "now".
+    await chrome.storage.local.set({ [OPEN_TRACKING_SINCE_KEY]: now }).catch(() => undefined);
+    return now;
+}
+
+export async function getCleanupTipHiddenUntil(): Promise<number> {
+    const result = await chrome.storage.local.get(CLEANUP_TIP_HIDDEN_UNTIL_KEY);
+    const value = result[CLEANUP_TIP_HIDDEN_UNTIL_KEY];
+    return typeof value === "number" ? value : 0;
+}
+
+export async function setCleanupTipHiddenUntil(until: number): Promise<void> {
+    try {
+        await chrome.storage.local.set({ [CLEANUP_TIP_HIDDEN_UNTIL_KEY]: until });
     } catch (err) {
         throw writeFailure(err);
     }

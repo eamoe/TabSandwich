@@ -18,3 +18,6 @@
 .mini { width: 16px; height: 16px; border-radius: 5px; font-size: 9px; box-shadow: 0 0 0 1.5px var(--surface); }
 .mini .img { width: 12px; height: 12px; }
 .img { width: 16px; height: 16px; }
+/* A one-color icon flipped where it would vanish: tokens say which theme flips which (none, or invert). */
+.darkInk .img { filter: var(--fav-dark-ink); }
+.lightInk .img { filter: var(--fav-light-ink); }

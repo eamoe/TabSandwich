@@ -96,6 +96,11 @@
 .pageTitle { margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pageSite { margin: 1px 0 0; font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .actionRow { display: flex; gap: 8px; align-items: center; }
+/* "Add a note" sits on the site's line, as quiet as a link; the note opens on its own row above Save. */
+.addNote { border: 0; padding: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+.addNote:hover { text-decoration: underline; text-underline-offset: 2px; }
+.noteRow { display: flex; }
+.noteRow input { flex: 1; min-width: 0; }
 
 .save {
     height: 32px;

@@ -1,11 +1,11 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, Settings, TabGroup } from "../../types";
-import type { MatchRange } from "../../domain/search";
+import type { SearchMatch } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
-import { dropTarget, groupItems, isTabOutdated, reorderTarget, type DropSide, type ListItem, type Move } from "./listModel";
+import { dropTarget, groupItems, isTabOutdated, reorderTarget, stoppedAtPinLine, type DropSide, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
 import { TabRow, type EditOutcome } from "./TabRow";
 import styles from "./TabList.module.css";
@@ -47,7 +47,10 @@ export function TabList(props: {
     /** Show saved windows as windows (All, no search); otherwise every match is a plain row. */
     grouped: boolean;
     settings: Settings;
-    titleRanges: Map<string, MatchRange[]> | null;
+    /** While searching: each shown tab's match (what to highlight in its title, category and window name). */
+    matches: Map<string, SearchMatch> | null;
+    /** Each tab's saved window name, for the tabs inside one; named on a row only while searching. */
+    windowOf: Map<string, string>;
     searchActive: boolean;
     canReorder: boolean;
     showCategory: boolean;
@@ -58,8 +61,12 @@ export function TabList(props: {
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: (tab: SavedTab) => void;
-    onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
+    onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string; note: string }) => Promise<EditOutcome>;
     onDelete: (tab: SavedTab) => Promise<boolean>;
+    onTogglePin: (tab: SavedTab) => void;
+    /** Showing the archive: rows offer Restore and Delete for good; nothing moves or pins. */
+    inArchive: boolean;
+    onRestore: (tab: SavedTab) => Promise<boolean>;
     /** A tab moved in your own order, maybe into or out of a saved window. */
     onReorder: (draggedId: string, move: Move) => void | Promise<void>;
     onToggleGroup: (group: TabGroup) => void;
@@ -131,7 +138,8 @@ export function TabList(props: {
         if ((e.key === "ArrowDown" || e.key === "ArrowUp") && e.altKey) {
             if (!row.tab) return;
             const move = reorderTarget(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up");
-            if (!props.canReorder) announce(props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
+            if (!props.canReorder) announce(props.inArchive ? strings.cantMoveArchived : props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
+            else if (!move && stoppedAtPinLine(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up")) announce(strings.pinLine(!!row.tab.pinned));
             else if (move) {
                 const id = row.tab.id;
                 pendingFocus.current = id;
@@ -160,10 +168,11 @@ export function TabList(props: {
         } else if (e.key === "ArrowLeft" && (row.group || row.parent)) {
             if (row.parent) focusRow(groupKey(row.parent.id));
             else if (!row.group!.collapsed) props.onToggleGroup(row.group!);
-        } else if (props.selecting && (e.key === "e" || e.key === "E" || e.key === "Delete" || e.key === "Backspace")) {
+        } else if (props.selecting && (e.key === "e" || e.key === "E" || e.key === "p" || e.key === "P" || e.key === "Delete" || e.key === "Backspace")) {
             // While selecting, a row's own edit and delete step aside (the bar acts on the selection).
             return;
         } else if ((e.key === "e" || e.key === "E") && row.tab) li.querySelector<HTMLElement>('[data-row-action="edit"]')?.click();
+        else if ((e.key === "p" || e.key === "P") && row.tab && !props.inArchive) props.onTogglePin(row.tab);
         else if (e.key === "Delete" || e.key === "Backspace") {
             // Focus moves on to the next row (or the one before, at the end) once this one is gone;
             // past a window's own tabs when the whole window goes.
@@ -172,7 +181,7 @@ export function TabList(props: {
             if (row.tab) li.querySelector<HTMLElement>('[data-row-action="delete"]')?.click();
             else {
                 const item = items.find((i) => i.kind === "group" && i.group.id === row.group!.id);
-                if (item?.kind === "group") props.onGroupAction(item.group, item.tabs, "delete");
+                if (item?.kind === "group") props.onGroupAction(item.group, item.tabs, "archive");
             }
         } else if (e.key === "Escape") props.onEscape();
         else return;
@@ -249,7 +258,8 @@ export function TabList(props: {
                 color={props.colorOf(category)}
                 tinted={category !== UNCATEGORIZED}
                 outdated={isTabOutdated(tab, props.settings)}
-                titleRanges={props.titleRanges?.get(tab.id) ?? []}
+                match={props.matches?.get(tab.id) ?? null}
+                windowName={props.searchActive ? (props.windowOf.get(tab.id) ?? null) : null}
                 showCategory={props.showCategory}
                 entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
                 entranceDelayMs={Math.min(index, STAGGER_CAP) * STAGGER_MS}
@@ -266,6 +276,9 @@ export function TabList(props: {
                 onOpen={() => props.onOpen(tab)}
                 onEdit={(updates) => props.onEdit(tab, updates)}
                 onDelete={() => props.onDelete(tab)}
+                onTogglePin={() => props.onTogglePin(tab)}
+                inArchive={props.inArchive}
+                onRestore={() => props.onRestore(tab)}
                 dragHandlers={dragHandlersFor(tab.id, tab.id, (dragged, side) => dropTarget(items, dragged, { tabId: tab.id }, side))}
             />
         );

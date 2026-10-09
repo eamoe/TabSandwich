@@ -1,5 +1,5 @@
 import { test, expect } from "../e2e/fixtures";
-import { openSettings, openSiteTab, seedLibrary } from "../e2e/helpers";
+import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
  * One approved picture per screen and state, in light and dark (see playwright.visual.config.ts).
@@ -46,6 +46,48 @@ for (const colorScheme of ["light", "dark"] as const) {
 
         test("main list", async ({ popup }) => {
             await expect(popup).toHaveScreenshot(`main-${colorScheme}.png`);
+        });
+
+        test("two pinned tabs on top, one of them hovered", async ({ popup }) => {
+            const library = LIBRARY.map((t) => (t.title === "Hacker News" || t.title === "Principles of calm technology" ? { ...t, pinned: true } : t));
+            await seedLibrary(popup, library, SETTINGS);
+            await popup.mouse.move(0, 599);
+            await tabList(popup).getByRole("listitem").filter({ hasText: "Hacker News" }).hover();
+            await expect(popup).toHaveScreenshot(`pinned-${colorScheme}.png`);
+        });
+
+        test("the archive, a row hovered", async ({ popup }) => {
+            const library = LIBRARY.map((t, i) => (i % 3 === 1 ? { ...t, archivedDaysAgo: i } : t));
+            await seedLibrary(popup, library, SETTINGS);
+            await popup.getByRole("button", { name: /^Archived/ }).click();
+            await popup.mouse.move(0, 599);
+            await tabList(popup).getByRole("listitem").first().hover();
+            await expect(popup).toHaveScreenshot(`archive-${colorScheme}.png`);
+        });
+
+        test("rows with notes, and the save card's note open", async ({ popup }) => {
+            const notes: Record<string, string> = {
+                "Q3 Roadmap": "numbers for Thursday's board meeting",
+                "Principles of calm technology": "quoted in the onboarding redesign doc, section 3 — worth a second read before it goes out",
+            };
+            await seedLibrary(popup, LIBRARY.map((t) => (notes[t.title] ? { ...t, note: notes[t.title] } : t)), SETTINGS);
+            await popup.getByRole("button", { name: "Add a note" }).click();
+            await popup.getByRole("textbox", { name: "Note" }).fill("for the calm-tech reading list");
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`notes-${colorScheme}.png`);
+        });
+
+        test("the cleanup tip", async ({ popup }) => {
+            const old = LIBRARY.map((t) => (t.category === "Work" || t.category === "Travel" ? { ...t, daysAgo: 300 } : t));
+            await seedLibrary(popup, old, SETTINGS, { trackingSinceDaysAgo: 365 });
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`cleanup-tip-${colorScheme}.png`);
+        });
+
+        test("a suggested category on the save card", async ({ popup }) => {
+            await seedLibrary(popup, [...LIBRARY, { title: "Older", url: "https://example.test/Older", category: "Reading" }], SETTINGS);
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`suggested-${colorScheme}.png`);
         });
 
         test("editing a row", async ({ popup }) => {

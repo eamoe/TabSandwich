@@ -37,6 +37,47 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("a pinned tab, with its row's buttons showing", async ({ popup }) => {
+            await seedLibrary(popup, [
+                { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", pinned: true },
+                { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20 },
+            ]);
+            await tabList(popup).getByRole("button", { name: "Q3 Roadmap", exact: true }).focus();
+            await expect(popup.getByRole("button", { name: "Unpin Q3 Roadmap" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("a row with a note, being edited, and the save card's note open", async ({ context, popup }) => {
+            await openSiteTab(context, popup, "Example Article");
+            await seedLibrary(popup, [
+                { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", note: "numbers for the board meeting" },
+                { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20, note: "read later" },
+            ]);
+            await popup.getByRole("button", { name: "Add a note" }).click();
+            expect(await scan(popup)).toEqual([]);
+            await popup.getByRole("button", { name: "Edit Q3 Roadmap" }).click();
+            await expect(tabList(popup).getByRole("textbox", { name: "Note" })).toHaveValue("numbers for the board meeting");
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("the cleanup tip showing", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                ["a", "b", "c"].map((x) => ({ title: `Old ${x}`, url: `https://${x}.example.com/`, category: "Work", daysAgo: 300 })),
+                {},
+                { trackingSinceDaysAgo: 365 }
+            );
+            await expect(popup.getByRole("note", { name: /not opened in 6 months/ })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("a suggested category on the save card", async ({ context, popup }) => {
+            const url = await openSiteTab(context, popup, "Example Article");
+            await seedLibrary(popup, [{ title: "Older", url: url.replace("Example%20Article", "Older"), category: "Work" }]);
+            await expect(popup.getByLabel(/suggested from where you saved/)).toHaveValue("Work");
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("first run: nothing saved yet", async ({ popup }) => {
             await seedLibrary(popup, []);
             await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
@@ -110,6 +151,21 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("searching by a category's and a saved window's name", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "A", url: "https://a.example.com/", category: "Work", groupId: "w" },
+                    { title: "B", url: "https://b.example.com/", category: "Reading", groupId: "w" },
+                ],
+                {},
+                { groups: [{ id: "w", name: "Toasted Rye" }] }
+            );
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("rye work");
+            await expect(tabList(popup).locator("mark")).toHaveText(["Work", "Rye"]);
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("renaming a saved window", async ({ popup }) => {
             await seedLibrary(
                 popup,
@@ -164,7 +220,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         });
 
         test("undo toast showing", async ({ popup }) => {
-            await popup.getByRole("button", { name: "Delete Q3 Roadmap" }).click();
+            await popup.getByRole("button", { name: "Archive Q3 Roadmap" }).click();
             await expect(popup.getByRole("button", { name: "Undo" })).toBeVisible();
             expect(await scan(popup)).toEqual([]);
         });

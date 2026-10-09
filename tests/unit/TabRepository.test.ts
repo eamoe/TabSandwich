@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH, recordOpen } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -54,8 +54,9 @@ describe("addTabs", () => {
     });
 
     it("puts two or more new tabs in one collapsed saved window, written in the same write", async () => {
-        seed([makeTab()]);
-        seedGroups([makeGroup({ name: "Crispy Bagel" })]);
+        const bagel = makeGroup({ name: "Crispy Bagel" });
+        seed([makeTab({ groupId: bagel.id })]);
+        seedGroups([bagel]);
         const writes: string[][] = [];
         let offered: string[] = [];
         storage.rejectSet = (items) => {
@@ -79,6 +80,30 @@ describe("addTabs", () => {
         expect(added.every((t) => t.groupId === group!.id)).toBe(true);
         expect(storedGroups().map((g) => g.name)).toEqual(["Toasted Rye", "Crispy Bagel"]);
         expect(writes).toEqual([["tabSandwich.groups", "tabSandwich.tabs"]]);
+    });
+
+    it("doesn't count the name of a window none of whose tabs are saved any more as taken", async () => {
+        seed([makeTab()]);
+        seedGroups([makeGroup({ name: "Crispy Bagel" })]);
+        let offered: string[] = ["?"];
+        await addTabs([{ title: "One", url: "https://one.example.com/" }, { title: "Two", url: "https://two.example.com/" }], undefined, (taken) => {
+            offered = taken;
+            return "Crispy Bagel";
+        });
+        expect(offered).toEqual([]);
+    });
+
+    it("puts each page in its own category when none is given for all (suggestions), and all in one when it is", async () => {
+        seed([]);
+        const pages = [
+            { title: "A", url: "https://a.example.com/", category: "Work" },
+            { title: "B", url: "https://b.example.com/" },
+        ];
+        const { added } = await addTabs(pages);
+        expect(added.map((t) => t.category)).toEqual(["Work", undefined]);
+        seed([]);
+        const { added: all } = await addTabs(pages, "Reading");
+        expect(all.map((t) => t.category)).toEqual(["Reading", "Reading"]);
     });
 
     it("makes no saved window for a single new tab", async () => {
@@ -317,5 +342,103 @@ describe("refreshTab / putBackTab (Update in the save card, and its Undo)", () =
         await deleteTab(tab.id);
         await putBackTab(previous!);
         expect(storedTabs()).toEqual([]);
+    });
+});
+
+describe("setPinned", () => {
+    it("pins a loose tab to the end of the pinned ones; unpinning leaves it just below them", async () => {
+        const [p, a, b, c] = [makeTab({ pinned: true }), makeTab(), makeTab(), makeTab()];
+        seed([a, p, b, c]);
+        const pinned = await setPinned(c.id, true);
+        expect(pinned).toMatchObject({ id: c.id, pinned: true });
+        expect(storedTabs().map((t) => t.id)).toEqual([a.id, p.id, c.id, b.id]);
+        await setPinned(c.id, false);
+        expect(storedTabs().find((t) => t.id === c.id)).not.toHaveProperty("pinned");
+        expect(storedTabs().map((t) => t.id)).toEqual([a.id, p.id, c.id, b.id]);
+    });
+
+    it("with nothing pinned yet, a pinned tab goes first; one inside a saved window stays put", async () => {
+        const group = makeGroup();
+        const [a, m1, m2] = [makeTab(), makeTab({ groupId: group.id }), makeTab({ groupId: group.id })];
+        seed([a, m1, m2]);
+        seedGroups([group]);
+        await setPinned(m2.id, true);
+        expect(storedTabs().map((t) => t.id)).toEqual([a.id, m1.id, m2.id]);
+        await setPinned(a.id, false);
+        await setPinned(m1.id, false);
+        const b = makeTab();
+        seed([a, b]);
+        await setPinned(b.id, true);
+        expect(storedTabs().map((t) => t.id)).toEqual([b.id, a.id]);
+    });
+
+    it("returns null for a tab that's gone", async () => {
+        seed([makeTab()]);
+        expect(await setPinned("nope", true)).toBeNull();
+    });
+});
+
+describe("archiveTabs / unarchiveTabs", () => {
+    it("marks tabs archived where they stand (order and window kept), and restores them as they were", async () => {
+        const group = makeGroup();
+        const [a, b, c] = [makeTab(), makeTab({ groupId: group.id }), makeTab({ pinned: true })];
+        seed([a, b, c]);
+        const before = Date.now();
+        expect(await archiveTabs([b.id, c.id, "gone"])).toEqual([b.id, c.id]);
+        const stored = storedTabs();
+        expect(stored.map((t) => t.id)).toEqual([a.id, b.id, c.id]);
+        expect(stored[1]).toMatchObject({ groupId: group.id });
+        expect(stored[1].archivedAt).toBeGreaterThanOrEqual(before);
+        // Already archived: skipped, so Undo of a second archive doesn't restore the first.
+        expect(await archiveTabs([b.id])).toEqual([]);
+
+        expect(await unarchiveTabs([b.id, c.id, a.id])).toEqual([b.id, c.id]);
+        expect(storedTabs()).toEqual([a, b, c]);
+    });
+
+    it("a pinned tab inside a window whose other tabs are archived counts as loose when pinned again", async () => {
+        const group = makeGroup();
+        const [a, m1, m2] = [makeTab(), makeTab({ groupId: group.id }), makeTab({ groupId: group.id, archivedAt: 1 })];
+        seed([a, m1, m2]);
+        seedGroups([group]);
+        await setPinned(m1.id, true);
+        expect(storedTabs().map((t) => t.id)).toEqual([m1.id, a.id, m2.id]);
+    });
+});
+
+describe("notes", () => {
+    it("are one tidy line, at most MAX_NOTE_LENGTH characters; blank is no note", () => {
+        expect(tidyNote("  auth   endpoints\nfor mobile ")).toBe("auth endpoints for mobile");
+        expect(tidyNote("x".repeat(200))).toHaveLength(MAX_NOTE_LENGTH);
+        expect(tidyNote("   ")).toBeUndefined();
+        expect(tidyNote(undefined)).toBeUndefined();
+    });
+
+    it("are saved with a new tab, changed or cleared by an edit, and kept by edits that don't touch them", async () => {
+        seed([]);
+        const { tab } = await addTab({ title: "API", url: "https://api.example.com/", note: " why: auth " });
+        expect(storedTabs()[0].note).toBe("why: auth");
+        await editTab(tab.id, { title: "API docs" });
+        expect(storedTabs()[0]).toMatchObject({ title: "API docs", note: "why: auth" });
+        await editTab(tab.id, { note: "for the mobile app" });
+        expect(storedTabs()[0].note).toBe("for the mobile app");
+        await editTab(tab.id, { note: "  " });
+        expect(storedTabs()[0]).not.toHaveProperty("note");
+        const { tab: plain } = await addTab({ title: "Plain", url: "https://plain.example.com/", note: "" });
+        expect(plain).not.toHaveProperty("note");
+    });
+});
+
+describe("recordOpen", () => {
+    it("stamps when each tab was opened and counts how often, leaving the rest alone", async () => {
+        const [a, b] = [makeTab(), makeTab()];
+        seed([a, b]);
+        const before = Date.now();
+        await recordOpen([a.id]);
+        await recordOpen([a.id, "gone"]);
+        const [stored, other] = storedTabs();
+        expect(stored.openCount).toBe(2);
+        expect(stored.lastOpenedAt).toBeGreaterThanOrEqual(before);
+        expect(other).toEqual(b);
     });
 });

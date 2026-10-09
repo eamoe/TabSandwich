@@ -28,12 +28,14 @@ test.describe("Keyboard control", () => {
         await expect(titleOf(popup, "Charlie")).toBeFocused();
         await popup.keyboard.press("Home");
         await expect(titleOf(popup, "Alpha")).toBeFocused();
-        // Only the current row's buttons are in the Tab order: title, Edit, Delete, then out.
+        // Only the current row's buttons are in the Tab order: title, Pin, Edit, Archive, then out.
         await popup.keyboard.press("ArrowDown");
+        await popup.keyboard.press("Tab");
+        await expect(popup.getByRole("button", { name: "Pin Bravo" })).toBeFocused();
         await popup.keyboard.press("Tab");
         await expect(popup.getByRole("button", { name: "Edit Bravo" })).toBeFocused();
         await popup.keyboard.press("Tab");
-        await expect(popup.getByRole("button", { name: "Delete Bravo" })).toBeFocused();
+        await expect(popup.getByRole("button", { name: "Archive Bravo" })).toBeFocused();
         await popup.keyboard.press("Tab");
         await expect(tabList(popup).locator(":focus")).toHaveCount(0);
     });
@@ -59,7 +61,7 @@ test.describe("Keyboard control", () => {
         await expect(titleOf(popup, "Alpha renamed")).toBeFocused();
     });
 
-    test("TC-222: Delete removes the row, focus moves on, and Ctrl+Z (⌘Z) brings it back", async ({ popup }) => {
+    test("TC-222: Delete archives the row, focus moves on, and Ctrl+Z (⌘Z) brings it back", async ({ popup }) => {
         await titleOf(popup, "Bravo").focus();
         await popup.keyboard.press("Delete");
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Charlie"]);

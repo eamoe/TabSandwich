@@ -97,20 +97,30 @@ test.describe("Saved windows", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▸ Research", "Omega"]);
     });
 
-    test("TC-238: remove a saved window and its tabs from the list, and Undo", async ({ popup }) => {
+    test("TC-238: archive a saved window (all its tabs), Undo, and restoring them puts the window back together", async ({ popup }) => {
         await seedWindow(popup);
         await actions(popup, "Research").click();
-        await popup.getByRole("menuitem", { name: "Remove from list", exact: true }).click();
-        await expect(popup.getByText("Removed 3 tabs")).toBeVisible();
+        await popup.getByRole("menuitem", { name: "Archive", exact: true }).click();
+        await expect(popup.getByText("Archived 3 tabs")).toBeVisible();
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Omega"]);
-        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Omega"]);
+        // Still saved, in the archive.
+        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Gamma", "Delta", "Epsilon", "Omega"]);
 
         await popup.getByRole("button", { name: "Undo" }).click();
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▸ Research", "Omega"]);
-        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Gamma", "Delta", "Epsilon", "Omega"]);
+
+        // Archived again, then restored from the archive in one step: the window is whole again.
+        await actions(popup, "Research").click();
+        await popup.getByRole("menuitem", { name: "Archive", exact: true }).click();
+        await popup.getByRole("button", { name: "Archived (3)" }).click();
+        await popup.getByRole("button", { name: "Select tabs" }).click();
+        await popup.getByRole("navigation", { name: "Selected tabs" }).getByRole("button", { name: "Select all" }).click();
+        await popup.getByRole("button", { name: "Restore 3 selected tabs" }).click();
+        await expect(popup.getByText("Restored 3 tabs")).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▸ Research", "Omega"]);
     });
 
-    test("TC-239: open a saved window's tabs in a new window, keeping them or removing them", async ({ popup }) => {
+    test("TC-239: open a saved window's tabs in a new window, keeping them or archiving them", async ({ popup }) => {
         await seedWindow(popup);
         // Tab counts, not addresses: these sites are outside what the test copy of the extension may read.
         const windows = () => popup.evaluate(async () => (await chrome.windows.getAll()).length);
@@ -124,7 +134,7 @@ test.describe("Saved windows", () => {
         expect(await storedTabs(popup)).toHaveLength(5);
 
         await actions(popup, "Research").click();
-        await popup.getByRole("menuitem", { name: "Open all and remove from list" }).click();
+        await popup.getByRole("menuitem", { name: "Open all and archive them" }).click();
         await expect.poll(windows).toBe(before + 2);
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Omega"]);
         await popup.getByRole("button", { name: "Undo" }).click();
@@ -137,7 +147,7 @@ test.describe("Saved windows", () => {
         await popup.keyboard.press("Enter");
         await expect(popup.getByRole("menuitem", { name: "Open all in a new window" })).toBeFocused();
         await popup.keyboard.press("End");
-        await expect(popup.getByRole("menuitem", { name: "Remove from list", exact: true })).toBeFocused();
+        await expect(popup.getByRole("menuitem", { name: "Archive", exact: true })).toBeFocused();
         await popup.keyboard.press("ArrowDown");
         await expect(popup.getByRole("menuitem", { name: "Open all in a new window" })).toBeFocused();
         await popup.keyboard.press("Escape");

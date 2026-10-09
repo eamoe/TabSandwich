@@ -6,7 +6,7 @@ Guidance for Claude Code (or any AI collaborator) working in this repo.
 
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
 revisiting browser tabs. Popup-only UI (no background/content scripts),
-category tagging with color coding, outdated-tab tracking, drag-to-reorder,
+category tagging with color coding, a "Waiting" reminder for categories you read later (others are kept), drag-to-reorder,
 saving a whole window at once,
 keyboard shortcut to open. Everything is stored locally via
 `chrome.storage.local` — there is no server, no sync, no analytics.
@@ -29,34 +29,41 @@ src/
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
                             tabs and saved windows written together in one write when a change touches both;
-                            the last "What's new" version seen, kept apart from Settings so backups can't revive it
+                            the last "What's new" version seen, since when opens are counted and the cleanup tip's
+                            "Not now" date — kept apart from Settings so backups can't revive them
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
-                            backup before writing, original restored if anything fails (version 2 = v3.2: saved windows)
+                            backup before writing, original restored if anything fails (version 2 = v3.2: saved windows; 3 = v3.3: which categories age)
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
-    GroupRepository.ts    saved windows: rename, open/closed, break apart, delete with its tabs (+ Undo for both)
+    GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
-    search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
+    suggest.ts             category suggestions: where pages sharing most of a new page's address went
+                            (the two newest agreeing, else the most common) — pure, from your library alone
+    search.ts              fuzzy-match scoring for search (titles, addresses, notes; category and saved-window
+                            names by word start) — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme, sort and outdated-tab settings writes; clamps the day count to 1–365
+    SettingsRepository.ts  theme, sort, the waiting days and which categories age; clamps the day count to 1–365
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
+    iconInk.ts             whether an icon is one dark/mid-gray or one light color on transparency (GitHub's cat,
+                            Chrome's gray globe),
+                            from its pixels — so the tile can flip it where it would vanish — pure
   ui/                       Preact screens and building blocks of the v3.0 look
     tokens.css              every color/shadow/size, light + dark; "System" = no data-theme attribute
                             (CSS follows the OS, even while open), Light/Dark = data-theme on <html>
@@ -69,39 +76,47 @@ src/
                             when the popup is too short, never clipped by the list
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
-    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile
-    CategoryPicker.tsx      native <select> with the chosen category's color dot
+    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
+                             a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
+    CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
     main/                   the main screen
       App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
-      useLibrary.ts         loads tabs + settings + storage use for both screens; only the newest load paints
+      useLibrary.ts         loads tabs + settings + storage use (+ open-counting and tip dates) for both screens;
+                             only the newest load paints
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
+                             ("In your archive" and Restore for an archived one); "Add a note" before saving; a new page's
+                             picker starts on its suggested category (a sparkle until you pick)
       SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
                              "tabs" permission the first time), what was saved and skipped, Close the saved tabs
       useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted
-      ManualForm.tsx        add a link by hand, shown in place of the save card; an already-saved link offers Open
-      FilterPills.tsx       All / Outdated / category pills, plus the storage-nearly-full warning
+      ManualForm.tsx        add a link by hand (with an optional note), shown in place of the save card; an already-saved
+                             link offers Open (an archived one, Restore)
+      FilterPills.tsx       All / Waiting / category / Archived pills, plus the storage-nearly-full warning
       SortMenu.tsx          the sort button pinned at the end of the pill row, and its floating menu
       SelectionBar.tsx      the Select button after it, and the bar that takes the filter row's place while selecting
-                             (count, Select all, Move to…, Delete, ✕) at the same height, so the popup never resizes
-      EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match", and the "What's new" note
+                             (count, Select all, Move to…, Archive, ✕; on Archived: Restore, Delete for good) at the same height, so the popup never resizes
+      EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
+                             "everything's in the archive", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
-                             the list's keys (arrows, Enter, E, Delete, Alt+arrows to move, → ← for windows, Space to pick
+                             the list's keys (arrows, Enter, E, P to pin, Delete, Alt+arrows to move, → ← for windows, Space to pick
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
-      listModel.ts          pure list rules (filter options and order, filtering, sorting, site names, saved windows
-                             in the list, random window names, where a move or drop takes a tab: into or out of a window) — logic-tested
+      listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
+                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
+                             never across the pinned line) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, outdated switch + days, keyboard shortcut and the list's keys, storage meter
-      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; color strip and messages
-                             float over the row so nothing ever shifts
+      GeneralTab.tsx        Light/Dark/System, keyboard shortcut and the list's keys, storage meter
+      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; the ☾ on each row (its tabs age
+                             and show as Waiting, or are kept), Uncategorized's own row (☾ only), the days
+                             field under the list; color strip and messages float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
   vite-env.d.ts             types for non-code imports, e.g. *.module.css

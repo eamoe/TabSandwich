@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
+import { ALL, ARCHIVED, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, pinnedFirst, stoppedAtPinLine, isTabOutdated, staleKeptTabs, STALE_AFTER_DAYS, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
 import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
 const DAY = 24 * 60 * 60 * 1000;
-const settings = { ...DEFAULT_SETTINGS, categories: ["Work", "Reading"] };
+// Work ages here (and Reading doesn't), so the one old tab below, in Work, is waiting.
+const settings = { ...DEFAULT_SETTINGS, categories: ["Work", "Reading"], waitingCategories: ["Work"] };
 
 describe("filters on the main list", () => {
     const now = Date.now();
@@ -15,7 +16,7 @@ describe("filters on the main list", () => {
         makeTab({ category: "Hobby", savedAt: now }),
     ];
 
-    it("lists All, then Outdated, then categories in Settings order, strays, and Uncategorized last", () => {
+    it("lists All, then Waiting, then categories in Settings order, strays, and Uncategorized last", () => {
         expect(filterOptions(tabs, settings)).toEqual([
             { key: ALL, count: 4 },
             { key: OUTDATED, count: 1 },
@@ -26,8 +27,19 @@ describe("filters on the main list", () => {
         ]);
     });
 
-    it("offers no Outdated filter while outdated flagging is off", () => {
-        expect(filterOptions(tabs, { ...settings, outdatedEnabled: false }).map((o) => o.key)).not.toContain(OUTDATED);
+    it("offers no Waiting filter while no category ages", () => {
+        expect(filterOptions(tabs, { ...settings, waitingCategories: [] }).map((o) => o.key)).not.toContain(OUTDATED);
+    });
+
+    it("flags only tabs in a category that ages (Uncategorized included), however long others have waited", () => {
+        const old = now - 30 * DAY;
+        const reading = makeTab({ category: "Reading", savedAt: old });
+        const work = makeTab({ category: "Work", savedAt: old });
+        const loose = makeTab({ savedAt: old });
+        const fresh = makeTab({ category: "Reading", savedAt: now });
+        const all = [reading, work, loose, fresh];
+        expect(applyFilter(all, { ...settings, waitingCategories: ["Reading", "Uncategorized"] }, OUTDATED)).toEqual([reading, loose]);
+        expect(applyFilter(all, { ...settings, waitingCategories: ["Work"] }, OUTDATED)).toEqual([work]);
     });
 
     it("leaves out categories nothing uses", () => {
@@ -40,7 +52,7 @@ describe("filters on the main list", () => {
         expect(effectiveFilter("Work", options)).toBe("Work");
     });
 
-    it("shows only the chosen category, or only outdated tabs", () => {
+    it("shows only the chosen category, or only waiting tabs", () => {
         expect(applyFilter(tabs, settings, "Work")).toEqual([tabs[1]]);
         expect(applyFilter(tabs, settings, OUTDATED)).toEqual([tabs[1]]);
         expect(applyFilter(tabs, settings, "Uncategorized")).toEqual([tabs[2]]);
@@ -114,6 +126,12 @@ describe("saved windows in the list", () => {
         expect(shape(groupItems([m1, m2], []))).toEqual(["m1", "m2"]);
     });
 
+    it("names each tab's saved window only while it shows as one (search matches and shows that name)", () => {
+        expect(Object.fromEntries(windowNames([a, m1, m2, z], [g]))).toEqual({ m1: "Research", m2: "Research" });
+        expect(windowNames([a, m1], [g]).size).toBe(0);
+        expect(windowNames([m1, m2], []).size).toBe(0);
+    });
+
     it("names a saved window at random, sandwich-style, never reusing a name in use", () => {
         const first = () => 0;
         expect(newGroupName([], first)).toBe("Toasted Rye");
@@ -152,5 +170,130 @@ describe("saved windows in the list", () => {
         const closed = groupItems([a, m1, m2, m3, z], [{ ...g, collapsed: true }]);
         expect(dropTarget(closed, "a", { groupId: "g" }, "after")).toEqual({ to: "m3", group: null, side: "after" });
         expect(dropTarget(closed, "m2", { groupId: "g" }, "before")).toEqual({ to: "m1", group: null, side: "before" });
+    });
+});
+
+describe("pinned tabs", () => {
+    const g = { id: "g", name: "Research", createdAt: 0, collapsed: false };
+    const [p1, p2, a, m1, m2, mp, z] = [
+        makeTab({ id: "p1", pinned: true }),
+        makeTab({ id: "p2", pinned: true }),
+        makeTab({ id: "a" }),
+        makeTab({ id: "m1", groupId: "g" }),
+        makeTab({ id: "m2", groupId: "g" }),
+        makeTab({ id: "mp", groupId: "g", pinned: true }),
+        makeTab({ id: "z" }),
+    ];
+    const ids = (tabs: { id: string }[]) => tabs.map((t) => t.id);
+
+    it("come first, in the order given (your own or the sort's); the rest keep theirs", () => {
+        expect(ids(pinnedFirst([a, p2, z, p1]))).toEqual(["p2", "p1", "a", "z"]);
+        expect(pinnedFirst([a, z])).toEqual([a, z]);
+    });
+
+    it("inside a saved window stay in it, at its own top", () => {
+        const ordered = pinnedFirst([a, m1, m2, mp, p1, z], new Set(["m1", "m2", "mp"]));
+        expect(ids(ordered)).toEqual(["p1", "a", "m1", "m2", "mp", "z"]);
+        const items = groupItems(ordered, [g]);
+        expect(items.map((i) => (i.kind === "tab" ? i.tab.id : `[${ids(i.tabs).join(",")}]`))).toEqual(["p1", "a", "[mp,m1,m2]", "z"]);
+    });
+
+    it("never show as waiting, however old, even in a category that ages", () => {
+        const old = { savedAt: Date.now() - 60 * DAY, category: "Work" };
+        expect(isTabOutdated(makeTab({ ...old }), settings)).toBe(true);
+        expect(isTabOutdated(makeTab({ ...old, pinned: true }), settings)).toBe(false);
+    });
+
+    describe("moving stops at the line between pinned and the rest", () => {
+        const items = groupItems(pinnedFirst([p1, p2, a, m1, m2, mp, z], new Set(["m1", "m2", "mp"])), [g]);
+
+        it("Alt+arrows: pinned among pinned, the rest among the rest, and says why it stopped", () => {
+            expect(reorderTarget(items, "p1", "down")).toEqual({ to: "p2", group: null });
+            expect(reorderTarget(items, "p2", "down")).toBeNull();
+            expect(stoppedAtPinLine(items, "p2", "down")).toBe(true);
+            expect(reorderTarget(items, "a", "up")).toBeNull();
+            expect(stoppedAtPinLine(items, "a", "up")).toBe(true);
+            expect(stoppedAtPinLine(items, "p1", "up")).toBe(false); // the top of the list, not the line
+            // Inside a window: its pinned tab stays at its top.
+            expect(reorderTarget(items, "m1", "up")).toBeNull();
+            expect(reorderTarget(items, "mp", "down")).toBeNull();
+        });
+
+        it("drops: each lands only on its own side, right up to the line", () => {
+            expect(dropTarget(items, "a", { tabId: "p2" }, "after")).toEqual({ to: "p2", group: null, side: "after" });
+            expect(dropTarget(items, "a", { tabId: "p2" }, "before")).toBeNull();
+            expect(dropTarget(items, "z", { tabId: "p1" }, "before")).toBeNull();
+            expect(dropTarget(items, "p1", { tabId: "a" }, "before")).toEqual({ to: "a", group: null, side: "before" });
+            expect(dropTarget(items, "p1", { tabId: "a" }, "after")).toBeNull();
+            expect(dropTarget(items, "p1", { tabId: "z" }, "before")).toBeNull();
+            // A window's row is below the line: no pinned tab goes before it, after it, or to its top past its pinned tab.
+            expect(dropTarget(items, "p1", { groupId: "g" }, "before")).toBeNull();
+            expect(dropTarget(items, "a", { groupId: "g" }, "before")).toEqual({ to: "mp", group: null, side: "before" });
+            expect(dropTarget(items, "z", { groupId: "g" }, "after")).toBeNull();
+            expect(dropTarget(items, "p1", { groupId: "g" }, "after")).toEqual({ to: "mp", group: "g", side: "before" });
+            expect(dropTarget(items, "z", { tabId: "mp" }, "after")).toEqual({ to: "mp", group: "g", side: "after" });
+            expect(dropTarget(items, "z", { tabId: "mp" }, "before")).toBeNull();
+        });
+    });
+});
+
+describe("archived tabs", () => {
+    const now = Date.now();
+    const work = makeTab({ category: "Work", savedAt: now - 30 * DAY });
+    const archivedWork = makeTab({ category: "Work", savedAt: now - 30 * DAY, archivedAt: now });
+    const archivedReading = makeTab({ category: "Reading", archivedAt: now });
+    const tabs = [work, archivedWork, archivedReading];
+
+    it("leave every filter and count but their own, which comes last while there's something in it", () => {
+        expect(filterOptions(tabs, settings)).toEqual([
+            { key: ALL, count: 1 },
+            { key: OUTDATED, count: 1 },
+            { key: "Work", count: 1 },
+            { key: ARCHIVED, count: 2 },
+        ]);
+        expect(filterOptions([work], settings).map((o) => o.key)).not.toContain(ARCHIVED);
+        expect(applyFilter(tabs, settings, ALL)).toEqual([work]);
+        expect(applyFilter(tabs, settings, "Work")).toEqual([work]);
+        expect(applyFilter(tabs, settings, OUTDATED)).toEqual([work]);
+        expect(applyFilter(tabs, settings, ARCHIVED)).toEqual([archivedWork, archivedReading]);
+    });
+
+    it("never show as waiting", () => {
+        expect(isTabOutdated(archivedWork, settings)).toBe(false);
+    });
+});
+
+describe("last opened", () => {
+    const now = Date.UTC(2027, 5, 1);
+    const never = makeTab({ id: "never" });
+    const once = makeTab({ id: "once", lastOpenedAt: now - 5 * DAY, openCount: 1 });
+    const often = makeTab({ id: "often", lastOpenedAt: now - 9 * DAY, openCount: 7 });
+    const recent = makeTab({ id: "recent", lastOpenedAt: now - DAY, openCount: 1 });
+
+    it("sorts by most recently opened, or most often (then most recently), never-opened last", () => {
+        expect(sortTabs([never, once, often, recent], "opened").map((t) => t.id)).toEqual(["recent", "once", "often", "never"]);
+        expect(sortTabs([never, once, often, recent], "openedMost").map((t) => t.id)).toEqual(["often", "recent", "once", "never"]);
+    });
+
+    describe("the cleanup tip's tabs", () => {
+        const long = now - (STALE_AFTER_DAYS + 10) * DAY;
+        const base = { savedAt: long, category: "Work" };
+        const settingsKeep = { ...settings, waitingCategories: ["Reading"] };
+
+        it("are kept, unpinned, in the list, and untouched for six months since counting began", () => {
+            const stale = makeTab({ ...base, id: "stale" });
+            const openedLately = makeTab({ ...base, id: "opened", lastOpenedAt: now - 10 * DAY });
+            const pinned = makeTab({ ...base, id: "pinned", pinned: true });
+            const archived = makeTab({ ...base, id: "archived", archivedAt: now });
+            const aging = makeTab({ ...base, id: "aging", category: "Reading" });
+            const savedLately = makeTab({ ...base, id: "new", savedAt: now - 10 * DAY });
+            const all = [stale, openedLately, pinned, archived, aging, savedLately];
+            expect(staleKeptTabs(all, settingsKeep, now, long).map((t) => t.id)).toEqual(["stale"]);
+        });
+
+        it("wait six months from when counting began, so opens before then aren't held against a tab", () => {
+            const stale = makeTab({ ...base, id: "stale" });
+            expect(staleKeptTabs([stale], settingsKeep, now, now - 30 * DAY)).toEqual([]);
+        });
     });
 });
