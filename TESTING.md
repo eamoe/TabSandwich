@@ -1015,3 +1015,16 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: 3+ tabs in categories whose moon is off, not pinned, not opened from Tab Sandwich in 6 months — and Tab Sandwich counting opens for at least that long (it starts the day 3.3 is installed).
 - Steps: Look at All; click **Archive them**. Set it up again and click **Not now**; reopen the popup.
 - Expected: A line above the list: "N kept tabs not opened in 6 months", **Archive them**, **Not now**. Archive them archives exactly those (pinned ones, aging categories' and recently opened ones stay), with one Undo. Not now hides the tip for 30 days, across reopening. With counting begun less than 6 months ago, no tip at all.
+
+**TC-276 — The save card suggests a category (P1)** **[auto]**
+- Preconditions: pages from the current page's site saved in a category (e.g. Work); for a GitHub repo, its pages saved in that project's category.
+- Steps: Open the popup on a new page from that site; look at the picker; save. Then on another new page, pick a different category yourself and save.
+- Expected: The picker starts on the suggested category with a small sparkle (screen readers hear "suggested from where you saved pages like it"); saving keeps it. Picking yourself removes the sparkle and saves your pick. A repo's page is suggested that repo's category, not just the site's. Correcting a site's suggestion twice makes the new category the suggestion from then on (logic-tested); with no history for a site the picker starts on Uncategorized.
+
+**TC-277 — Saving a window suggests per page (P2)** **[auto]**
+- Steps: Without picking a category, Save all tabs in this window; then again with a category picked.
+- Expected: Without a pick, each page goes to its own suggestion (or Uncategorized); with a pick, every page goes there.
+
+**TC-278 — The + form suggests (P2)** **[auto]**
+- Steps: Open **+**, type a link from a site you've saved before, Tab out of the field; Add.
+- Expected: The picker moves to the suggestion, with the sparkle; Add saves it there. Pressing Enter straight from the URL field applies the suggestion too; a category picked by hand is never changed.

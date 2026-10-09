@@ -48,7 +48,7 @@ FIND IT AGAIN, FAST
 Search matches titles, sites and your notes as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. Sort by newest, oldest, title, site, recently opened or most opened, and switch back to your own order any time. Kept tabs you haven't opened in six months? A quiet tip offers to archive them.
 
 ORGANIZE WITH CATEGORIES
-Give any saved tab a color-coded category. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
+Give any saved tab a color-coded category, and Tab Sandwich learns where pages go: save another page from the same site or project and it suggests the category you used, worked out on your device. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
 
 READ LATER, OR KEEP
 Pick the categories you save things to read later: once a tab there has waited a week (or however long you like), it gets a small moon badge, and a "Waiting" filter rounds them all up. Everything else, like dev tools, docs and accounts, is kept and never nags. Pin the ones you use most to keep them on top, and add a note on why you saved something.

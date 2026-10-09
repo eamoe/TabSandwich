@@ -52,12 +52,13 @@ test.describe("Saving a whole window", () => {
         expect(await storedTabs(popup)).toHaveLength(3);
     });
 
-    test("TC-229: started from an already-saved page, the window's pages go to Uncategorized", async ({ context, popup }) => {
-        await seedLibrary(popup, [{ title: "Saved Before", url: `${TEST_SITE}/Saved%20Before`, category: "Work" }]);
+    test("TC-229: started from an already-saved page, each of the window's pages goes where it's suggested (none: Uncategorized)", async ({ context, popup }) => {
+        // The saved page's category says nothing about the rest; here no page has a suggestion either.
+        await seedLibrary(popup, [{ title: "Saved Before", url: `${TEST_SITE}/Saved%20Before` }]);
         await answerPermissionPrompt(context, popup, "grant");
         await openSiteTab(context, popup, "Alpha");
         await openSiteTab(context, popup, "Saved Before");
-        await expect(popup.getByLabel("Saved in category")).toHaveValue("Work");
+        await popup.getByLabel("Saved in category").selectOption("Work");
         await card(popup).getByRole("button", { name: /^Save all \d+ tabs in this window$/ }).click();
         await expect(card(popup).getByRole("status").filter({ hasText: "Saved 1 tab" })).toBeVisible();
         const [alpha] = await storedTabs(popup);

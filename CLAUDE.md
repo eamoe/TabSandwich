@@ -45,6 +45,8 @@ src/
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
+    suggest.ts             category suggestions: where pages sharing most of a new page's address went
+                            (the two newest agreeing, else the most common) — pure, from your library alone
     search.ts              fuzzy-match scoring for search (titles, addresses, notes; category and saved-window
                             names by word start) — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
@@ -76,7 +78,7 @@ src/
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
                              a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
-    CategoryPicker.tsx      native <select> with the chosen category's color dot
+    CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
     main/                   the main screen
       App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
@@ -88,7 +90,8 @@ src/
       Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
-                             ("In your archive" and Restore for an archived one); "Add a note" before saving
+                             ("In your archive" and Restore for an archived one); "Add a note" before saving; a new page's
+                             picker starts on its suggested category (a sparkle until you pick)
       SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
                              "tabs" permission the first time), what was saved and skipped, Close the saved tabs
       useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted

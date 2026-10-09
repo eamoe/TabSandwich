@@ -215,6 +215,8 @@ export const strings = {
     noteLabel: "Note",
     notePlaceholder: "Why you saved it (optional)",
     addNote: "Add a note",
+    suggestedLabel: (label: string) => `${label} (suggested from where you saved pages like it)`,
+    suggestedTooltip: "Suggested from where you saved pages like this one",
     titlePlaceholder: "Title",
     categoryLabel: "Category",
     editUrlPlaceholder: "https://example.com",

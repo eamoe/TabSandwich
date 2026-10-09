@@ -93,6 +93,19 @@ describe("addTabs", () => {
         expect(offered).toEqual([]);
     });
 
+    it("puts each page in its own category when none is given for all (suggestions), and all in one when it is", async () => {
+        seed([]);
+        const pages = [
+            { title: "A", url: "https://a.example.com/", category: "Work" },
+            { title: "B", url: "https://b.example.com/" },
+        ];
+        const { added } = await addTabs(pages);
+        expect(added.map((t) => t.category)).toEqual(["Work", undefined]);
+        seed([]);
+        const { added: all } = await addTabs(pages, "Reading");
+        expect(all.map((t) => t.category)).toEqual(["Reading", "Reading"]);
+    });
+
     it("makes no saved window for a single new tab", async () => {
         seed([]);
         const { added, group } = await addTabs([{ title: "One", url: "https://one.example.com/" }], undefined, () => "Window");

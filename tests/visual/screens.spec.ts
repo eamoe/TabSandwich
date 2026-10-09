@@ -84,6 +84,12 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`cleanup-tip-${colorScheme}.png`);
         });
 
+        test("a suggested category on the save card", async ({ popup }) => {
+            await seedLibrary(popup, [...LIBRARY, { title: "Older", url: "https://example.test/Older", category: "Reading" }], SETTINGS);
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`suggested-${colorScheme}.png`);
+        });
+
         test("editing a row", async ({ popup }) => {
             await popup.getByRole("button", { name: "Edit Q3 Roadmap" }).click();
             await expect(popup).toHaveScreenshot(`edit-${colorScheme}.png`);

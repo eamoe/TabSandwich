@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
 import { addTab, MAX_NOTE_LENGTH, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
+import { suggestCategory } from "../../domain/suggest";
 import { normalizeUrl } from "../../util/url";
 import { writeErrorMessage } from "../errors";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
@@ -15,6 +16,8 @@ import styles from "./Hero.module.css";
  * stays open with what was typed so it can be fixed.
  */
 export function ManualForm(props: {
+    /** Everything saved: where pages like the typed link went (suggestions). */
+    tabs: SavedTab[];
     categoryOptions: PickerOption[];
     colorOf: (category: string) => string;
     onAdded: (result: AddTabResult) => void;
@@ -27,6 +30,16 @@ export function ManualForm(props: {
     const [title, setTitle] = useState("");
     const [note, setNote] = useState("");
     const [category, setCategory] = useState(UNCATEGORIZED);
+    // The category shown is a suggestion until you pick one yourself (then it's left alone).
+    const [suggested, setSuggested] = useState(false);
+    const [pickedByHand, setPickedByHand] = useState(false);
+    const suggest = () => {
+        if (pickedByHand) return;
+        const normalized = normalizeUrl(url);
+        const suggestion = normalized ? suggestCategory(normalized, props.tabs, props.categoryOptions.map((o) => o.value)) : undefined;
+        setCategory(suggestion ?? UNCATEGORIZED);
+        setSuggested(suggestion !== undefined);
+    };
     const [error, setError] = useState("");
     // The saved tab the typed link turned out to be, offered to open.
     const [duplicateOf, setDuplicateOf] = useState<SavedTab | null>(null);
@@ -45,12 +58,14 @@ export function ManualForm(props: {
             urlInput.current?.focus();
             return;
         }
+        // Submitted straight from the URL field (Enter, no blur yet): the suggestion still applies.
+        const target = pickedByHand ? chosen : (suggestCategory(normalized, props.tabs, props.categoryOptions.map((o) => o.value)) ?? chosen);
         setBusy(true);
         try {
             const result = await addTab({
                 title: title.trim() || new URL(normalized).hostname,
                 url: normalized,
-                category: chosen === UNCATEGORIZED ? undefined : chosen,
+                category: target === UNCATEGORIZED ? undefined : target,
                 note,
             });
             if (result.duplicate) {
@@ -86,6 +101,7 @@ export function ManualForm(props: {
                         setError("");
                         setDuplicateOf(null);
                     }}
+                    onBlur={suggest}
                 />
                 <label for="manual-title" class="visually-hidden">
                     {strings.titleOptionalLabel}
@@ -137,8 +153,13 @@ export function ManualForm(props: {
                         value={chosen}
                         options={props.categoryOptions}
                         color={props.colorOf(chosen)}
-                        onChange={setCategory}
+                        onChange={(value) => {
+                            setCategory(value);
+                            setPickedByHand(true);
+                            setSuggested(false);
+                        }}
                         onSurface
+                        suggested={suggested}
                     />
                     <button type="button" class={controls.btn} onClick={props.onClose}>
                         {strings.cancel}

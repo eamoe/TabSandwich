@@ -25,3 +25,6 @@
     cursor: pointer;
 }
 .chevron { position: absolute; right: 9px; pointer-events: none; color: var(--ink-3); display: flex; }
+/* A suggested category: a small sparkle before the chevron, until you pick one yourself. */
+.suggested { position: absolute; right: 26px; pointer-events: none; color: var(--accent); display: flex; }
+.isSuggested .select { padding-right: 44px; }

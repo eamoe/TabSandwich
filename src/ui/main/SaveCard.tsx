@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, TabGroup } from "../../types";
 import { addTab, MAX_NOTE_LENGTH, refreshTab, type AddTabResult } from "../../domain/TabRepository";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
+import { suggestCategory } from "../../domain/suggest";
 import { isSupportedTabUrl, urlsMatch } from "../../util/url";
 import { daysSince } from "../../util/time";
 import { writeErrorMessage } from "../errors";
@@ -57,12 +58,17 @@ export function SaveCard(props: {
 
     const supported = isSupportedTabUrl(tab?.url);
     const savedCopy = supported ? props.tabs.find((t) => urlsMatch(t.url, tab!.url!)) : undefined;
-    // The picker follows the page: the saved copy's category on a saved page, Uncategorized on a
-    // new one, until you pick something for that page. Worked out as the card renders (not in a
-    // later effect), so it never shows the wrong category for a moment, or overwrites a pick.
-    const category =
-        picked && picked.forId === savedCopy?.id ? picked.value : savedCopy ? getTabCategory(savedCopy) : UNCATEGORIZED;
-    const setCategory = (value: string) => setPicked({ forId: savedCopy?.id, value });
+    const categories = props.categoryOptions.map((o) => o.value);
+    // A new page starts where pages like it went (if anywhere); a pick is about this one page.
+    const suggestion = supported && !savedCopy ? suggestCategory(tab!.url!, props.tabs, categories) : undefined;
+    const pageKey = savedCopy?.id ?? tab?.url;
+    const pickedHere = picked !== null && picked.forId === pageKey;
+    // The picker follows the page: the saved copy's category on a saved page, the suggestion (or
+    // Uncategorized) on a new one, until you pick something for that page. Worked out as the card
+    // renders (not in a later effect), so it never shows the wrong category for a moment, or
+    // overwrites a pick.
+    const category = pickedHere ? picked.value : savedCopy ? getTabCategory(savedCopy) : (suggestion ?? UNCATEGORIZED);
+    const setCategory = (value: string) => setPicked({ forId: pageKey, value });
 
     // A category removed in Settings while it was picked here falls back to Uncategorized.
     const chosen = props.categoryOptions.some((o) => o.value === category) ? category : UNCATEGORIZED;
@@ -202,6 +208,7 @@ export function SaveCard(props: {
                         options={props.categoryOptions}
                         color={props.colorOf(chosen)}
                         onChange={setCategory}
+                        suggested={!pickedHere && suggestion !== undefined && chosen === suggestion}
                     />
                     {showSaved ? (
                         <>
@@ -233,7 +240,14 @@ export function SaveCard(props: {
             {tab !== undefined && (
                 // On a page that's already saved, the picker shows that one page's category, which
                 // says nothing about the rest of the window: those go to Uncategorized.
-                <SaveWindow tabs={props.tabs} category={showSaved || chosen === UNCATEGORIZED ? undefined : chosen} onSaved={props.onWindowSaved} />
+                // A category you picked takes every page; a suggestion was for this page only, so then
+                // each page gets its own suggestion.
+                <SaveWindow
+                    tabs={props.tabs}
+                    category={showSaved || !pickedHere ? undefined : chosen === UNCATEGORIZED ? null : chosen}
+                    suggest={(url) => suggestCategory(url, props.tabs, categories)}
+                    onSaved={props.onWindowSaved}
+                />
             )}
             <p class="visually-hidden" role="status" aria-live="polite">
                 {status === "idle" ? "" : label}

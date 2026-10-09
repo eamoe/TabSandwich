@@ -684,6 +684,7 @@ export function App(props: { whatsNew?: string | null }) {
                 />
                 {manualOpen ? (
                     <ManualForm
+                        tabs={library.tabs}
                         categoryOptions={saveOptions}
                         colorOf={colorOf}
                         onAdded={afterSave}

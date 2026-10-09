@@ -65,18 +65,19 @@ export type NameGroup = (taken: string[]) => string;
 /**
  * Saves several pages in one write (a whole window): the same duplicate rule as addTab, checked
  * again under the lock in case something was saved since the caller looked. The new tabs go to
- * the top of the list, keeping the order they were given in, all into one category. With
+ * the top of the list, keeping the order they were given in, all into `category` — or, without
+ * one, each into its own (an input's category: a suggestion), else Uncategorized. With
  * `nameGroup`, two or more added tabs also become a saved window (collapsed), written together
  * with them; a single tab needs no group.
  */
-export async function addTabs(inputs: { title: string; url: string }[], category?: string, nameGroup?: NameGroup): Promise<AddTabsResult> {
+export async function addTabs(inputs: { title: string; url: string; category?: string }[], category?: string, nameGroup?: NameGroup): Promise<AddTabsResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
         const added: SavedTab[] = [];
         const savedAt = Date.now();
         for (const input of inputs) {
             if (tabs.some((t) => urlsMatch(t.url, input.url)) || added.some((t) => urlsMatch(t.url, input.url))) continue;
-            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category, savedAt });
+            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category: category ?? input.category, savedAt });
         }
         let group: TabGroup | null = null;
         if (nameGroup && added.length >= 2) {

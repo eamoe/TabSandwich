@@ -71,6 +71,13 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("a suggested category on the save card", async ({ context, popup }) => {
+            const url = await openSiteTab(context, popup, "Example Article");
+            await seedLibrary(popup, [{ title: "Older", url: url.replace("Example%20Article", "Older"), category: "Work" }]);
+            await expect(popup.getByLabel(/suggested from where you saved/)).toHaveValue("Work");
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("first run: nothing saved yet", async ({ popup }) => {
             await seedLibrary(popup, []);
             await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
