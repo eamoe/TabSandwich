@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
+import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, pinnedFirst, stoppedAtPinLine, isTabOutdated, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
 import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
@@ -170,5 +170,69 @@ describe("saved windows in the list", () => {
         const closed = groupItems([a, m1, m2, m3, z], [{ ...g, collapsed: true }]);
         expect(dropTarget(closed, "a", { groupId: "g" }, "after")).toEqual({ to: "m3", group: null, side: "after" });
         expect(dropTarget(closed, "m2", { groupId: "g" }, "before")).toEqual({ to: "m1", group: null, side: "before" });
+    });
+});
+
+describe("pinned tabs", () => {
+    const g = { id: "g", name: "Research", createdAt: 0, collapsed: false };
+    const [p1, p2, a, m1, m2, mp, z] = [
+        makeTab({ id: "p1", pinned: true }),
+        makeTab({ id: "p2", pinned: true }),
+        makeTab({ id: "a" }),
+        makeTab({ id: "m1", groupId: "g" }),
+        makeTab({ id: "m2", groupId: "g" }),
+        makeTab({ id: "mp", groupId: "g", pinned: true }),
+        makeTab({ id: "z" }),
+    ];
+    const ids = (tabs: { id: string }[]) => tabs.map((t) => t.id);
+
+    it("come first, in the order given (your own or the sort's); the rest keep theirs", () => {
+        expect(ids(pinnedFirst([a, p2, z, p1]))).toEqual(["p2", "p1", "a", "z"]);
+        expect(pinnedFirst([a, z])).toEqual([a, z]);
+    });
+
+    it("inside a saved window stay in it, at its own top", () => {
+        const ordered = pinnedFirst([a, m1, m2, mp, p1, z], new Set(["m1", "m2", "mp"]));
+        expect(ids(ordered)).toEqual(["p1", "a", "m1", "m2", "mp", "z"]);
+        const items = groupItems(ordered, [g]);
+        expect(items.map((i) => (i.kind === "tab" ? i.tab.id : `[${ids(i.tabs).join(",")}]`))).toEqual(["p1", "a", "[mp,m1,m2]", "z"]);
+    });
+
+    it("never show as waiting, however old, even in a category that ages", () => {
+        const old = { savedAt: Date.now() - 60 * DAY, category: "Work" };
+        expect(isTabOutdated(makeTab({ ...old }), settings)).toBe(true);
+        expect(isTabOutdated(makeTab({ ...old, pinned: true }), settings)).toBe(false);
+    });
+
+    describe("moving stops at the line between pinned and the rest", () => {
+        const items = groupItems(pinnedFirst([p1, p2, a, m1, m2, mp, z], new Set(["m1", "m2", "mp"])), [g]);
+
+        it("Alt+arrows: pinned among pinned, the rest among the rest, and says why it stopped", () => {
+            expect(reorderTarget(items, "p1", "down")).toEqual({ to: "p2", group: null });
+            expect(reorderTarget(items, "p2", "down")).toBeNull();
+            expect(stoppedAtPinLine(items, "p2", "down")).toBe(true);
+            expect(reorderTarget(items, "a", "up")).toBeNull();
+            expect(stoppedAtPinLine(items, "a", "up")).toBe(true);
+            expect(stoppedAtPinLine(items, "p1", "up")).toBe(false); // the top of the list, not the line
+            // Inside a window: its pinned tab stays at its top.
+            expect(reorderTarget(items, "m1", "up")).toBeNull();
+            expect(reorderTarget(items, "mp", "down")).toBeNull();
+        });
+
+        it("drops: each lands only on its own side, right up to the line", () => {
+            expect(dropTarget(items, "a", { tabId: "p2" }, "after")).toEqual({ to: "p2", group: null, side: "after" });
+            expect(dropTarget(items, "a", { tabId: "p2" }, "before")).toBeNull();
+            expect(dropTarget(items, "z", { tabId: "p1" }, "before")).toBeNull();
+            expect(dropTarget(items, "p1", { tabId: "a" }, "before")).toEqual({ to: "a", group: null, side: "before" });
+            expect(dropTarget(items, "p1", { tabId: "a" }, "after")).toBeNull();
+            expect(dropTarget(items, "p1", { tabId: "z" }, "before")).toBeNull();
+            // A window's row is below the line: no pinned tab goes before it, after it, or to its top past its pinned tab.
+            expect(dropTarget(items, "p1", { groupId: "g" }, "before")).toBeNull();
+            expect(dropTarget(items, "a", { groupId: "g" }, "before")).toEqual({ to: "mp", group: null, side: "before" });
+            expect(dropTarget(items, "z", { groupId: "g" }, "after")).toBeNull();
+            expect(dropTarget(items, "p1", { groupId: "g" }, "after")).toEqual({ to: "mp", group: "g", side: "before" });
+            expect(dropTarget(items, "z", { tabId: "mp" }, "after")).toEqual({ to: "mp", group: "g", side: "after" });
+            expect(dropTarget(items, "z", { tabId: "mp" }, "before")).toBeNull();
+        });
     });
 });

@@ -5,7 +5,7 @@ import type { SearchMatch } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
-import { dropTarget, groupItems, isTabOutdated, reorderTarget, type DropSide, type ListItem, type Move } from "./listModel";
+import { dropTarget, groupItems, isTabOutdated, reorderTarget, stoppedAtPinLine, type DropSide, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
 import { TabRow, type EditOutcome } from "./TabRow";
 import styles from "./TabList.module.css";
@@ -63,6 +63,7 @@ export function TabList(props: {
     onOpen: (tab: SavedTab) => void;
     onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
     onDelete: (tab: SavedTab) => Promise<boolean>;
+    onTogglePin: (tab: SavedTab) => void;
     /** A tab moved in your own order, maybe into or out of a saved window. */
     onReorder: (draggedId: string, move: Move) => void | Promise<void>;
     onToggleGroup: (group: TabGroup) => void;
@@ -135,6 +136,7 @@ export function TabList(props: {
             if (!row.tab) return;
             const move = reorderTarget(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up");
             if (!props.canReorder) announce(props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
+            else if (!move && stoppedAtPinLine(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up")) announce(strings.pinLine(!!row.tab.pinned));
             else if (move) {
                 const id = row.tab.id;
                 pendingFocus.current = id;
@@ -163,10 +165,11 @@ export function TabList(props: {
         } else if (e.key === "ArrowLeft" && (row.group || row.parent)) {
             if (row.parent) focusRow(groupKey(row.parent.id));
             else if (!row.group!.collapsed) props.onToggleGroup(row.group!);
-        } else if (props.selecting && (e.key === "e" || e.key === "E" || e.key === "Delete" || e.key === "Backspace")) {
+        } else if (props.selecting && (e.key === "e" || e.key === "E" || e.key === "p" || e.key === "P" || e.key === "Delete" || e.key === "Backspace")) {
             // While selecting, a row's own edit and delete step aside (the bar acts on the selection).
             return;
         } else if ((e.key === "e" || e.key === "E") && row.tab) li.querySelector<HTMLElement>('[data-row-action="edit"]')?.click();
+        else if ((e.key === "p" || e.key === "P") && row.tab) props.onTogglePin(row.tab);
         else if (e.key === "Delete" || e.key === "Backspace") {
             // Focus moves on to the next row (or the one before, at the end) once this one is gone;
             // past a window's own tabs when the whole window goes.
@@ -270,6 +273,7 @@ export function TabList(props: {
                 onOpen={() => props.onOpen(tab)}
                 onEdit={(updates) => props.onEdit(tab, updates)}
                 onDelete={() => props.onDelete(tab)}
+                onTogglePin={() => props.onTogglePin(tab)}
                 dragHandlers={dragHandlersFor(tab.id, tab.id, (dragged, side) => dropTarget(items, dragged, { tabId: tab.id }, side))}
             />
         );

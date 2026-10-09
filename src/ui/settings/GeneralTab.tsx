@@ -19,6 +19,7 @@ const LIST_KEYS: Array<{ keys: string[]; what: string }> = [
     { keys: ["Enter"], what: strings.keyHelp.open },
     { keys: ["→", "←"], what: strings.keyHelp.window },
     { keys: ["E"], what: strings.keyHelp.edit },
+    { keys: ["P"], what: strings.keyHelp.pin },
     { keys: [IS_MAC ? "⌫" : "Delete"], what: strings.keyHelp.delete },
     { keys: [IS_MAC ? "⌘" : "Ctrl", "Z"], what: strings.keyHelp.undo },
     { keys: [IS_MAC ? "⌥" : "Alt", "↑", "↓"], what: strings.keyHelp.reorder },

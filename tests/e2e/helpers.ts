@@ -9,6 +9,7 @@ export interface SeedTab {
     daysAgo?: number;
     /** The id of a saved window in `groups` (seedLibrary's last argument). */
     groupId?: string;
+    pinned?: boolean;
 }
 
 export interface SeedGroup {
@@ -49,6 +50,7 @@ export async function seedLibrary(
                     category: t.category,
                     savedAt: now - (t.daysAgo ?? 0) * day,
                     ...(t.groupId ? { groupId: t.groupId } : {}),
+                    ...(t.pinned ? { pinned: true } : {}),
                 })),
                 "tabSandwich.groups": groups.map((g) => ({ id: g.id, name: g.name, createdAt: now, collapsed: g.collapsed ?? true })),
                 "tabSandwich.settings": {

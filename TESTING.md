@@ -308,7 +308,7 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
-- Steps: Tab to a category pill and the Waiting pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
+- Steps: Tab to a category pill and the Waiting pill and activate each; Tab into the list (it's one stop: the current row's title, then its pin, edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
 - Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable, Escape cancels.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
@@ -949,3 +949,19 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: tabs saved 10–30 days ago in Work, Reading and Uncategorized; days set to 7.
 - Steps: Look at the list; open Settings › Categories; click Reading's ☾ (dims) and Work's (lights); hover each to read what it means; go Back.
 - Expected: At first only the Reading and Uncategorized tabs have the ☾ age badge and are counted in "Waiting (N)"; Work's 30-day-old tab has neither. After the change Work's tab is waiting and Reading's isn't. A lit moon's tooltip says "Its tabs show as waiting after 7 days", a dim one "Kept: its tabs never show as waiting". Uncategorized has its own last row with only the ☾. A category added later starts kept (☾ dim); renaming a category keeps its ☾. Updating from 3.2: every category is kept except Uncategorized (none at all if "Outdated tabs" was switched off), checked by the robot tests on stored 3.2 data.
+
+**TC-260 — Pin a tab (P1)** **[auto]**
+- Steps: Hover a row (an old one in an aging category, e.g. Reading) and click its pin; pin a second tab; then click the first one's pin again.
+- Expected: The pinned tab jumps to the top and flashes; a small pin shows on it where the age badge was (a pinned tab never ages, and leaves the Waiting filter). The second pinned tab lands below the first. Unpinning puts it just below the pinned ones, its age badge back. Screen readers hear "Pinned “…” to the top" / "Unpinned “…”", and "Pinned" with the row.
+
+**TC-261 — P pins from the keyboard (P2)** **[auto]**
+- Steps: Arrow to a row; press P; press P again.
+- Expected: The row pins (moves to the top) and unpins, keeping the keyboard focus. While selecting, P does nothing.
+
+**TC-262 — Pinned tabs stay on top in every sort (P1)** **[auto]**
+- Steps: Pin a loose tab and a tab inside an open saved window; sort by Title, then Newest; pick a category filter.
+- Expected: The loose pinned tab stays first in every sort; the window's pinned tab sits at the top of its window. Under a filter (windows show as plain rows), every pinned tab comes first.
+
+**TC-263 — Moving stops at the pinned line (P2)** **[auto]**
+- Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
+- Expected: Alt+↑ doesn't move it, and screen readers hear "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; a pinned tab can't go below the line. Pinning only ever changes with the pin or P.

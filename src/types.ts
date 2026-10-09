@@ -7,6 +7,8 @@ export interface SavedTab {
     savedAt: number;
     /** The saved window this tab belongs to (v3.2). Absent, or naming a group that no longer exists: not in a group. */
     groupId?: string;
+    /** Pinned (v3.3): shown above the rest in every sort (inside a saved window, at the top of it), and never waiting. Absent: not pinned. */
+    pinned?: boolean;
 }
 
 /** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */

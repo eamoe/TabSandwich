@@ -97,6 +97,12 @@ const PATHS: Record<IconName, JSX.Element> = {
         </>
     ),
     moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
+    pin: (
+        <>
+            <line x1="12" y1="17" x2="12" y2="22" />
+            <path d="M5 17h14v-1.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2z" />
+        </>
+    ),
     check: <polyline points="5 12 10 17 19 7" />,
     chevronDown: <polyline points="6 9 12 15 18 9" />,
     chevronUp: <polyline points="18 15 12 9 6 15" />,
@@ -155,6 +161,7 @@ export type IconName =
     | "grip"
     | "tabs"
     | "moon"
+    | "pin"
     | "check"
     | "chevronDown"
     | "chevronUp"

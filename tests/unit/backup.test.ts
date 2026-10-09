@@ -42,6 +42,11 @@ describe("parseBackupFile", () => {
         expect(parseBackupFile(fileWith({ tabs: [], settings: { waitingCategories: [1] } }))?.settingsFields.waitingCategories).toBeUndefined();
     });
 
+    it("keeps a tab's pin, and nothing but true counts as pinned", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", pinned: true }, { title: "b", url: "https://b.com", pinned: "yes" }] }));
+        expect(parsed?.tabs.map((t) => t.pinned)).toEqual([true, undefined]);
+    });
+
     it("reads the theme from a backup exported by v3.0 or later", () => {
         const parsed = parseBackupFile(fileWith(buildBackupFile([], { ...DEFAULT_SETTINGS, theme: "dark" })));
         expect(parsed?.settingsFields.theme).toBe("dark");

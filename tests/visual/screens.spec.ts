@@ -1,5 +1,5 @@
 import { test, expect } from "../e2e/fixtures";
-import { openSettings, openSiteTab, seedLibrary } from "../e2e/helpers";
+import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
  * One approved picture per screen and state, in light and dark (see playwright.visual.config.ts).
@@ -46,6 +46,14 @@ for (const colorScheme of ["light", "dark"] as const) {
 
         test("main list", async ({ popup }) => {
             await expect(popup).toHaveScreenshot(`main-${colorScheme}.png`);
+        });
+
+        test("two pinned tabs on top, one of them hovered", async ({ popup }) => {
+            const library = LIBRARY.map((t) => (t.title === "Hacker News" || t.title === "Principles of calm technology" ? { ...t, pinned: true } : t));
+            await seedLibrary(popup, library, SETTINGS);
+            await popup.mouse.move(0, 599);
+            await tabList(popup).getByRole("listitem").filter({ hasText: "Hacker News" }).hover();
+            await expect(popup).toHaveScreenshot(`pinned-${colorScheme}.png`);
         });
 
         test("editing a row", async ({ popup }) => {

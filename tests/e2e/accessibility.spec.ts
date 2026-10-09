@@ -37,6 +37,16 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("a pinned tab, with its row's buttons showing", async ({ popup }) => {
+            await seedLibrary(popup, [
+                { title: "Q3 Roadmap", url: "https://notion.so/q3", category: "Work", pinned: true },
+                { title: "Old article", url: "https://medium.com/old", category: "Reading", daysAgo: 20 },
+            ]);
+            await tabList(popup).getByRole("button", { name: "Q3 Roadmap", exact: true }).focus();
+            await expect(popup.getByRole("button", { name: "Unpin Q3 Roadmap" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("first run: nothing saved yet", async ({ popup }) => {
             await seedLibrary(popup, []);
             await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();

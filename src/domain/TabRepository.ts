@@ -304,3 +304,35 @@ export async function reorderTabs(draggedId: string, targetId: string): Promise<
         await setTabs(reordered);
     });
 }
+
+/**
+ * Pins or unpins a tab. A loose tab being pinned moves, in your own order, to just after the
+ * pinned loose tabs already there (the end of the pinned ones, as in Chrome's tab strip); a tab
+ * inside a saved window stays where it is (it's shown at the top of its window). Unpinning
+ * leaves it in place: just below the pinned ones. Null if the tab is gone.
+ */
+export async function setPinned(id: string, pinned: boolean): Promise<SavedTab | null> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const index = tabs.findIndex((t) => t.id === id);
+        if (index === -1) return null;
+        const { pinned: _was, ...rest } = tabs[index];
+        const tab: SavedTab = pinned ? { ...rest, pinned: true } : rest;
+        const others = tabs.filter((t) => t.id !== id);
+        const groups = new Set((await getGroups()).map((g) => g.id));
+        const members = new Map<string, number>();
+        for (const t of tabs) if (t.groupId && groups.has(t.groupId)) members.set(t.groupId, (members.get(t.groupId) ?? 0) + 1);
+        const loose = (t: SavedTab) => !t.groupId || (members.get(t.groupId) ?? 0) < 2;
+        if (pinned && loose(tabs[index])) {
+            let at = 0;
+            others.forEach((t, i) => {
+                if (t.pinned && loose(t)) at = i + 1;
+            });
+            others.splice(at, 0, tab);
+            await setTabs(others);
+        } else {
+            await setTabs(tabs.map((t) => (t.id === id ? tab : t)));
+        }
+        return tab;
+    });
+}

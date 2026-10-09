@@ -25,7 +25,7 @@ export function backupFileName(): string {
 }
 
 /** `groupId` here is the id the file used — only for matching tabs to the file's groups; never kept. */
-type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId">;
+type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId" | "pinned">;
 
 export interface ParsedImport {
     tabs: ImportedTab[];
@@ -59,6 +59,7 @@ function readImportedTab(raw: unknown): ImportedTab | null {
         category: typeof raw.category === "string" ? raw.category : undefined,
         savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now(),
         groupId: typeof raw.groupId === "string" ? raw.groupId : undefined,
+        ...(raw.pinned === true ? { pinned: true } : {}),
     };
 }
 

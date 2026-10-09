@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -317,5 +317,38 @@ describe("refreshTab / putBackTab (Update in the save card, and its Undo)", () =
         await deleteTab(tab.id);
         await putBackTab(previous!);
         expect(storedTabs()).toEqual([]);
+    });
+});
+
+describe("setPinned", () => {
+    it("pins a loose tab to the end of the pinned ones; unpinning leaves it just below them", async () => {
+        const [p, a, b, c] = [makeTab({ pinned: true }), makeTab(), makeTab(), makeTab()];
+        seed([a, p, b, c]);
+        const pinned = await setPinned(c.id, true);
+        expect(pinned).toMatchObject({ id: c.id, pinned: true });
+        expect(storedTabs().map((t) => t.id)).toEqual([a.id, p.id, c.id, b.id]);
+        await setPinned(c.id, false);
+        expect(storedTabs().find((t) => t.id === c.id)).not.toHaveProperty("pinned");
+        expect(storedTabs().map((t) => t.id)).toEqual([a.id, p.id, c.id, b.id]);
+    });
+
+    it("with nothing pinned yet, a pinned tab goes first; one inside a saved window stays put", async () => {
+        const group = makeGroup();
+        const [a, m1, m2] = [makeTab(), makeTab({ groupId: group.id }), makeTab({ groupId: group.id })];
+        seed([a, m1, m2]);
+        seedGroups([group]);
+        await setPinned(m2.id, true);
+        expect(storedTabs().map((t) => t.id)).toEqual([a.id, m1.id, m2.id]);
+        await setPinned(a.id, false);
+        await setPinned(m1.id, false);
+        const b = makeTab();
+        seed([a, b]);
+        await setPinned(b.id, true);
+        expect(storedTabs().map((t) => t.id)).toEqual([b.id, a.id]);
+    });
+
+    it("returns null for a tab that's gone", async () => {
+        seed([makeTab()]);
+        expect(await setPinned("nope", true)).toBeNull();
     });
 });

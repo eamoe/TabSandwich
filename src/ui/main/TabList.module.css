@@ -126,6 +126,10 @@
 /* Invisible but still clickable while hidden: the pointer is over the row by then, which shows them. */
 .row:hover .actions, .row:focus-within .actions { opacity: 1; transform: none; }
 .row:hover .age, .row:focus-within .age { visibility: hidden; }
+/* A pinned row's pin, where an age badge would be (a pinned tab never ages). */
+.pinMark { flex-shrink: 0; display: inline-flex; color: var(--accent); transform: rotate(35deg); }
+.row:hover .pinMark, .row:focus-within .pinMark { visibility: hidden; }
+.pinned { color: var(--accent); }
 .delete:hover { color: var(--danger); }
 
 .editing { height: auto; display: block; padding: 8px; background: var(--surface) !important; box-shadow: var(--row-lift); transform: none; }

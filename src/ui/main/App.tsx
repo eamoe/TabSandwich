@@ -13,6 +13,7 @@ import {
     restoreTabs,
     reorderTabs,
     setCategoryOf,
+    setPinned,
     type AddTabResult,
 } from "../../domain/TabRepository";
 import { getCategoryColorHex, getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
@@ -35,7 +36,7 @@ import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, sortTabs, windowNames, type Move } from "./listModel";
+import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -107,6 +108,8 @@ export function App(props: { whatsNew?: string | null }) {
         return () => clearTimeout(timer);
     }, [loaded]);
 
+    // Said to screen readers after a pin or unpin (the row's move and flash show it on screen).
+    const [pinNote, setPinNote] = useState("");
     const flash = useCallback((id: string) => setHighlight({ id, seq: ++highlightSeq.current }), []);
 
     const stopSelecting = useCallback(() => {
@@ -176,7 +179,8 @@ export function App(props: { whatsNew?: string | null }) {
         if (!library) return { tabs: [] as SavedTab[], matches: null };
         const filtered = sortTabs(applyFilter(library.tabs, library.settings, activeFilter), sort);
         const q = query.trim();
-        if (!q) return { tabs: filtered, matches: null };
+        // Pinned tabs first in every sort; a saved window (shown only on All) keeps its pinned ones at its own top.
+        if (!q) return { tabs: pinnedFirst(filtered, activeFilter === ALL ? new Set(windowOf.keys()) : undefined), matches: null };
         const matches = searchTabs(filtered, q, (tab) => ({ category: getTabCategory(tab), window: windowOf.get(tab.id) }));
         return { tabs: matches.map((m) => m.tab), matches: new Map<string, SearchMatch>(matches.map((m) => [m.tab.id, m])) };
     }, [library, activeFilter, sort, query, windowOf]);
@@ -287,6 +291,19 @@ export function App(props: { whatsNew?: string | null }) {
             flash(deleted.id);
         });
         return true;
+    };
+
+    // Pinning moves the row (to the top, or back down among the rest): it flashes where it lands.
+    const onTogglePin = async (tab: SavedTab) => {
+        const pinning = !tab.pinned;
+        try {
+            await setPinned(tab.id, pinning);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await reload();
+        flash(tab.id);
+        setPinNote(pinning ? strings.pinnedNote(tab.title) : strings.unpinnedNote(tab.title));
     };
 
     const onToggleGroup = async (group: TabGroup) => {
@@ -537,7 +554,7 @@ export function App(props: { whatsNew?: string | null }) {
                     <StorageWarning pct={library.storagePct} onSeeStorage={() => openSettings()} />
                 )}
                 <p class="visually-hidden" role="status" aria-live="polite">
-                    {searching ? strings.matches(visible.tabs.length) : ""}
+                    {searching ? strings.matches(visible.tabs.length) : pinNote}
                 </p>
                 <TabList
                     tabs={visible.tabs}
@@ -571,6 +588,7 @@ export function App(props: { whatsNew?: string | null }) {
                     onOpen={openTab}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onTogglePin={(tab) => void onTogglePin(tab)}
                     onReorder={onReorder}
                     onToggleGroup={onToggleGroup}
                     onGroupAction={onGroupAction}

@@ -50,6 +50,7 @@ export interface RowProps {
     colorOf: (category: string) => string;
     onOpen: () => void;
     onEdit: (updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
+    onTogglePin: () => void;
     /** Resolves false when the delete couldn't be saved, so the row comes back. */
     onDelete: () => Promise<boolean>;
     dragHandlers: {
@@ -183,6 +184,7 @@ export function TabRow(props: RowProps) {
                         </>
                     )}
                     <span class={styles.site}>{siteName(tab.url)}</span>
+                    {tab.pinned && <span class="visually-hidden">{strings.pinnedForScreenReaders}</span>}
                 </span>
             </div>
             {props.outdated && (
@@ -191,8 +193,26 @@ export function TabRow(props: RowProps) {
                     {strings.ageBadge(days)}
                 </span>
             )}
+            {/* A pinned tab never ages, so its pin stands where the age badge would; the actions cover it on hover. */}
+            {tab.pinned && (
+                <span class={styles.pinMark} aria-hidden="true">
+                    <Icon name="pin" size={13} />
+                </span>
+            )}
             {!props.selecting && (
                 <span class={styles.actions}>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small} ${tab.pinned ? styles.pinned : ""}`}
+                        aria-label={tab.pinned ? strings.unpinTab(tab.title) : strings.pinTab(tab.title)}
+                        aria-pressed={!!tab.pinned}
+                        title={tab.pinned ? strings.unpinTooltip : strings.pinTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="pin"
+                        onClick={props.onTogglePin}
+                    >
+                        <Icon name="pin" size={14} />
+                    </button>
                     <button
                         type="button"
                         class={`${controls.iconBtn} ${controls.small}`}

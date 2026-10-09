@@ -110,6 +110,14 @@ export const strings = {
         ],
     } as Record<string, readonly string[]>,
     categoryForScreenReaders: (category: string) => `Category: ${category}`,
+    pinTab: (title: string) => `Pin ${title}`,
+    unpinTab: (title: string) => `Unpin ${title}`,
+    pinTooltip: "Pin to the top (P)",
+    unpinTooltip: "Unpin (P)",
+    /** Read with a pinned row (the pin on screen shows it). */
+    pinnedForScreenReaders: "Pinned",
+    pinnedNote: (title: string) => `Pinned “${title}” to the top`,
+    unpinnedNote: (title: string) => `Unpinned “${title}”`,
     /** Read before a search result's saved window name (the stack icon shows it on screen). */
     inSavedWindow: "Saved window:",
     savedDaysAgo: (days: number) => `Saved ${days} day${days === 1 ? "" : "s"} ago`,
@@ -184,6 +192,8 @@ export const strings = {
     steppedOutOf: (title: string, name: string) => `Moved “${title}” out of ${name}`,
     cantMoveSorted: "Tabs can only be moved in your own order. Switch the sort to Your order first.",
     cantMoveSearching: "Clear the search to move tabs.",
+    pinLine: (pinned: boolean) =>
+        pinned ? "Pinned tabs stay above the others. Press P to unpin it." : "Pinned tabs stay above the others. Press P to pin this one.",
     keyboardKeys: "Keys in the list",
     keyHelp: {
         search: "Jump to search",
@@ -192,6 +202,7 @@ export const strings = {
         window: "Open or close a saved window",
         select: "Select or unselect, while selecting",
         edit: "Edit it",
+        pin: "Pin it to the top, or unpin it",
         delete: "Delete it",
         undo: "Undo, while Undo is showing",
         reorder: "Move it up or down (in your own order)",

@@ -28,8 +28,10 @@ test.describe("Keyboard control", () => {
         await expect(titleOf(popup, "Charlie")).toBeFocused();
         await popup.keyboard.press("Home");
         await expect(titleOf(popup, "Alpha")).toBeFocused();
-        // Only the current row's buttons are in the Tab order: title, Edit, Delete, then out.
+        // Only the current row's buttons are in the Tab order: title, Pin, Edit, Delete, then out.
         await popup.keyboard.press("ArrowDown");
+        await popup.keyboard.press("Tab");
+        await expect(popup.getByRole("button", { name: "Pin Bravo" })).toBeFocused();
         await popup.keyboard.press("Tab");
         await expect(popup.getByRole("button", { name: "Edit Bravo" })).toBeFocused();
         await popup.keyboard.press("Tab");

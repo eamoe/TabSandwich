@@ -51,7 +51,7 @@ ORGANIZE WITH CATEGORIES
 Give any saved tab a color-coded category. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
 
 READ LATER, OR KEEP
-Pick the categories you save things to read later: once a tab there has waited a week (or however long you like), it gets a small moon badge, and a "Waiting" filter rounds them all up. Everything else, like dev tools, docs and accounts, is kept and never nags.
+Pick the categories you save things to read later: once a tab there has waited a week (or however long you like), it gets a small moon badge, and a "Waiting" filter rounds them all up. Everything else, like dev tools, docs and accounts, is kept and never nags. Pin the ones you use most to keep them on top.
 
 SAVE A WHOLE WINDOW
 Forty tabs open? One click saves every page in the window into a category, skipping browser pages and anything already saved, with an exact count. Then close them all with one more click, or keep them open. A saved window stays together in your list under a name like "Toasted Rye": open it, rename it, reopen all its tabs in a new window, or break it apart.
@@ -63,7 +63,7 @@ LIGHT AND DARK
 Follows your computer's light or dark mode, even while open, or pick one in Settings.
 
 BACKUP AND KEYBOARD
-Export everything to a file and import it later. Every action works from the keyboard — arrow keys, Enter to open, E to edit, Delete, Alt+arrows to reorder, / to search — and a customizable keyboard shortcut opens the popup.
+Export everything to a file and import it later. Every action works from the keyboard — arrow keys, Enter to open, E to edit, P to pin, Delete, Alt+arrows to reorder, / to search — and a customizable keyboard shortcut opens the popup.
 
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site). Saving a whole window needs permission to see your open tabs; Chrome asks only when you first use it, and everything else works if you say no.
