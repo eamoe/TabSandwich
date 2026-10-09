@@ -941,9 +941,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: `projx` lists every tab in ProjX, the category's name highlighted on rows found only by it; `projx api` narrows to the docs page. `rye` lists both tabs of the window (search shows every tab on its own row), each naming the window next to a small stack icon, "Rye" highlighted. A name matches only where a word of it starts, so `prsnl` finds nothing. Searching inside a category filter still searches only that category (TC-115).
 
 **TC-258 — One-color site icons stay visible in dark mode (P2)**
-- Preconditions: GitHub and a colorful site (e.g. Figma, Hacker News) visited in Chrome and saved; Wikipedia saved too.
+- Preconditions: GitHub and a colorful site (e.g. Figma, Hacker News) visited in Chrome and saved; Wikipedia saved too; a page Chrome has no icon for (shows Chrome's gray globe).
 - Steps: Look at the list in Light, then in Dark (Settings › General).
-- Expected: GitHub's black cat shows dark on its tile in Light and light in Dark; colorful icons, icons with their own background (Wikipedia, MDN) and Chrome's gray globe look the same in both. (The pixel check itself is logic-tested in `tests/unit/iconInk.test.ts`; robot tests can't plant a real site's icon in Chrome's cache.)
+- Expected: GitHub's black cat and Chrome's gray globe show dark on their tiles in Light and light in Dark; colorful icons and icons with their own background (Wikipedia, MDN) look the same in both. (The pixel check itself is logic-tested in `tests/unit/iconInk.test.ts`; the approved dark screenshots show the flipped globe.)
 
 **TC-259 — Kept and waiting categories (P1)** **[auto]**
 - Preconditions: tabs saved 10–30 days ago in Work, Reading and Uncategorized; days set to 7.

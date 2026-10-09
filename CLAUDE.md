@@ -58,7 +58,8 @@ src/
     time.ts                daysSince, isOutdated
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
-    iconInk.ts             whether an icon is one dark or one light color on transparency (GitHub's cat),
+    iconInk.ts             whether an icon is one dark/mid-gray or one light color on transparency (GitHub's cat,
+                            Chrome's gray globe),
                             from its pixels — so the tile can flip it where it would vanish — pure
   ui/                       Preact screens and building blocks of the v3.0 look
     tokens.css              every color/shadow/size, light + dark; "System" = no data-theme attribute

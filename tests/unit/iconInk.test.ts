@@ -21,8 +21,12 @@ describe("iconInk", () => {
         expect(iconInk(icon(0.4, [255, 255, 255]))).toBe("light");
     });
 
-    it("leaves Chrome's mid-gray default globe alone", () => {
-        expect(iconInk(icon(0.44, [100, 100, 104]))).toBeNull();
+    it("counts Chrome's mid-gray default globe as dark ink: it sinks into a dark tile too", () => {
+        expect(iconInk(icon(0.44, [100, 100, 104]))).toBe("dark");
+    });
+
+    it("leaves a light-gray one-color shape alone: it reads on both themes", () => {
+        expect(iconInk(icon(0.44, [170, 170, 170]))).toBeNull();
     });
 
     it("leaves an icon with its own background alone, however dark (MDN) or light (Wikipedia)", () => {
