@@ -16,7 +16,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **What's new** — after an update, a short note at the top of the list says what changed; dismiss it with one click.
 - **Add a link manually** — for anything that isn't your active tab, via the **+** button in the header.
 - **Knows what you've saved** — on a page you've already saved, the popup says when ("Saved 12 days ago") instead of offering Save again. **Show** finds it in the list; **Update** refreshes the saved copy with the page's current title and address, today's date and the picked category (undoable). Adding an already-saved link by hand offers to open it.
-- **Search** — fuzzy-matches on title, domain, and path as you type, with matched characters highlighted; combines with an active category or Outdated filter.
+- **Search** — fuzzy-matches on title, domain, and path as you type, and finds every tab in a category or saved window by typing its name, with matched characters highlighted; combines with an active category or Outdated filter.
 - **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/rename/remove/reorder) from Settings.
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings). Saved tabs are tinted and outlined in it and show the category name next to a matching dot, so the list scans by color without relying on color alone.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.

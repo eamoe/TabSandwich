@@ -1,7 +1,7 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, Settings, TabGroup } from "../../types";
-import type { MatchRange } from "../../domain/search";
+import type { SearchMatch } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
@@ -47,7 +47,10 @@ export function TabList(props: {
     /** Show saved windows as windows (All, no search); otherwise every match is a plain row. */
     grouped: boolean;
     settings: Settings;
-    titleRanges: Map<string, MatchRange[]> | null;
+    /** While searching: each shown tab's match (what to highlight in its title, category and window name). */
+    matches: Map<string, SearchMatch> | null;
+    /** Each tab's saved window name, for the tabs inside one; named on a row only while searching. */
+    windowOf: Map<string, string>;
     searchActive: boolean;
     canReorder: boolean;
     showCategory: boolean;
@@ -249,7 +252,8 @@ export function TabList(props: {
                 color={props.colorOf(category)}
                 tinted={category !== UNCATEGORIZED}
                 outdated={isTabOutdated(tab, props.settings)}
-                titleRanges={props.titleRanges?.get(tab.id) ?? []}
+                match={props.matches?.get(tab.id) ?? null}
+                windowName={props.searchActive ? (props.windowOf.get(tab.id) ?? null) : null}
                 showCategory={props.showCategory}
                 entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
                 entranceDelayMs={Math.min(index, STAGGER_CAP) * STAGGER_MS}

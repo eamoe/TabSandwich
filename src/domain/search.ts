@@ -6,11 +6,25 @@ export interface MatchRange {
     end: number;
 }
 
+/**
+ * The names a tab is listed under, besides its own title and address: its category and, when it
+ * belongs to one, its saved window's name. Passed in by the caller (they live in Settings and the
+ * saved windows, not on the tab), so this module stays free of storage.
+ */
+export interface TabLabels {
+    category: string;
+    window?: string;
+}
+
 export interface SearchMatch {
     tab: SavedTab;
     score: number;
     /** Ascending, non-overlapping ranges into `tab.title`. Empty when only the URL matched. */
     titleRanges: MatchRange[];
+    /** Ranges into the category's name, when a term matched it. */
+    categoryRanges: MatchRange[];
+    /** Ranges into the saved window's name, when a term matched it. */
+    windowRanges: MatchRange[];
 }
 
 /**
@@ -33,6 +47,8 @@ const MAX_GAP_PENALTY = 8;
 const WEIGHT_TITLE = 1;
 const WEIGHT_HOST = 0.9;
 const WEIGHT_PATH = 0.55;
+/** A category or saved-window name: what you'd type to find a project's tabs, as strong as the site. */
+const WEIGHT_LABEL = 0.9;
 
 const BOUNDARY_CHARS = new Set([" ", "-", "_", ".", "/", ":", "?", "&", "=", "+", ",", "|", "(", ")", "[", "]", "#", "@"]);
 
@@ -101,19 +117,39 @@ function matchTerm(haystack: string, term: string): FieldMatch | null {
     return best ?? scanFrom(haystack, lower, term, 0);
 }
 
+/**
+ * A category or saved-window name matches only where a term starts one of its words ("proj" →
+ * "ProjX", "rye" → "Toasted Rye"), never by scattered letters: a hit there brings in every tab
+ * under that name, so "rd" must not pull in all of "Reading".
+ */
+function matchLabel(label: string | undefined, term: string): FieldMatch | null {
+    if (!label || !term) return null;
+    const lower = label.toLowerCase();
+    let best: FieldMatch | null = null;
+    for (let i = lower.indexOf(term); i !== -1; i = lower.indexOf(term, i + 1)) {
+        if (!isBoundary(label, i)) continue;
+        const candidate = scanFrom(label, lower, term, i);
+        if (candidate && (!best || candidate.score > best.score)) best = candidate;
+    }
+    return best;
+}
+
 interface TabFields {
     title: string;
     host: string;
     path: string;
+    category?: string;
+    window?: string;
 }
 
-function fieldsFor(tab: SavedTab): TabFields {
+function fieldsFor(tab: SavedTab, labels?: TabLabels): TabFields {
+    const named = { category: labels?.category, window: labels?.window };
     try {
         const url = new URL(tab.url);
-        return { title: tab.title, host: url.hostname, path: url.pathname + url.search };
+        return { title: tab.title, host: url.hostname, path: url.pathname + url.search, ...named };
     } catch {
         // An unparsable URL is still searchable as raw text rather than being silently excluded.
-        return { title: tab.title, host: "", path: tab.url };
+        return { title: tab.title, host: "", path: tab.url, ...named };
     }
 }
 
@@ -132,42 +168,57 @@ function mergeRanges(ranges: MatchRange[]): MatchRange[] {
 interface TermResult {
     score: number;
     titleRanges: MatchRange[];
+    categoryRanges: MatchRange[];
+    windowRanges: MatchRange[];
 }
 
 function scoreTerm(fields: TabFields, term: string): TermResult | null {
     const title = matchTerm(fields.title, term);
     const host = matchTerm(fields.host, term);
     const path = matchTerm(fields.path, term);
-    if (!title && !host && !path) return null;
+    const category = matchLabel(fields.category, term);
+    const window = matchLabel(fields.window, term);
+    if (!title && !host && !path && !category && !window) return null;
 
     const score = Math.max(
         title ? title.score * WEIGHT_TITLE : 0,
         host ? host.score * WEIGHT_HOST : 0,
-        path ? path.score * WEIGHT_PATH : 0
+        path ? path.score * WEIGHT_PATH : 0,
+        category ? category.score * WEIGHT_LABEL : 0,
+        window ? window.score * WEIGHT_LABEL : 0
     );
 
-    // Highlight whenever the title matched at all, even if the URL is what scored highest —
-    // the title is the only one of the three the row actually displays.
-    return { score, titleRanges: title?.ranges ?? [] };
+    // Highlight wherever a term matched something the row shows (title, category, window name),
+    // even if the URL is what scored highest, so you can see why a tab is in the results.
+    return {
+        score,
+        titleRanges: title?.ranges ?? [],
+        categoryRanges: category?.ranges ?? [],
+        windowRanges: window?.ranges ?? [],
+    };
 }
 
 /**
  * Filters and ranks. Whitespace splits the query into terms that must *all* match somewhere
- * ("python article"), rather than being matched as one literal string containing a space.
+ * ("python article"; "projx repo" = in the ProjX category, with "repo" in its title or address),
+ * rather than being matched as one literal string containing a space. `labelsOf` names each tab's
+ * category and saved window; without it only titles and addresses are searched.
  *
  * An empty query returns every tab, unranked, so the caller's existing order survives.
  */
-export function searchTabs(tabs: SavedTab[], rawQuery: string): SearchMatch[] {
+export function searchTabs(tabs: SavedTab[], rawQuery: string, labelsOf?: (tab: SavedTab) => TabLabels): SearchMatch[] {
     const terms = rawQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (terms.length === 0) {
-        return tabs.map((tab) => ({ tab, score: 0, titleRanges: [] }));
+        return tabs.map((tab) => ({ tab, score: 0, titleRanges: [], categoryRanges: [], windowRanges: [] }));
     }
 
     const matches: SearchMatch[] = [];
     for (const tab of tabs) {
-        const fields = fieldsFor(tab);
+        const fields = fieldsFor(tab, labelsOf?.(tab));
         let total = 0;
-        let ranges: MatchRange[] = [];
+        let titleRanges: MatchRange[] = [];
+        let categoryRanges: MatchRange[] = [];
+        let windowRanges: MatchRange[] = [];
         let matchedEveryTerm = true;
 
         for (const term of terms) {
@@ -177,11 +228,19 @@ export function searchTabs(tabs: SavedTab[], rawQuery: string): SearchMatch[] {
                 break;
             }
             total += result.score;
-            ranges = ranges.concat(result.titleRanges);
+            titleRanges = titleRanges.concat(result.titleRanges);
+            categoryRanges = categoryRanges.concat(result.categoryRanges);
+            windowRanges = windowRanges.concat(result.windowRanges);
         }
 
         if (matchedEveryTerm && total > 0) {
-            matches.push({ tab, score: total, titleRanges: mergeRanges(ranges) });
+            matches.push({
+                tab,
+                score: total,
+                titleRanges: mergeRanges(titleRanges),
+                categoryRanges: mergeRanges(categoryRanges),
+                windowRanges: mergeRanges(windowRanges),
+            });
         }
     }
 

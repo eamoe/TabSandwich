@@ -15,9 +15,9 @@ import {
     setCategoryOf,
     type AddTabResult,
 } from "../../domain/TabRepository";
-import { getCategoryColorHex, UNCATEGORIZED } from "../../domain/CategoryRepository";
+import { getCategoryColorHex, getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { deleteGroup, renameGroup, restoreGroup, setGroupCollapsed, ungroup, type RemovedGroup } from "../../domain/GroupRepository";
-import { searchTabs } from "../../domain/search";
+import { searchTabs, type SearchMatch } from "../../domain/search";
 import { setSort } from "../../domain/SettingsRepository";
 import { getGroups, getTabs, setLastSeenVersion } from "../../storage/chromeStorage";
 import { writeErrorMessage } from "../errors";
@@ -35,7 +35,7 @@ import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, sortTabs, type Move } from "./listModel";
+import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, sortTabs, windowNames, type Move } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -169,14 +169,17 @@ export function App(props: { whatsNew?: string | null }) {
     const activeFilter = effectiveFilter(filter, options);
     const sort = pendingSort ?? library?.settings.sort ?? "custom";
 
+    // Search results list every tab as its own row, so each one in a saved window names it.
+    const windowOf = useMemo(() => (library ? windowNames(library.tabs, library.groups) : new Map<string, string>()), [library]);
+
     const visible = useMemo(() => {
-        if (!library) return { tabs: [] as SavedTab[], ranges: null };
+        if (!library) return { tabs: [] as SavedTab[], matches: null };
         const filtered = sortTabs(applyFilter(library.tabs, library.settings, activeFilter), sort);
         const q = query.trim();
-        if (!q) return { tabs: filtered, ranges: null };
-        const matches = searchTabs(filtered, q);
-        return { tabs: matches.map((m) => m.tab), ranges: new Map(matches.map((m) => [m.tab.id, m.titleRanges])) };
-    }, [library, activeFilter, sort, query]);
+        if (!q) return { tabs: filtered, matches: null };
+        const matches = searchTabs(filtered, q, (tab) => ({ category: getTabCategory(tab), window: windowOf.get(tab.id) }));
+        return { tabs: matches.map((m) => m.tab), matches: new Map<string, SearchMatch>(matches.map((m) => [m.tab.id, m])) };
+    }, [library, activeFilter, sort, query, windowOf]);
 
     // The toast sits outside the main screen so it still shows while Settings is open.
     if (!library) return <Toast />;
@@ -542,7 +545,8 @@ export function App(props: { whatsNew?: string | null }) {
                     // A closed window could hide a match: filtered or searched, every tab is its own row.
                     grouped={activeFilter === ALL && !searching}
                     settings={library.settings}
-                    titleRanges={visible.ranges}
+                    matches={visible.matches}
+                    windowOf={windowOf}
                     searchActive={searching}
                     // Your own order is the only one dragging can change: search results are in
                     // match order and the other sorts are views, so a drag there would mean nothing.

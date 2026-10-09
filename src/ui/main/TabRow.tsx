@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
-import type { MatchRange } from "../../domain/search";
+import type { MatchRange, SearchMatch } from "../../domain/search";
 import { normalizeUrl } from "../../util/url";
 import { daysSince } from "../../util/time";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
@@ -20,8 +20,11 @@ export interface RowProps {
     color: string;
     tinted: boolean;
     outdated: boolean;
-    titleRanges: MatchRange[];
+    /** While searching: what matched, highlighted in the title, the category and the window name. */
+    match: SearchMatch | null;
     showCategory: boolean;
+    /** The saved window this tab is in, named on the row while searching (results show every tab on its own). */
+    windowName: string | null;
     /** How the row arrives: rising in with the rest on open, dropping in later, or not animated (while searching). */
     entrance: "rise" | "drop" | "none";
     entranceDelayMs: number;
@@ -63,7 +66,7 @@ export function leaveDurationMs(): number {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240;
 }
 
-/** Wraps the parts of a title that matched the search in <mark>, as real nodes: a page title is untrusted text, never markup. */
+/** Wraps the parts of a title (or name) that matched the search in <mark>, as real nodes: a page title is untrusted text, never markup. */
 function highlighted(title: string, ranges: MatchRange[]) {
     if (ranges.length === 0) return title;
     const parts = [];
@@ -151,14 +154,14 @@ export function TabRow(props: RowProps) {
                     aria-checked={props.selecting ? props.selected : undefined}
                     onClick={(e) => (props.selecting ? props.onToggleSelect(e.shiftKey) : props.onOpen())}
                 >
-                    {highlighted(tab.title, props.titleRanges)}
+                    {highlighted(tab.title, props.match?.titleRanges ?? [])}
                 </button>
                 <span class={styles.meta}>
                     {props.showCategory ? (
                         <>
                             <span class={styles.category}>
                                 <span class={controls.dot} style={{ background: props.color }} />
-                                {props.category}
+                                {highlighted(props.category, props.match?.categoryRanges ?? [])}
                             </span>
                             <span class={styles.separator} aria-hidden="true">
                                 ·
@@ -166,6 +169,18 @@ export function TabRow(props: RowProps) {
                         </>
                     ) : (
                         <span class="visually-hidden">{strings.categoryForScreenReaders(props.category)}</span>
+                    )}
+                    {props.windowName !== null && (
+                        <>
+                            <span class={styles.window}>
+                                <Icon name="tabs" size={11} />
+                                <span class="visually-hidden">{`${strings.inSavedWindow} `}</span>
+                                <span class={styles.windowName}>{highlighted(props.windowName, props.match?.windowRanges ?? [])}</span>
+                            </span>
+                            <span class={styles.separator} aria-hidden="true">
+                                ·
+                            </span>
+                        </>
                     )}
                     <span class={styles.site}>{siteName(tab.url)}</span>
                 </span>

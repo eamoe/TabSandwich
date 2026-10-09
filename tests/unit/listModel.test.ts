@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
+import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
 import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
@@ -112,6 +112,12 @@ describe("saved windows in the list", () => {
     it("shows a window down to one tab, or a tab naming a window that's gone, as a plain tab", () => {
         expect(shape(groupItems([a, m1], [g]))).toEqual(["a", "m1"]);
         expect(shape(groupItems([m1, m2], []))).toEqual(["m1", "m2"]);
+    });
+
+    it("names each tab's saved window only while it shows as one (search matches and shows that name)", () => {
+        expect(Object.fromEntries(windowNames([a, m1, m2, z], [g]))).toEqual({ m1: "Research", m2: "Research" });
+        expect(windowNames([a, m1], [g]).size).toBe(0);
+        expect(windowNames([m1, m2], []).size).toBe(0);
     });
 
     it("names a saved window at random, sandwich-style, never reusing a name in use", () => {

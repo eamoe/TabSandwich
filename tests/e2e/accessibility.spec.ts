@@ -110,6 +110,21 @@ for (const colorScheme of ["light", "dark"] as const) {
             expect(await scan(popup)).toEqual([]);
         });
 
+        test("searching by a category's and a saved window's name", async ({ popup }) => {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "A", url: "https://a.example.com/", category: "Work", groupId: "w" },
+                    { title: "B", url: "https://b.example.com/", category: "Reading", groupId: "w" },
+                ],
+                {},
+                { groups: [{ id: "w", name: "Toasted Rye" }] }
+            );
+            await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("rye work");
+            await expect(tabList(popup).locator("mark")).toHaveText(["Work", "Rye"]);
+            expect(await scan(popup)).toEqual([]);
+        });
+
         test("renaming a saved window", async ({ popup }) => {
             await seedLibrary(
                 popup,

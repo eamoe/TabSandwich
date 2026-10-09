@@ -90,7 +90,7 @@ export const strings = {
     tipCategories: "Make the categories yours.",
     editCategories: "Edit categories",
     noMatchesTitle: (query: string) => `No saved tabs match “${query}”`,
-    noMatchesHint: "Search looks at titles and sites. Try fewer letters, or part of the site's name.",
+    noMatchesHint: "Search looks at titles, sites, categories and saved windows. Try fewer letters, or part of a name.",
     noMatchesInFilter: (filter: string) => `Only tabs in ${filter} were searched.`,
     searchAllTabs: "Search all tabs",
 
@@ -110,6 +110,8 @@ export const strings = {
         ],
     } as Record<string, readonly string[]>,
     categoryForScreenReaders: (category: string) => `Category: ${category}`,
+    /** Read before a search result's saved window name (the stack icon shows it on screen). */
+    inSavedWindow: "Saved window:",
     savedDaysAgo: (days: number) => `Saved ${days} day${days === 1 ? "" : "s"} ago`,
     ageBadge: (days: number) => `${days}d`,
     // Choosing several tabs at once.

@@ -44,7 +44,8 @@ src/
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
-    search.ts              fuzzy-match scoring for search — pure, no DOM/chrome.* references,
+    search.ts              fuzzy-match scoring for search (titles, addresses; category and saved-window
+                            names by word start) — pure, no DOM/chrome.* references,
                             so an omnibox or service-worker search can reuse it unchanged
     backup.ts              export/import JSON: hand-rolled shape validation (no schema lib),
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
@@ -95,7 +96,7 @@ src/
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering, sorting, site names, saved windows
-                             in the list, random window names, where a move or drop takes a tab: into or out of a window) — logic-tested
+                             in the list and each tab's window name, random window names, where a move or drop takes a tab: into or out of a window) — logic-tested
     settings/               the Settings screen: four tabs (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize

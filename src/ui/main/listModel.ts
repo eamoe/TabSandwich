@@ -106,6 +106,19 @@ export function groupItems(tabs: SavedTab[], groups: TabGroup[]): ListItem[] {
 }
 
 /**
+ * Each tab's saved window name, for the tabs that show inside one (a group of two or more of the
+ * given tabs, as in groupItems): what search matches and what a search result names, since
+ * results list every tab as its own row.
+ */
+export function windowNames(tabs: SavedTab[], groups: TabGroup[]): Map<string, string> {
+    const names = new Map<string, string>();
+    for (const item of groupItems(tabs, groups)) {
+        if (item.kind === "group") for (const tab of item.tabs) names.set(tab.id, item.group.name);
+    }
+    return names;
+}
+
+/**
  * A name for a newly saved window, picked at random, sandwich-style ("Toasted Rye"), and not one
  * already in use (a number is added in the unlikely case every pairing is taken). `random` is
  * there for the logic tests.

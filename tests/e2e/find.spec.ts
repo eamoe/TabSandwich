@@ -31,6 +31,41 @@ test.describe("Search and filters", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Open Pull Requests", "Weekend Trip Itinerary", "The Pragmatic Programmer"]);
     });
 
+    test("TC-257: typing a category's or saved window's name finds every tab in it", async ({ popup }) => {
+        await seedLibrary(
+            popup,
+            [
+                { title: "eamoe/projx", url: "https://github.com/eamoe/projx", category: "ProjX" },
+                { title: "API reference", url: "https://docs.example.com/api", category: "ProjX" },
+                { title: "Weekend Trip Itinerary", url: "https://airbnb.com/trips/1", category: "Personal", groupId: "w" },
+                { title: "Flights", url: "https://flights.example.com/", category: "Personal", groupId: "w" },
+                { title: "Unrelated", url: "https://unrelated.example.com/", category: "Work" },
+            ],
+            { categories: ["ProjX", "Work", "Personal", "Reading"] },
+            { groups: [{ id: "w", name: "Toasted Rye" }] }
+        );
+        await search(popup).fill("projx");
+        await expect.poll(() => rowTitles(popup)).toEqual(["eamoe/projx", "API reference"]);
+        // A tab found by its category shows why: the matched letters of the name are highlighted.
+        const docs = tabList(popup).locator("li[data-tab-id]").filter({ hasText: "API reference" });
+        await expect(docs.locator("mark")).toHaveText(["ProjX"]);
+
+        // The category plus a word narrows it down.
+        await search(popup).fill("projx api");
+        await expect.poll(() => rowTitles(popup)).toEqual(["API reference"]);
+
+        // A saved window's name finds its tabs, each row naming the window (it isn't shown as one while searching).
+        await search(popup).fill("rye");
+        await expect.poll(() => rowTitles(popup)).toEqual(["Weekend Trip Itinerary", "Flights"]);
+        const flights = tabList(popup).locator("li[data-tab-id]").filter({ hasText: "Flights" });
+        await expect(flights).toContainText("Saved window: Toasted Rye");
+        await expect(flights.locator("mark")).toHaveText(["Rye"]);
+
+        // Names match where a word starts, not by scattered letters ("prsnl" is in no title or address either).
+        await search(popup).fill("prsnl");
+        await expect(tabList(popup).getByRole("heading", { name: "No saved tabs match “prsnl”" })).toBeVisible();
+    });
+
     test("TC-031: a category pill shows only that category", async ({ popup }) => {
         await popup.getByRole("button", { name: "Personal", exact: true }).click();
         await expect.poll(() => rowTitles(popup)).toEqual(["Weekend Trip Itinerary"]);

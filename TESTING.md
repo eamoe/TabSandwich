@@ -361,7 +361,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-110 — Basic substring match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub" (`github.com`) among several others.
 - Steps: Type `git` into the search box in the header (`#search-input`).
-- Expected: Only tabs matching on title/domain/path remain; matched characters in the title are visually highlighted.
+- Expected: Only tabs matching on title/domain/path (or category or saved-window name, TC-257) remain; matched characters in the title are visually highlighted.
 
 **TC-111 — Non-contiguous (fuzzy) match (P1)** **[auto]**
 - Preconditions: a saved tab titled "GitHub".
@@ -380,7 +380,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 
 **TC-114 — No results state (P1)** **[auto]**
 - Steps: Search for a string that matches nothing, e.g. `zzzzz`.
-- Expected: The list says "No saved tabs match “zzzzz”" with a hint to try fewer letters or part of the site's name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
+- Expected: The list says "No saved tabs match “zzzzz”" with a hint that search looks at titles, sites, categories and saved windows, and to try fewer letters or part of a name (distinct from the "Nothing saved yet" welcome); screen readers hear "No matching tabs".
 
 **TC-115 — Search composes with an active category/Outdated pill (P1)** **[auto]**
 - Preconditions: tabs across 2+ categories.
@@ -931,3 +931,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
 - Expected: Every tab, category, color, theme and sort is as it was; "New in 3.2" shows once. Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 2, with a backup copy; the robot tests cover the upgrade itself (TC-184), but not an existing install updating in place.)
 
+## 21. Stay Organized (v3.3)
+
+**TC-257 — Search finds a category's or saved window's tabs by its name (P1)** **[auto]**
+- Preconditions: a category "ProjX" holding a repo and a docs page whose titles and addresses don't all say "projx"; a saved window "Toasted Rye" with two tabs.
+- Steps: Search `projx`; then `projx api`; then `rye`; then `prsnl` (scattered letters of "Personal").
+- Expected: `projx` lists every tab in ProjX, the category's name highlighted on rows found only by it; `projx api` narrows to the docs page. `rye` lists both tabs of the window (search shows every tab on its own row), each naming the window next to a small stack icon, "Rye" highlighted. A name matches only where a word of it starts, so `prsnl` finds nothing. Searching inside a category filter still searches only that category (TC-115).

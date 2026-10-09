@@ -27,6 +27,10 @@
     --save: #FFC24B;
     --save-hover: #FFB52E;
     --on-save: #3A2800;
+    /* A search match: a soft wash under the row's own ink in light; in dark the wash would sink to a
+       muddy brown under light ink, so it's the Save yellow with dark ink, as on the Save button. */
+    --mark-bg: color-mix(in srgb, var(--save) 55%, transparent);
+    --mark-ink: currentColor;
     --dup: #C2410C;
     --on-dup: #FFFFFF;
     --danger: #B42339;
@@ -76,6 +80,8 @@
         --save: #F5B93E;
         --save-hover: #FFC85C;
         --on-save: #271A00;
+        --mark-bg: color-mix(in srgb, var(--save) 85%, transparent);
+        --mark-ink: var(--on-save);
         --dup: #FB923C;
         --on-dup: #2A1300;
         --danger: #FF8FA0;
@@ -119,6 +125,8 @@
     --save: #F5B93E;
     --save-hover: #FFC85C;
     --on-save: #271A00;
+    --mark-bg: color-mix(in srgb, var(--save) 85%, transparent);
+    --mark-ink: var(--on-save);
     --dup: #FB923C;
     --on-dup: #2A1300;
     --danger: #FF8FA0;
