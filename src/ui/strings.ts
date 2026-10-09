@@ -109,6 +109,11 @@ export const strings = {
     whatsNewTitle: (release: string) => `New in ${release}`,
     dismissWhatsNew: "Dismiss what's new",
     whatsNewNotes: {
+        "3.3": [
+            "Categories no longer age. Light the ☾ for the ones you read later, in Settings › Categories.",
+            "Archive instead of delete, pin tabs to the top, and add a note on why you saved something.",
+            "Search finds categories, saved windows and notes; new pages get a suggested category.",
+        ],
         "3.2": [
             "Save every tab in a window at once, then close them in one click.",
             "A saved window stays together as one row, named like “Toasted Rye”.",

@@ -26,8 +26,9 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 is the first that does).
-9. Anything new in this release that isn't marked **[auto]** yet.
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 does: which categories age).
+9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
+10. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -929,9 +930,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (3.1.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (3.2.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
-- Expected: Every tab, category, color, theme and sort is as it was; "New in 3.2" shows once. Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 2, with a backup copy; the robot tests cover the upgrade itself (TC-184), but not an existing install updating in place.)
+- Expected: Every tab, window, category, color, theme and sort is as it was; "New in 3.3" shows once. Only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
 ## 21. Stay Organized (v3.3)
 

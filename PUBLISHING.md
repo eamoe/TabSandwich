@@ -68,15 +68,15 @@ Export everything to a file and import it later. Every action works from the key
 YOUR DATA STAYS YOURS
 Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site). Saving a whole window needs permission to see your open tabs; Chrome asks only when you first use it, and everything else works if you say no.
 
-NEW IN 3.2
-Save every tab in a window at once, skipping what's already saved, then close them in one click. A saved window stays together in your list under a name like "Toasted Rye": open it, rename it, reopen all its tabs, or drag tabs in and out. Select several tabs to move them to a category or delete them in one go.
+NEW IN 3.3
+Read later, or keep: only the categories you choose ever nag you about old tabs. Archive instead of delete, and restore anything exactly where it was. Pin the tabs you use most, add a note on why you saved something, and let Tab Sandwich suggest the category for a new page. Search now finds categories, saved windows and notes too.
 ```
 
 ### Screenshots
 
 Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the icon, large (`branding/icon.svg`):
 
-1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list and save card
+1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list (a pinned tab, a note) and save card
 2. `screenshot-2-whole-window.png` — "Forty tabs open? Save them all at once": a window just saved, open as a saved window, with "Close N tabs" on offer
 3. `screenshot-3-dark-mode.png` — "Easy on the eyes, day or night": the list in dark mode
 4. `screenshot-4-search.png` — "Find any saved tab in a keystroke": search with highlighted matches
@@ -133,6 +133,7 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
 4. Update the description/screenshots only if something user-facing actually changed (3.2.0 did: paste the summary and detailed description above, including its "New in 3.2" paragraph, and replace all five screenshots — delete the old ones first, since two were renamed — re-rendered with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - 3.3.0 changes the description (paste it again, with its "New in 3.3" paragraph) and all five screenshots (same names; re-render after the version bump). It adds no permission and sends nothing anywhere: the new data (pins, archive, notes, when a tab was last opened from Tab Sandwich) stays on the device like the rest, so the **Privacy practices** answers stay as they are; `PRIVACY.md` lists it.
    - 3.2.0 adds the optional `tabs` permission: in the **Privacy practices** tab, add its justification (Step 3 above). Being optional, it's asked for only when someone first saves a whole window, so updating doesn't disable the extension for existing users.
    - A new icon (3.1.0 has one) normally comes from the uploaded zip. If the **Store listing** tab also has its own 128×128 store icon field, upload `images/icon-128.png` there too, or the listing keeps the old one.
 5. Submit for review again (update reviews are usually faster than the first one).
