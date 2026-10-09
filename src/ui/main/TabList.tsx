@@ -64,6 +64,9 @@ export function TabList(props: {
     onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
     onDelete: (tab: SavedTab) => Promise<boolean>;
     onTogglePin: (tab: SavedTab) => void;
+    /** Showing the archive: rows offer Restore and Delete for good; nothing moves or pins. */
+    inArchive: boolean;
+    onRestore: (tab: SavedTab) => Promise<boolean>;
     /** A tab moved in your own order, maybe into or out of a saved window. */
     onReorder: (draggedId: string, move: Move) => void | Promise<void>;
     onToggleGroup: (group: TabGroup) => void;
@@ -135,7 +138,7 @@ export function TabList(props: {
         if ((e.key === "ArrowDown" || e.key === "ArrowUp") && e.altKey) {
             if (!row.tab) return;
             const move = reorderTarget(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up");
-            if (!props.canReorder) announce(props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
+            if (!props.canReorder) announce(props.inArchive ? strings.cantMoveArchived : props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
             else if (!move && stoppedAtPinLine(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up")) announce(strings.pinLine(!!row.tab.pinned));
             else if (move) {
                 const id = row.tab.id;
@@ -169,7 +172,7 @@ export function TabList(props: {
             // While selecting, a row's own edit and delete step aside (the bar acts on the selection).
             return;
         } else if ((e.key === "e" || e.key === "E") && row.tab) li.querySelector<HTMLElement>('[data-row-action="edit"]')?.click();
-        else if ((e.key === "p" || e.key === "P") && row.tab) props.onTogglePin(row.tab);
+        else if ((e.key === "p" || e.key === "P") && row.tab && !props.inArchive) props.onTogglePin(row.tab);
         else if (e.key === "Delete" || e.key === "Backspace") {
             // Focus moves on to the next row (or the one before, at the end) once this one is gone;
             // past a window's own tabs when the whole window goes.
@@ -274,6 +277,8 @@ export function TabList(props: {
                 onEdit={(updates) => props.onEdit(tab, updates)}
                 onDelete={() => props.onDelete(tab)}
                 onTogglePin={() => props.onTogglePin(tab)}
+                inArchive={props.inArchive}
+                onRestore={() => props.onRestore(tab)}
                 dragHandlers={dragHandlersFor(tab.id, tab.id, (dragged, side) => dropTarget(items, dragged, { tabId: tab.id }, side))}
             />
         );

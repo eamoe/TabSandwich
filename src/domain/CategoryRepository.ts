@@ -162,7 +162,8 @@ export async function reorderCategories(draggedName: string, targetName: string)
 }
 
 /** Why a removal was refused; the screens put it into words (src/ui/errors.ts). */
-export type RemoveRefusal = "reserved" | "in-use";
+/** "archived": only tabs in the archive still use it (they don't show in the list, so say where they are). */
+export type RemoveRefusal = "reserved" | "in-use" | "archived";
 
 export interface RemoveCategoryResult {
     removed: boolean;
@@ -181,8 +182,9 @@ export async function removeCategory(name: string): Promise<RemoveCategoryResult
     }
     return withStorageLock(async () => {
         const tabs = await getTabs();
-        if (tabs.some((t) => getTabCategory(t) === name)) {
-            return { removed: false, reason: "in-use" };
+        const using = tabs.filter((t) => getTabCategory(t) === name);
+        if (using.length > 0) {
+            return { removed: false, reason: using.every((t) => t.archivedAt) ? "archived" : "in-use" };
         }
         const settings = await getSettings();
         settings.categories = settings.categories.filter((c) => c !== name);

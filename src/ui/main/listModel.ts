@@ -10,10 +10,17 @@ import { strings } from "../strings";
 
 export const ALL = "All";
 export const OUTDATED = "Outdated";
+/** The Archived filter: never a category's name (those are at most 15 characters, and this one can't be typed). */
+export const ARCHIVED = "\u0000archived";
+
+/** Archived: out of the list, kept for the Archived filter (SavedTab.archivedAt). */
+export function isArchived(tab: SavedTab): boolean {
+    return tab.archivedAt !== undefined;
+}
 
 /** Waiting: not pinned, in a category whose tabs age (Settings.waitingCategories), saved at least the set number of days ago. */
 export function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
-    if (tab.pinned) return false;
+    if (tab.pinned || isArchived(tab)) return false;
     return isOutdated(tab.savedAt, settings.waitingCategories.includes(getTabCategory(tab)), settings.outdatedDays);
 }
 
@@ -38,14 +45,20 @@ export interface FilterOption {
     count: number;
 }
 
-/** All first, then Outdated (only while something is outdated), then each category in use. */
-export function filterOptions(tabs: SavedTab[], settings: Settings): FilterOption[] {
+/**
+ * All first, then Waiting (only while something is waiting), then each category in use, then
+ * Archived (only while something is archived). Everything but Archived counts only tabs in the list.
+ */
+export function filterOptions(all: SavedTab[], settings: Settings): FilterOption[] {
+    const tabs = all.filter((t) => !isArchived(t));
     const outdatedCount = tabs.filter((t) => isTabOutdated(t, settings)).length;
     const options: FilterOption[] = [{ key: ALL, count: tabs.length }];
     if (outdatedCount > 0) options.push({ key: OUTDATED, count: outdatedCount });
     for (const cat of categoriesInUse(tabs, settings.categories)) {
         options.push({ key: cat, count: tabs.filter((t) => getTabCategory(t) === cat).length });
     }
+    const archivedCount = all.length - tabs.length;
+    if (archivedCount > 0) options.push({ key: ARCHIVED, count: archivedCount });
     return options;
 }
 
@@ -54,7 +67,10 @@ export function effectiveFilter(filter: string, options: FilterOption[]): string
     return options.some((o) => o.key === filter) ? filter : ALL;
 }
 
-export function applyFilter(tabs: SavedTab[], settings: Settings, filter: string): SavedTab[] {
+/** What a filter shows: Archived, the archive; every other filter, tabs in the list only. */
+export function applyFilter(all: SavedTab[], settings: Settings, filter: string): SavedTab[] {
+    if (filter === ARCHIVED) return all.filter(isArchived);
+    const tabs = all.filter((t) => !isArchived(t));
     if (filter === ALL) return tabs;
     if (filter === OUTDATED) return tabs.filter((t) => isTabOutdated(t, settings));
     return tabs.filter((t) => getTabCategory(t) === filter);

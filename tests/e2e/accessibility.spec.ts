@@ -189,7 +189,7 @@ for (const colorScheme of ["light", "dark"] as const) {
         });
 
         test("undo toast showing", async ({ popup }) => {
-            await popup.getByRole("button", { name: "Delete Q3 Roadmap" }).click();
+            await popup.getByRole("button", { name: "Archive Q3 Roadmap" }).click();
             await expect(popup.getByRole("button", { name: "Undo" })).toBeVisible();
             expect(await scan(popup)).toEqual([]);
         });

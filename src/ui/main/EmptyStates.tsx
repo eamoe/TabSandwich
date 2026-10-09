@@ -67,7 +67,27 @@ export function EmptyLibrary(props: { onEditCategories: () => void }) {
  * narrowed the search, one click searches everything instead. (Clearing the search is the ×
  * in the search box, right above.)
  */
-export function NoMatches(props: { query: string; filterLabel: string | null; onSearchAll: () => void }) {
+/** All is empty because every saved tab is archived: not a first run, so no welcome, just the way back. */
+export function AllArchived(props: { onShowArchive: () => void }) {
+    return (
+        <div class={`${styles.empty} ${styles.compact}`}>
+            <span class={styles.searchIcon} aria-hidden="true">
+                <Icon name="archive" size={18} />
+            </span>
+            <h2 class={styles.title}>{strings.allArchivedTitle}</h2>
+            <p class={styles.lead}>{strings.allArchivedBody}</p>
+            <button type="button" class={styles.action} onClick={props.onShowArchive}>
+                {strings.showArchive}
+            </button>
+        </div>
+    );
+}
+
+/**
+ * A search that found nothing. Inside a filter it offers to search everything; when the archive
+ * (left out of every view but its own) has a match, it offers to search there.
+ */
+export function NoMatches(props: { query: string; filterLabel: string | null; onSearchAll: () => void; onSearchArchive?: () => void }) {
     return (
         <div class={`${styles.empty} ${styles.compact}`}>
             <span class={styles.searchIcon} aria-hidden="true">
@@ -83,6 +103,11 @@ export function NoMatches(props: { query: string; filterLabel: string | null; on
                 </>
             ) : (
                 <p class={styles.lead}>{strings.noMatchesHint}</p>
+            )}
+            {props.onSearchArchive && (
+                <button type="button" class={styles.action} onClick={props.onSearchArchive}>
+                    {strings.searchArchive}
+                </button>
             )}
         </div>
     );

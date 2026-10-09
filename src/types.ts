@@ -9,6 +9,12 @@ export interface SavedTab {
     groupId?: string;
     /** Pinned (v3.3): shown above the rest in every sort (inside a saved window, at the top of it), and never waiting. Absent: not pinned. */
     pinned?: boolean;
+    /**
+     * When it was archived (v3.3): out of the list, the filters, the Waiting count and search, kept
+     * (in its place in your order, and in its saved window) until it's restored or deleted for good
+     * from the Archived filter. Absent: not archived.
+     */
+    archivedAt?: number;
 }
 
 /** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */

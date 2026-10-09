@@ -78,6 +78,13 @@ describe("removeCategory", () => {
         expect(storedSettings().categoryColors).not.toHaveProperty("Reading");
     });
 
+    it("says so when only archived tabs still use it", async () => {
+        seed([makeTab({ category: "Personal", archivedAt: 1 })], base);
+        expect(await removeCategory("Personal")).toEqual({ removed: false, reason: "archived" });
+        seed([makeTab({ category: "Personal", archivedAt: 1 }), makeTab({ category: "Personal" })], base);
+        expect(await removeCategory("Personal")).toEqual({ removed: false, reason: "in-use" });
+    });
+
     it("refuses while any tab still uses it", async () => {
         seed([makeTab({ category: "Work" })], base);
         expect(await removeCategory("Work")).toEqual({ removed: false, reason: "in-use" });

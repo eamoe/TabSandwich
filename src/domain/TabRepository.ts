@@ -320,8 +320,9 @@ export async function setPinned(id: string, pinned: boolean): Promise<SavedTab |
         const tab: SavedTab = pinned ? { ...rest, pinned: true } : rest;
         const others = tabs.filter((t) => t.id !== id);
         const groups = new Set((await getGroups()).map((g) => g.id));
+        // As the list shows windows: archived tabs aren't in it, so they don't count as members.
         const members = new Map<string, number>();
-        for (const t of tabs) if (t.groupId && groups.has(t.groupId)) members.set(t.groupId, (members.get(t.groupId) ?? 0) + 1);
+        for (const t of tabs) if (t.groupId && groups.has(t.groupId) && !t.archivedAt) members.set(t.groupId, (members.get(t.groupId) ?? 0) + 1);
         const loose = (t: SavedTab) => !t.groupId || (members.get(t.groupId) ?? 0) < 2;
         if (pinned && loose(tabs[index])) {
             let at = 0;
@@ -334,5 +335,42 @@ export async function setPinned(id: string, pinned: boolean): Promise<SavedTab |
             await setTabs(tabs.map((t) => (t.id === id ? tab : t)));
         }
         return tab;
+    });
+}
+
+/**
+ * Archives tabs: they leave the list but stay saved, in their place in your order and in their
+ * saved window, so restoring puts each back exactly where it was. Hands back the ids actually
+ * archived (ones gone or already archived are skipped), for one Undo (unarchiveTabs).
+ */
+export async function archiveTabs(ids: string[]): Promise<string[]> {
+    return withStorageLock(async () => {
+        const wanted = new Set(ids);
+        const tabs = await getTabs();
+        const archived = tabs.filter((t) => wanted.has(t.id) && !t.archivedAt).map((t) => t.id);
+        if (archived.length === 0) return [];
+        const now = Date.now();
+        const hit = new Set(archived);
+        await setTabs(tabs.map((t) => (hit.has(t.id) ? { ...t, archivedAt: now } : t)));
+        return archived;
+    });
+}
+
+/** Restores archived tabs to the list, each where it was (and back in its saved window). Hands back the ids restored. */
+export async function unarchiveTabs(ids: string[]): Promise<string[]> {
+    return withStorageLock(async () => {
+        const wanted = new Set(ids);
+        const tabs = await getTabs();
+        const restored = tabs.filter((t) => wanted.has(t.id) && t.archivedAt).map((t) => t.id);
+        if (restored.length === 0) return [];
+        const hit = new Set(restored);
+        await setTabs(
+            tabs.map((t) => {
+                if (!hit.has(t.id)) return t;
+                const { archivedAt: _was, ...rest } = t;
+                return rest;
+            })
+        );
+        return restored;
     });
 }

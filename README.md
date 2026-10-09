@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Tab Sandwich** is a Chrome extension for saving and organizing browser tabs. Save the tab you're on with one click, or add any link manually. Organize saved tabs into categories, filter and search visually, edit or delete entries in place, and get a nudge when something's been sitting around long enough to be worth revisiting.
+**Tab Sandwich** is a Chrome extension for saving and organizing browser tabs. Save the tab you're on with one click, or add any link manually. Organize saved tabs into categories, filter and search visually, edit, archive or delete entries in place, and get a nudge when something's been sitting around long enough to be worth revisiting.
 
 Data is stored locally via `chrome.storage.local` — nothing leaves your browser.
 
@@ -20,7 +20,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Categories** — assign a category to each saved tab, filter the list by category, manage the category list (add/rename/remove/reorder) from Settings.
 - **Color-coded categories** — each category gets a color from a preset palette (set per-category in Settings). Saved tabs are tinted and outlined in it and show the category name next to a matching dot, so the list scans by color without relying on color alone.
 - **Inline editing** — fix a title, URL, or category without deleting and re-adding.
-- **Undo delete** — deleting a tab shows an 8-second Undo option before it's gone for good.
+- **Archive** — a row's own button (or Delete) archives a tab: it leaves the list, its counts and search, but stays saved under the **Archived** pill, where it can be restored to exactly where it was (inside its saved window, too) or deleted for good. Both come with an 8-second Undo.
 - **Storage write protection** — a save, edit, delete, or category change that fails to write (e.g. storage full) shows a specific error instead of silently vanishing, and a warning appears once storage is over 80% full, before you actually hit the limit.
 - **Export & import** — back up all your saved tabs and settings to a JSON file, and restore them later by merging into or replacing what's currently saved (also undoable).
 - **Pin** — pin the tabs you use most (the pin on a row, or P): they stay on top in every sort, at the top of their saved window, and never show as waiting.
@@ -30,7 +30,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
 - **Keyboard shortcut** — open the popup with `Alt+S` (customizable via Chrome's own shortcut settings, linked from within the extension).
-- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, P pins, Delete deletes (Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, → and ← open and close a saved window, Space picks a row while selecting, / jumps to search. The keys are listed in Settings › General.
+- **Works without a mouse** — every action works from the keyboard: arrow keys move through the list, Enter opens, E edits, P pins, Delete archives (in the archive: deletes for good; Ctrl+Z / ⌘Z undoes), Alt+arrows move a tab, → and ← open and close a saved window, Space picks a row while selecting, / jumps to search. The keys are listed in Settings › General.
 
 ## Installation
 

@@ -42,6 +42,11 @@ describe("parseBackupFile", () => {
         expect(parseBackupFile(fileWith({ tabs: [], settings: { waitingCategories: [1] } }))?.settingsFields.waitingCategories).toBeUndefined();
     });
 
+    it("keeps when a tab was archived, so Replace all doesn't bring the archive back into the list", () => {
+        const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", archivedAt: 1700000000000 }, { title: "b", url: "https://b.com", archivedAt: "x" }] }));
+        expect(parsed?.tabs.map((t) => t.archivedAt)).toEqual([1700000000000, undefined]);
+    });
+
     it("keeps a tab's pin, and nothing but true counts as pinned", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", pinned: true }, { title: "b", url: "https://b.com", pinned: "yes" }] }));
         expect(parsed?.tabs.map((t) => t.pinned)).toEqual([true, undefined]);

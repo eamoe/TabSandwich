@@ -51,8 +51,15 @@ export interface RowProps {
     onOpen: () => void;
     onEdit: (updates: { title: string; url: string; category: string }) => Promise<EditOutcome>;
     onTogglePin: () => void;
-    /** Resolves false when the delete couldn't be saved, so the row comes back. */
+    /**
+     * In the list: Archive. In the archive (`inArchive`): Delete for good. Resolves false when it
+     * couldn't be saved, so the row comes back.
+     */
     onDelete: () => Promise<boolean>;
+    /** Showing the archive: the row offers Restore and Delete for good instead of pin, edit and archive. */
+    inArchive: boolean;
+    /** Restore, in the archive. Resolves false when it couldn't be saved, so the row comes back. */
+    onRestore: () => Promise<boolean>;
     dragHandlers: {
         onDragStart: (e: DragEvent) => void;
         onDragEnd: () => void;
@@ -101,6 +108,10 @@ export function TabRow(props: RowProps) {
     const startDelete = async () => {
         setLeaving(true);
         if (!(await props.onDelete())) setLeaving(false);
+    };
+    const startRestore = async () => {
+        setLeaving(true);
+        if (!(await props.onRestore())) setLeaving(false);
     };
 
     const rowStyle = {
@@ -194,12 +205,38 @@ export function TabRow(props: RowProps) {
                 </span>
             )}
             {/* A pinned tab never ages, so its pin stands where the age badge would; the actions cover it on hover. */}
-            {tab.pinned && (
+            {tab.pinned && !props.inArchive && (
                 <span class={styles.pinMark} aria-hidden="true">
                     <Icon name="pin" size={13} />
                 </span>
             )}
-            {!props.selecting && (
+            {!props.selecting && props.inArchive && (
+                <span class={styles.actions}>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small}`}
+                        aria-label={strings.restoreTab(tab.title)}
+                        title={strings.restoreTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="restore"
+                        onClick={() => void startRestore()}
+                    >
+                        <Icon name="restore" size={14} />
+                    </button>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
+                        aria-label={strings.deleteForeverTab(tab.title)}
+                        title={strings.deleteForeverTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="delete"
+                        onClick={() => void startDelete()}
+                    >
+                        <Icon name="trash" size={14} />
+                    </button>
+                </span>
+            )}
+            {!props.selecting && !props.inArchive && (
                 <span class={styles.actions}>
                     <button
                         type="button"
@@ -226,14 +263,14 @@ export function TabRow(props: RowProps) {
                     </button>
                     <button
                         type="button"
-                        class={`${controls.iconBtn} ${controls.small} ${styles.delete}`}
-                        aria-label={strings.deleteTab(tab.title)}
-                        title={strings.deleteTooltip}
+                        class={`${controls.iconBtn} ${controls.small}`}
+                        aria-label={strings.archiveTab(tab.title)}
+                        title={strings.archiveTooltip}
                         tabIndex={tabIndex}
                         data-row-action="delete"
                         onClick={() => void startDelete()}
                     >
-                        <Icon name="trash" size={14} />
+                        <Icon name="archive" size={14} />
                     </button>
                 </span>
             )}

@@ -1,6 +1,7 @@
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { Icon } from "../Icon";
 import { strings } from "../strings";
-import { ALL, OUTDATED, type FilterOption } from "./listModel";
+import { ALL, ARCHIVED, OUTDATED, type FilterOption } from "./listModel";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import controls from "../controls.module.css";
 import styles from "./FilterPills.module.css";
@@ -11,22 +12,32 @@ export function FilterPills(props: {
     colorOf: (category: string) => string;
     onSelect: (key: string) => void;
 }) {
+    // The picked pill is always in view, however it was picked ("Search the archive" picks the last one).
+    const row = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+        const pill = row.current?.querySelector<HTMLElement>('[aria-pressed="true"]');
+        if (!pill || !row.current) return;
+        const { left, right } = pill.getBoundingClientRect();
+        const box = row.current.getBoundingClientRect();
+        if (left < box.left || right > box.right) row.current.scrollLeft += left < box.left ? left - box.left - 12 : right - box.right + 12;
+    }, [props.active]);
     return (
-        <div class={styles.pills} role="group" aria-label={strings.filterLabel}>
+        <div ref={row} class={styles.pills} role="group" aria-label={strings.filterLabel}>
             {props.options.map((o) => {
-                const isCategory = o.key !== ALL && o.key !== OUTDATED;
-                const label = o.key === ALL ? strings.all : o.key === OUTDATED ? strings.outdated : o.key;
+                const isCategory = o.key !== ALL && o.key !== OUTDATED && o.key !== ARCHIVED;
+                const label = o.key === ALL ? strings.all : o.key === OUTDATED ? strings.outdated : o.key === ARCHIVED ? strings.archived : o.key;
                 return (
                     <button
                         key={o.key}
                         type="button"
                         class={styles.pill}
-                        aria-label={o.key === OUTDATED ? strings.outdatedPill(o.count) : label}
+                        aria-label={o.key === OUTDATED ? strings.outdatedPill(o.count) : o.key === ARCHIVED ? strings.archivedPill(o.count) : label}
                         aria-pressed={o.key === props.active}
                         onClick={() => props.onSelect(o.key)}
                     >
                         {isCategory && <span class={controls.dot} style={{ background: props.colorOf(o.key) }} />}
                         {o.key === OUTDATED && <Icon name="moon" size={12} />}
+                        {o.key === ARCHIVED && <Icon name="archive" size={12} />}
                         <span>{o.key === UNCATEGORIZED ? UNCATEGORIZED : label}</span>
                         <span class={styles.count} aria-hidden="true">
                             {o.count}

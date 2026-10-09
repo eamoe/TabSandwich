@@ -14,6 +14,8 @@ import {
     reorderTabs,
     setCategoryOf,
     setPinned,
+    archiveTabs,
+    unarchiveTabs,
     type AddTabResult,
 } from "../../domain/TabRepository";
 import { getCategoryColorHex, getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
@@ -32,11 +34,11 @@ import { ManualForm } from "./ManualForm";
 import { FilterPills, StorageWarning } from "./FilterPills";
 import { SortMenu } from "./SortMenu";
 import { SelectButton, SelectionBar } from "./SelectionBar";
-import { EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
+import { AllArchived, EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
-import { ALL, OUTDATED, applyFilter, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
+import { ALL, ARCHIVED, OUTDATED, applyFilter, isArchived, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -172,14 +174,17 @@ export function App(props: { whatsNew?: string | null }) {
     const activeFilter = effectiveFilter(filter, options);
     const sort = pendingSort ?? library?.settings.sort ?? "custom";
 
+    // The tabs in the list; archived ones show only on the Archived filter.
+    const active = useMemo(() => (library ? library.tabs.filter((t) => !isArchived(t)) : []), [library]);
     // Search results list every tab as its own row, so each one in a saved window names it.
-    const windowOf = useMemo(() => (library ? windowNames(library.tabs, library.groups) : new Map<string, string>()), [library]);
+    const windowOf = useMemo(() => (library ? windowNames(active, library.groups) : new Map<string, string>()), [library, active]);
 
     const visible = useMemo(() => {
         if (!library) return { tabs: [] as SavedTab[], matches: null };
         const filtered = sortTabs(applyFilter(library.tabs, library.settings, activeFilter), sort);
         const q = query.trim();
         // Pinned tabs first in every sort; a saved window (shown only on All) keeps its pinned ones at its own top.
+        if (!q && activeFilter === ARCHIVED) return { tabs: filtered, matches: null };
         if (!q) return { tabs: pinnedFirst(filtered, activeFilter === ALL ? new Set(windowOf.keys()) : undefined), matches: null };
         const matches = searchTabs(filtered, q, (tab) => ({ category: getTabCategory(tab), window: windowOf.get(tab.id) }));
         return { tabs: matches.map((m) => m.tab), matches: new Map<string, SearchMatch>(matches.map((m) => [m.tab.id, m])) };
@@ -191,8 +196,14 @@ export function App(props: { whatsNew?: string | null }) {
     const configured = library.settings.categories;
     const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: c }));
     const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: c }));
+    // Anything saved at all, archive included: the filter row (and the Archived pill) shows.
     const hasTabs = library.tabs.length > 0;
     const searching = query.trim().length > 0;
+    const inArchive = activeFilter === ARCHIVED;
+    const archivedCount = library.tabs.length - active.length;
+    // Nothing found here, but the archive has a match: the empty list offers to search there.
+    const archiveHasMatch =
+        searching && !inArchive && visible.tabs.length === 0 && searchTabs(library.tabs.filter(isArchived), query.trim()).length > 0;
 
     const afterSave = async (result: AddTabResult) => {
         if (!result.duplicate) setHops((n) => n + 1);
@@ -221,18 +232,19 @@ export function App(props: { whatsNew?: string | null }) {
         if (!grouped) return;
         // Read fresh: this runs right after a save or Undo, before the screen has caught up.
         const [tabs, groups] = await Promise.all([getTabs(), getGroups()]);
-        const item = groupItems(tabs, groups).find((i) => i.kind === "group" && i.tabs.some((t) => t.id === id));
+        const item = groupItems(tabs.filter((t) => !isArchived(t)), groups).find((i) => i.kind === "group" && i.tabs.some((t) => t.id === id));
         if (item?.kind === "group" && item.group.collapsed) {
             await setGroupCollapsed(item.group.id, false).catch(() => undefined);
             await reload();
         }
     };
 
-    // Brings a saved tab into view and flashes it, widening the list only if it's filtered out.
+    // Brings a saved tab into view and flashes it, widening the list only if it's filtered out
+    // (to the archive, for an archived one).
     const reveal = async (id: string) => {
         const widen = !visible.tabs.some((t) => t.id === id);
         if (widen) {
-            setFilter(ALL);
+            setFilter(library.tabs.some((t) => t.id === id && isArchived(t)) ? ARCHIVED : ALL);
             setQuery("");
         }
         await openWindowHolding(id, widen || (activeFilter === ALL && !searching));
@@ -289,6 +301,52 @@ export function App(props: { whatsNew?: string | null }) {
             await reload();
             await openWindowHolding(deleted.id, activeFilter === ALL && !searching);
             flash(deleted.id);
+        });
+        return true;
+    };
+
+    // Archiving (a row's own button, or Delete): out of the list, back where it was with Undo.
+    const onArchive = async (tab: SavedTab): Promise<boolean> => {
+        let archived: string[] = [];
+        try {
+            archived = await archiveTabs([tab.id]);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await new Promise((resolve) => setTimeout(resolve, leaveDurationMs()));
+        await reload();
+        if (archived.length === 0) return false;
+        showUndoToast(strings.archivedToast, async () => {
+            try {
+                await unarchiveTabs(archived);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
+            await openWindowHolding(tab.id, activeFilter === ALL && !searching);
+            flash(tab.id);
+        });
+        return true;
+    };
+
+    // Restoring, in the archive: back in the list, where it was (in its saved window too).
+    const onRestore = async (tab: SavedTab): Promise<boolean> => {
+        let restored: string[] = [];
+        try {
+            restored = await unarchiveTabs([tab.id]);
+        } catch (err) {
+            showErrorToast(writeErrorMessage(err));
+        }
+        await new Promise((resolve) => setTimeout(resolve, leaveDurationMs()));
+        await reload();
+        if (restored.length === 0) return false;
+        showUndoToast(strings.restoredToast, async () => {
+            try {
+                await archiveTabs(restored);
+            } catch (err) {
+                showErrorToast(writeErrorMessage(err));
+            }
+            await reload();
         });
         return true;
     };
@@ -501,7 +559,8 @@ export function App(props: { whatsNew?: string | null }) {
                 <Header
                     showSearch={hasTabs}
                     query={query}
-                    tabCount={library.tabs.length}
+                    tabCount={inArchive ? archivedCount : active.length}
+                    inArchive={inArchive}
                     onQuery={setQuery}
                     onSubmitSearch={() => visible.tabs[0] && openTab(visible.tabs[0])}
                     onArrowDown={focusFirstRow}
@@ -545,7 +604,7 @@ export function App(props: { whatsNew?: string | null }) {
                 <nav class={styles.filterBar} aria-label={strings.filterBarLabel}>
                     <FilterPills options={options} active={activeFilter} colorOf={colorOf} onSelect={setFilter} />
                     <SortMenu value={sort} onChange={onSort} />
-                    <SelectButton active={false} onToggle={() => setSelecting(true)} />
+                    {!inArchive && <SelectButton active={false} onToggle={() => setSelecting(true)} />}
                 </nav>
             )}
             <main id="main-view" class={listStyles.wrap}>
@@ -567,19 +626,22 @@ export function App(props: { whatsNew?: string | null }) {
                     searchActive={searching}
                     // Your own order is the only one dragging can change: search results are in
                     // match order and the other sorts are views, so a drag there would mean nothing.
-                    canReorder={!searching && sort === "custom" && !selecting}
+                    canReorder={!searching && sort === "custom" && !selecting && !inArchive}
                     // Under a category filter every row shares that category, so rows leave it out.
-                    showCategory={activeFilter === ALL || activeFilter === OUTDATED}
+                    showCategory={activeFilter === ALL || activeFilter === OUTDATED || inArchive}
                     entered={entered}
                     highlight={highlight}
                     empty={
                         !hasTabs ? (
                             <EmptyLibrary onEditCategories={() => openSettings("categories")} />
+                        ) : active.length === 0 && activeFilter === ALL && !searching ? (
+                            <AllArchived onShowArchive={() => setFilter(ARCHIVED)} />
                         ) : (
                             <NoMatches
                                 query={query.trim()}
-                                filterLabel={activeFilter === ALL ? null : activeFilter === OUTDATED ? strings.outdated : activeFilter}
+                                filterLabel={activeFilter === ALL ? null : activeFilter === OUTDATED ? strings.outdated : inArchive ? strings.archived : activeFilter}
                                 onSearchAll={() => setFilter(ALL)}
+                                onSearchArchive={archiveHasMatch ? () => setFilter(ARCHIVED) : undefined}
                             />
                         )
                     }
@@ -587,8 +649,10 @@ export function App(props: { whatsNew?: string | null }) {
                     colorOf={colorOf}
                     onOpen={openTab}
                     onEdit={onEdit}
-                    onDelete={onDelete}
+                    onDelete={inArchive ? onDelete : onArchive}
                     onTogglePin={(tab) => void onTogglePin(tab)}
+                    inArchive={inArchive}
+                    onRestore={onRestore}
                     onReorder={onReorder}
                     onToggleGroup={onToggleGroup}
                     onGroupAction={onGroupAction}

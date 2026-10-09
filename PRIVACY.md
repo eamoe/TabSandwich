@@ -14,6 +14,7 @@ When you save a tab, Tab Sandwich stores:
 - The date and time you saved it
 - Which saved window it belongs to, if you saved it as part of a whole window
 - Whether you've pinned it
+- Whether, and when, you archived it
 
 For each saved window, Tab Sandwich stores its name (a random one like "Toasted Rye", which you can change), when it was saved, and whether you've left it open or closed in the list.
 

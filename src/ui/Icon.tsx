@@ -97,6 +97,21 @@ const PATHS: Record<IconName, JSX.Element> = {
         </>
     ),
     moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
+    archive: (
+        <>
+            <rect x="3" y="4" width="18" height="4" rx="1" />
+            <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+            <line x1="10" y1="12.5" x2="14" y2="12.5" />
+        </>
+    ),
+    restore: (
+        <>
+            <rect x="3" y="4" width="18" height="4" rx="1" />
+            <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+            <polyline points="9.5 14.5 12 12 14.5 14.5" />
+            <line x1="12" y1="12" x2="12" y2="17.5" />
+        </>
+    ),
     pin: (
         <>
             <line x1="12" y1="17" x2="12" y2="22" />
@@ -162,6 +177,8 @@ export type IconName =
     | "tabs"
     | "moon"
     | "pin"
+    | "archive"
+    | "restore"
     | "check"
     | "chevronDown"
     | "chevronUp"

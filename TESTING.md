@@ -185,13 +185,13 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Enter edit mode → change fields → **Cancel**.
 - Expected: Original values remain; nothing persisted.
 
-**TC-043 — Delete a tab (P1)** **[auto]**
-- Steps: Hover a row → click its trash icon.
-- Expected: The row slides away and is removed from the list and from storage (still gone after reopening the popup). A toast ("Deleted") appears at the bottom with an **Undo** button.
+**TC-043 — Archive a tab, and delete it for good from the archive (P1)** **[auto]**
+- Steps: Hover a row → click its archive icon (since 3.3 a row's own button archives). Then pick the **Archived** pill and click the row's trash icon.
+- Expected: Archiving: the row slides away and leaves the list, still saved (it's under Archived); a toast ("Archived") offers **Undo**. In the archive, the trash deletes it for good: gone from storage (still gone after reopening the popup), with a "Deleted" toast and **Undo**. The Archived pill disappears once the archive is empty.
 
 **TC-044 — Undo restores the tab to its exact original position (P1)** **[auto]**
 - Preconditions: 3+ saved tabs in manual order.
-- Steps: Delete the middle tab → click **Undo** in the toast before it disappears.
+- Steps: Archive the middle tab → click **Undo** in the toast before it disappears.
 - Expected: The tab reappears at the same position it was deleted from (not at the top or bottom of the list), scrolled into view and briefly highlighted, same as a fresh save.
 
 **TC-045 — Undo toast auto-dismisses and the deletion becomes permanent (P2)**
@@ -566,10 +566,10 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Edit a tab's title, click **Save**.
 - Expected: An error toast appears and the row closes showing its original, actually-stored title.
 
-**TC-173 — A failed delete shows an error and leaves the row in place (P1)** **[auto]**
+**TC-173 — A failed archive shows an error and leaves the row in place (P1)** **[auto]**
 - Preconditions: write patched to reject; at least one saved tab.
-- Steps: Delete a tab.
-- Expected: An error toast appears; the row starts to slide away but comes straight back at full size (no undo toast either — nothing was deleted to undo).
+- Steps: Archive a tab.
+- Expected: An error toast appears; the row starts to slide away but comes straight back at full size (no undo toast either — nothing was archived to undo).
 
 **TC-174 — A failed tab reorder shows an error and leaves the order unchanged (P2)**
 - Preconditions: write patched to reject; 2+ saved tabs.
@@ -787,8 +787,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Enter opens the tab in a new browser tab. E opens the edit form with the title selected; Escape cancels it and focus returns to the row; saving with Enter also returns focus to the row.
 
 **TC-222 — Delete from the keyboard, and undo (P1)** **[auto]**
-- Steps: On a row press Delete (on a Mac, the delete key, which is Backspace). Then Ctrl+Z (⌘Z on a Mac).
-- Expected: The row is deleted with the usual Undo toast, and focus moves to the next row (or the one before, at the end of the list). Ctrl+Z / ⌘Z undoes it while Undo is showing.
+- Steps: On a row press Delete (on a Mac, the delete key, which is Backspace). Then Ctrl+Z (⌘Z on a Mac). In the archive, Delete on a row.
+- Expected: In the list, the row is archived with the usual Undo toast; in the archive, Delete deletes for good (with Undo); and focus moves to the next row (or the one before, at the end of the list). Ctrl+Z / ⌘Z undoes it while Undo is showing.
 
 **TC-223 — Move a tab with Alt+arrows (P1)** **[auto]**
 - Steps: On a row press Alt+↓ (⌥↓), then Alt+↑. Try it under a category filter, and with a sort on.
@@ -965,3 +965,24 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-263 — Moving stops at the pinned line (P2)** **[auto]**
 - Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
 - Expected: Alt+↑ doesn't move it, and screen readers hear "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
+
+**TC-264 — Archived tabs are out of the list (P1)** **[auto]**
+- Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
+- Steps: Look at the list, the pills and the search field; search for an archived tab's title; click **Search the archive**; on the Archived pill press P and Alt+↑ on a row.
+- Expected: Archived tabs aren't in All, any category's count, the Waiting count, the search field's "Search N saved tabs", or the window's tab count. A search that only the archive matches says so and offers **Search the archive**, which picks the **Archived (N)** pill (last in the row, with a box icon); there the field reads "Search N archived tabs". Archived rows show no age badge or pin; P does nothing; Alt+arrows say "Restore a tab to move it."; there's no ☑ (selecting there comes in a later stage).
+
+**TC-265 — Restore puts it back where it was (P1)** **[auto]**
+- Steps: On the Archived pill, click a row's Restore (box with an arrow) for a tab that was inside a saved window; go to All; then Undo.
+- Expected: "Restored", and the tab is back in exactly its old place in your order, inside its window. Undo archives it again.
+
+**TC-266 — Everything archived (P2)** **[auto]**
+- Steps: Archive the last tab in the list.
+- Expected: All shows "Everything's in the archive" with **Show the archive** (not the first-run welcome); the filter row stays, with the Archived pill.
+
+**TC-267 — A category only the archive uses (P2)** **[auto]**
+- Steps: Settings › Categories: look at a category whose only tabs are archived, and click its remove button.
+- Expected: Its count says 0 tabs (counted as the list shows them); removing it is refused with "Tabs in your archive still use it — delete them there first."
+
+**TC-268 — The save card on an archived page (P2)** **[auto]**
+- Steps: Open a page whose saved copy is archived; click **Show** on the save card.
+- Expected: The list switches to the Archived pill, the saved copy flashing in view.

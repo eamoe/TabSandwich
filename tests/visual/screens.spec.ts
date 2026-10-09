@@ -56,6 +56,15 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`pinned-${colorScheme}.png`);
         });
 
+        test("the archive, a row hovered", async ({ popup }) => {
+            const library = LIBRARY.map((t, i) => (i % 3 === 1 ? { ...t, archivedDaysAgo: i } : t));
+            await seedLibrary(popup, library, SETTINGS);
+            await popup.getByRole("button", { name: /^Archived/ }).click();
+            await popup.mouse.move(0, 599);
+            await tabList(popup).getByRole("listitem").first().hover();
+            await expect(popup).toHaveScreenshot(`archive-${colorScheme}.png`);
+        });
+
         test("editing a row", async ({ popup }) => {
             await popup.getByRole("button", { name: "Edit Q3 Roadmap" }).click();
             await expect(popup).toHaveScreenshot(`edit-${colorScheme}.png`);

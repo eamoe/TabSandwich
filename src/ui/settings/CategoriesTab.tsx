@@ -24,7 +24,9 @@ const MAX_NAME_LENGTH = 15;
 const MESSAGE_MS = 3000;
 
 export function CategoriesTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
-    const { settings, tabs } = library;
+    const { settings } = library;
+    // Counted as the list shows them: archived tabs aren't in it (removing a category they use explains).
+    const tabs = library.tabs.filter((t) => !t.archivedAt);
     const [newName, setNewName] = useState("");
     const [paletteFor, setPaletteFor] = useState<string | null>(null);
     const [dragName, setDragName] = useState<string | null>(null);

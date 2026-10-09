@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -350,5 +350,33 @@ describe("setPinned", () => {
     it("returns null for a tab that's gone", async () => {
         seed([makeTab()]);
         expect(await setPinned("nope", true)).toBeNull();
+    });
+});
+
+describe("archiveTabs / unarchiveTabs", () => {
+    it("marks tabs archived where they stand (order and window kept), and restores them as they were", async () => {
+        const group = makeGroup();
+        const [a, b, c] = [makeTab(), makeTab({ groupId: group.id }), makeTab({ pinned: true })];
+        seed([a, b, c]);
+        const before = Date.now();
+        expect(await archiveTabs([b.id, c.id, "gone"])).toEqual([b.id, c.id]);
+        const stored = storedTabs();
+        expect(stored.map((t) => t.id)).toEqual([a.id, b.id, c.id]);
+        expect(stored[1]).toMatchObject({ groupId: group.id });
+        expect(stored[1].archivedAt).toBeGreaterThanOrEqual(before);
+        // Already archived: skipped, so Undo of a second archive doesn't restore the first.
+        expect(await archiveTabs([b.id])).toEqual([]);
+
+        expect(await unarchiveTabs([b.id, c.id, a.id])).toEqual([b.id, c.id]);
+        expect(storedTabs()).toEqual([a, b, c]);
+    });
+
+    it("a pinned tab inside a window whose other tabs are archived counts as loose when pinned again", async () => {
+        const group = makeGroup();
+        const [a, m1, m2] = [makeTab(), makeTab({ groupId: group.id }), makeTab({ groupId: group.id, archivedAt: 1 })];
+        seed([a, m1, m2]);
+        seedGroups([group]);
+        await setPinned(m1.id, true);
+        expect(storedTabs().map((t) => t.id)).toEqual([m1.id, a.id, m2.id]);
     });
 });

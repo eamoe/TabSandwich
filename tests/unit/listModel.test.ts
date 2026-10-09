@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, pinnedFirst, stoppedAtPinLine, isTabOutdated, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
+import { ALL, ARCHIVED, OUTDATED, applyFilter, categoriesInUse, effectiveFilter, filterOptions, siteName, sortTabs, groupItems, windowNames, pinnedFirst, stoppedAtPinLine, isTabOutdated, newGroupName, reorderTarget, dropTarget, type ListItem } from "../../src/ui/main/listModel";
 import { DEFAULT_SETTINGS } from "../../src/storage/chromeStorage";
 import { makeTab } from "./helpers";
 
@@ -234,5 +234,31 @@ describe("pinned tabs", () => {
             expect(dropTarget(items, "z", { tabId: "mp" }, "after")).toEqual({ to: "mp", group: "g", side: "after" });
             expect(dropTarget(items, "z", { tabId: "mp" }, "before")).toBeNull();
         });
+    });
+});
+
+describe("archived tabs", () => {
+    const now = Date.now();
+    const work = makeTab({ category: "Work", savedAt: now - 30 * DAY });
+    const archivedWork = makeTab({ category: "Work", savedAt: now - 30 * DAY, archivedAt: now });
+    const archivedReading = makeTab({ category: "Reading", archivedAt: now });
+    const tabs = [work, archivedWork, archivedReading];
+
+    it("leave every filter and count but their own, which comes last while there's something in it", () => {
+        expect(filterOptions(tabs, settings)).toEqual([
+            { key: ALL, count: 1 },
+            { key: OUTDATED, count: 1 },
+            { key: "Work", count: 1 },
+            { key: ARCHIVED, count: 2 },
+        ]);
+        expect(filterOptions([work], settings).map((o) => o.key)).not.toContain(ARCHIVED);
+        expect(applyFilter(tabs, settings, ALL)).toEqual([work]);
+        expect(applyFilter(tabs, settings, "Work")).toEqual([work]);
+        expect(applyFilter(tabs, settings, OUTDATED)).toEqual([work]);
+        expect(applyFilter(tabs, settings, ARCHIVED)).toEqual([archivedWork, archivedReading]);
+    });
+
+    it("never show as waiting", () => {
+        expect(isTabOutdated(archivedWork, settings)).toBe(false);
     });
 });
