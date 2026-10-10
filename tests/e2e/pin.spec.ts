@@ -78,4 +78,22 @@ test.describe("Pinned tabs", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
         await expect(windowRow(popup, "Research")).toBeVisible();
     });
+
+    test("TC-279: Unpin sits where the pin mark was, and a mouse click doesn't leave the row looking hovered", async ({ popup }) => {
+        await seed(popup);
+        const echo = row(popup, "Echo");
+        const actions = echo.getByRole("button", { name: "Edit Echo" }).locator("..");
+        await popup.getByRole("button", { name: "Pin Echo" }).click();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
+        // Pin is the last of the row's buttons, so on hover it covers the pin mark, not Archive.
+        await expect(echo.getByRole("button").last()).toHaveAccessibleName("Unpin Echo");
+        // The mouse moves on: the clicked button keeps focus, but the row stops showing its buttons.
+        await popup.mouse.move(0, 599);
+        await expect(popup.getByRole("button", { name: "Unpin Echo" })).toBeFocused();
+        await expect(actions).toHaveCSS("opacity", "0");
+        // Reached with the keyboard, they show.
+        await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
+        await expect(echo.getByRole("button", { name: "Echo", exact: true })).toBeFocused();
+        await expect(actions).toHaveCSS("opacity", "1");
+    });
 });

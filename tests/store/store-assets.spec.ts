@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { test } from "../e2e/fixtures";
 import { expect } from "../e2e/fixtures";
-import { answerPermissionPrompt, openSettings, seedLibrary } from "../e2e/helpers";
+import { answerPermissionPrompt, seedLibrary } from "../e2e/helpers";
 
 const OUT = "store-assets";
 
@@ -16,6 +16,14 @@ const LIBRARY = [
     { title: "Lisbon – Travel guide at Wikivoyage", url: "https://en.wikivoyage.org/wiki/Lisbon", category: "Travel", daysAgo: 15, note: "for the May trip: day 2 is Belém" },
     { title: "BBC Food – Recipes", url: "https://www.bbc.co.uk/food", category: "Recipes", daysAgo: 2 },
     { title: "Stack Overflow", url: "https://stackoverflow.com/", daysAgo: 1 },
+];
+/** Added for the Read later shot: more reading that's been waiting, and a few tabs already archived. */
+const WAITING_EXTRAS = [
+    { title: "web.dev: Learn CSS", url: "https://web.dev/learn/css", category: "Reading", daysAgo: 34 },
+    { title: "CSS-Tricks: A Complete Guide to Grid", url: "https://css-tricks.com/snippets/css/complete-guide-grid/", category: "Reading", daysAgo: 18 },
+    { title: "A List Apart", url: "https://alistapart.com/", category: "Reading", daysAgo: 23 },
+    { title: "Google Flights", url: "https://www.google.com/travel/flights", category: "Travel", daysAgo: 40, archivedDaysAgo: 6 },
+    { title: "The Verge", url: "https://www.theverge.com/", category: "Reading", daysAgo: 30, archivedDaysAgo: 2 },
 ];
 const SETTINGS = {
     categories: ["Work", "Reading", "Travel", "Recipes"],
@@ -46,7 +54,7 @@ async function compose(page: Page, file: string, popupPng: Buffer, headline: str
     await page.setContent(`<!doctype html><html><body style="margin:0;width:1280px;height:800px;overflow:hidden;background:${BACKGROUNDS[theme]};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#fff;display:flex;align-items:center;gap:72px;padding:0 96px;box-sizing:border-box">
       <div style="flex:1;min-width:0">
         ${brand}
-        <h1 style="margin:0 0 24px;font-size:${withIcon ? 46 : 52}px;line-height:1.08;font-weight:800;letter-spacing:-.02em">${headline}</h1>
+        <h1 style="margin:0 0 24px;font-size:${withIcon ? 46 : 52}px;line-height:1.08;font-weight:800;letter-spacing:-.02em;text-wrap:balance">${headline}</h1>
         ${lines.map((l) => `<p style="margin:0 0 12px;font-size:21px;line-height:1.4;opacity:.88">${l}</p>`).join("")}
       </div>
       <img src="${img}" width="380" height="600" style="border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35),0 8px 20px rgba(0,0,0,.2);flex-shrink:0">
@@ -70,7 +78,7 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
     test.skip(!process.env.TS_STORE_SCREENSHOTS, "Run through `pnpm store:screenshots`.");
     // Visit each sample site once, so Chrome's own icon cache has its icon (as it would for a real user).
     const visitor = await context.newPage();
-    for (const { url } of [...LIBRARY, { url: CURRENT_PAGE }, ...WINDOW_PAGES.map((url) => ({ url }))]) {
+    for (const { url } of [...LIBRARY, ...WAITING_EXTRAS, { url: CURRENT_PAGE }, ...WINDOW_PAGES.map((url) => ({ url }))]) {
         await visitor.goto(url, { waitUntil: "load", timeout: 30_000 }).catch(() => undefined);
         await visitor.waitForTimeout(800);
     }
@@ -78,9 +86,9 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
 
     await popup.setViewportSize({ width: 380, height: 600 });
     const canvas = await context.newPage();
-    const shot = async (theme: "light" | "dark", prepare: () => Promise<void>) => {
+    const shot = async (theme: "light" | "dark", prepare: () => Promise<void>, library: typeof LIBRARY = LIBRARY) => {
         await popup.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
-        await seedLibrary(popup, LIBRARY, SETTINGS);
+        await seedLibrary(popup, library, SETTINGS);
         const opened = context.waitForEvent("page");
         await popup.evaluate((u) => chrome.tabs.create({ url: u, active: true }), CURRENT_PAGE);
         await (await opened).waitForLoadState("load");
@@ -93,7 +101,8 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
 
     await compose(canvas, "screenshot-1-main-list.png", await shot("light", async () => {}), "Save the tab you're on, in one click", [
         "Pick a category as you save — it suggests one.",
-        "Pin favorites, add a note, archive the rest."
+        "Pin favorites, add a note, archive the rest.",
+        "Stored only in your browser. No account, no tracking."
     ], "light", true);
 
     // A window full of tabs, saved in one click (Chrome's permission prompt answered "Allow"),
@@ -132,7 +141,13 @@ test("Chrome Web Store screenshots", async ({ context, popup }) => {
         await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("news");
     }), "Find any saved tab in a keystroke", ["Search matches titles, sites, categories and notes.", "Sort, select many, and never touch the mouse."], "light");
 
-    await compose(canvas, "screenshot-5-private.png", await shot("dark", async () => {
-        await openSettings(popup, "About");
-    }), "Your tabs stay in your browser", ["No account, no server, no tracking.", "Back up to a file whenever you like."], "dark");
+    // Read later or keep: the Waiting filter (Reading ages, the other categories are kept), with
+    // the archive's pill beside it.
+    await compose(canvas, "screenshot-5-read-later.png", await shot("dark", async () => {
+        await popup.getByRole("button", { name: /^Waiting/ }).click();
+        await popup.mouse.move(0, 599);
+    }, [...LIBRARY, ...WAITING_EXTRAS] as typeof LIBRARY), "Read it later, or keep it for good", [
+        "Saved to read? It shows as Waiting after a week.",
+        "Everything else is kept. Done with a tab? Archive it — out of the way, never lost."
+    ], "dark");
 });

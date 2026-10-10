@@ -199,6 +199,9 @@ test.describe("Saved windows", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["▾ Research", "Gamma", "Delta", "Epsilon", "Alpha", "Omega"]);
         await popup.keyboard.press("Alt+ArrowUp");
         await expect.poll(order).toEqual(["Alpha", "Gamma", "Delta", "Epsilon", "Omega"]);
+        // (Settled: the list has redrawn and put focus back on the moved tab, before moving on.)
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Gamma", "Delta", "Epsilon", "Omega"]);
+        await expect(titleOf(popup, "Alpha")).toBeFocused();
 
         // A tab in the window moves within it...
         await titleOf(popup, "Gamma").focus();

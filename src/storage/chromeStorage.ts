@@ -102,6 +102,19 @@ export async function setSettings(settings: Settings): Promise<void> {
     }
 }
 
+/**
+ * Tabs and settings in one write, for a change that touches both (removing a category its tabs
+ * still use, and its Undo): either both land or neither does, so no tab is left pointing at a
+ * category the list no longer has.
+ */
+export async function setTabsAndSettings(tabs: SavedTab[], settings: Settings): Promise<void> {
+    try {
+        await chrome.storage.local.set({ [TABS_KEY]: tabs, [SETTINGS_KEY]: settings });
+    } catch (err) {
+        throw writeFailure(err);
+    }
+}
+
 /** Real usage against the real quota — backs FR-013's capacity indicator. No invented ceiling. */
 export async function getStorageUsage(): Promise<{ bytesInUse: number; quotaBytes: number }> {
     const bytesInUse = await chrome.storage.local.getBytesInUse();

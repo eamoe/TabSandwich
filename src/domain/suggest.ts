@@ -1,4 +1,5 @@
 import type { SavedTab } from "../types";
+import { UNCATEGORIZED } from "./CategoryRepository";
 
 /**
  * The category to start a new save in, learned from where you've put pages like it — worked out
@@ -18,7 +19,8 @@ export function suggestCategory(url: string, tabs: SavedTab[], categories: strin
     let depth = -1;
     let pool: SavedTab[] = [];
     for (const tab of tabs) {
-        if (!tab.category || !known.has(tab.category)) continue;
+        // (Before 3.3.1 the edit form stored "Uncategorized" as a word; that's no category too.)
+        if (!tab.category || tab.category === UNCATEGORIZED || !known.has(tab.category)) continue;
         const other = parts(tab.url);
         if (!other || other.host !== page.host) continue;
         const shared = sharedSegments(page.path, other.path);

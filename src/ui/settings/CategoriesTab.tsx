@@ -8,13 +8,14 @@ import {
     removeCategory,
     renameCategory,
     reorderCategories,
+    restoreCategory,
     setCategoryColor,
     UNCATEGORIZED,
 } from "../../domain/CategoryRepository";
 import { clampOutdatedDays, MAX_OUTDATED_DAYS, MIN_OUTDATED_DAYS, setCategoryWaiting, setOutdatedDays } from "../../domain/SettingsRepository";
 import { removeRefusalMessage, renameRefusalMessage, writeErrorMessage } from "../errors";
 import { Icon } from "../Icon";
-import { showErrorToast } from "../toastStore";
+import { showErrorToast, showUndoToast } from "../toastStore";
 import { strings } from "../strings";
 import type { Library } from "../main/useLibrary";
 import controls from "../controls.module.css";
@@ -25,8 +26,19 @@ const MESSAGE_MS = 3000;
 
 export function CategoriesTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
     const { settings } = library;
-    // Counted as the list shows them: archived tabs aren't in it (removing a category they use explains).
+    // Counted as the list shows them: archived tabs aren't in it (removing a category they use says so).
     const tabs = library.tabs.filter((t) => !t.archivedAt);
+    const archived = library.tabs.filter((t) => t.archivedAt);
+    const listRef = useRef<HTMLUListElement>(null);
+    // After a removal, focus goes to the row that took its place (or the one above, or the Add field).
+    const focusRowAt = useRef<number | null>(null);
+    useEffect(() => {
+        const index = focusRowAt.current;
+        if (index === null) return;
+        focusRowAt.current = null;
+        const names = listRef.current?.querySelectorAll<HTMLElement>("[data-category-name]") ?? [];
+        (names[Math.min(index, names.length - 1)] ?? document.getElementById("new-category-input"))?.focus();
+    }, [library]);
     const [newName, setNewName] = useState("");
     const [paletteFor, setPaletteFor] = useState<string | null>(null);
     const [dragName, setDragName] = useState<string | null>(null);
@@ -96,7 +108,27 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                     {strings.add}
                 </button>
             </form>
-            <ul class={styles.categories} aria-label={strings.configuredCategories}>
+            {/* The days setting, and the legend for every row's moon: on top, so a long list can't hide it. */}
+            <div class={styles.waitingDays}>
+                <Icon name="moon" size={14} />
+                <label for="outdated-days">{strings.waitingAfter}</label>
+                <input
+                    id="outdated-days"
+                    class={controls.field}
+                    type="number"
+                    min={MIN_OUTDATED_DAYS}
+                    max={MAX_OUTDATED_DAYS}
+                    aria-describedby="outdated-days-hint"
+                    value={days}
+                    onInput={(e) => setDays(e.currentTarget.value)}
+                    onChange={() => void commitDays()}
+                />
+                <span>{strings.days}</span>
+            </div>
+            <p id="outdated-days-hint" class={styles.waitingHint}>
+                {strings.waitingAfterHint}
+            </p>
+            <ul ref={listRef} class={styles.categories} aria-label={strings.configuredCategories}>
                 {settings.categories.map((name, index) => (
                     <CategoryRow
                         key={name}
@@ -104,6 +136,8 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                         colorKey={settings.categoryColors[name]}
                         color={getCategoryColorHex(name, settings.categoryColors)}
                         tabCount={tabs.filter((t) => getTabCategory(t) === name).length}
+                        archivedCount={archived.filter((t) => getTabCategory(t) === name).length}
+                        onRemoved={() => (focusRowAt.current = index)}
                         isFirst={index === 0}
                         isLast={index === settings.categories.length - 1}
                         paletteOpen={paletteFor === name}
@@ -143,25 +177,6 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                 ))}
                 <UncategorizedRow tabCount={tabs.filter((t) => getTabCategory(t) === UNCATEGORIZED).length} color={getCategoryColorHex(UNCATEGORIZED, settings.categoryColors)} {...waitingProps(UNCATEGORIZED)} />
             </ul>
-            <div class={styles.waitingDays}>
-                <Icon name="moon" size={14} />
-                <label for="outdated-days">{strings.waitingAfter}</label>
-                <input
-                    id="outdated-days"
-                    class={controls.field}
-                    type="number"
-                    min={MIN_OUTDATED_DAYS}
-                    max={MAX_OUTDATED_DAYS}
-                    aria-describedby="outdated-days-hint"
-                    value={days}
-                    onInput={(e) => setDays(e.currentTarget.value)}
-                    onChange={() => void commitDays()}
-                />
-                <span>{strings.days}</span>
-            </div>
-            <p id="outdated-days-hint" class={styles.hint}>
-                {strings.waitingAfterHint}
-            </p>
         </section>
     );
 }
@@ -210,6 +225,9 @@ function CategoryRow(props: WaitingProps & {
     colorKey: string | undefined;
     color: string;
     tabCount: number;
+    /** Its tabs in the archive: not in the count, but removing it releases them too. */
+    archivedCount: number;
+    onRemoved: () => void;
     isFirst: boolean;
     isLast: boolean;
     paletteOpen: boolean;
@@ -227,6 +245,9 @@ function CategoryRow(props: WaitingProps & {
 }) {
     const { name } = props;
     const [renaming, setRenaming] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+    const removeButton = useRef<HTMLButtonElement>(null);
+    const confirmButton = useRef<HTMLButtonElement>(null);
     const [draft, setDraft] = useState(name);
     const [message, setMessage] = useState("");
     const messageTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -299,18 +320,73 @@ function CategoryRow(props: WaitingProps & {
         }
     };
 
+    useLayoutEffect(() => {
+        if (confirming) confirmButton.current?.focus();
+    }, [confirming]);
+
+    const cancelRemove = () => {
+        setConfirming(false);
+        setTimeout(() => removeButton.current?.focus());
+    };
+
+    // Unused: removed at once. In use (archive included): asked in the row first. Either way, Undo.
     const remove = async () => {
+        if (!confirming && props.tabCount + props.archivedCount > 0) {
+            setConfirming(true);
+            return;
+        }
+        setConfirming(false);
         try {
             const result = await removeCategory(name);
-            if (!result.removed) {
+            if (!result.removed || !result.removedCategory) {
                 flash(result.reason ? removeRefusalMessage(result.reason) : strings.couldntSave);
                 return;
             }
+            const removed = result.removedCategory;
+            showUndoToast(strings.removedCategoryToast(name), async () => {
+                try {
+                    await restoreCategory(removed);
+                } catch (err) {
+                    showErrorToast(writeErrorMessage(err));
+                }
+                await props.reload();
+            });
+            props.onRemoved();
             await props.reload();
         } catch (err) {
             flash(writeErrorMessage(err));
         }
     };
+
+    if (confirming) {
+        const count = props.tabCount + props.archivedCount;
+        return (
+            <li class={`${styles.category} ${styles.confirming}`}>
+                <div class={styles.confirmText} id={`remove-${name}-detail`}>
+                    <strong>{strings.removeConfirmTitle(name)}</strong>
+                    <span title={strings.removeConfirmDetail(count, props.archivedCount)}>{strings.removeConfirmDetail(count, props.archivedCount)}</span>
+                </div>
+                <div
+                    class={styles.confirmButtons}
+                    role="group"
+                    aria-labelledby={`remove-${name}-detail`}
+                    onKeyDown={(e) => {
+                        if (e.key !== "Escape") return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        cancelRemove();
+                    }}
+                >
+                    <button ref={confirmButton} type="button" class={`${controls.btn} ${styles.confirmBtn} ${styles.removeBtn}`} onClick={() => void remove()}>
+                        {strings.removeConfirm}
+                    </button>
+                    <button type="button" class={`${controls.iconBtn} ${controls.small}`} aria-label={strings.cancel} title={strings.cancel} onClick={cancelRemove}>
+                        <Icon name="close" size={14} />
+                    </button>
+                </div>
+            </li>
+        );
+    }
 
     const classes = [styles.category, props.dragging ? styles.dragging : "", props.dragOver ? styles.dragOver : ""].join(" ");
     return (
@@ -352,6 +428,7 @@ function CategoryRow(props: WaitingProps & {
                 <button
                     type="button"
                     class={styles.name}
+                    data-category-name
                     aria-label={strings.renameCategory(name)}
                     onClick={() => {
                         setDraft(name);
@@ -370,10 +447,10 @@ function CategoryRow(props: WaitingProps & {
                 <button type="button" class={`${controls.iconBtn} ${controls.small}`} aria-label={strings.moveDown(name)} disabled={props.isLast} onClick={() => void run(() => moveCategory(name, "down"))}>
                     <Icon name="chevronDown" size={14} />
                 </button>
-                {/* Muted while in use, but still a real button: clicking it explains why it can't be removed. */}
                 <button
+                    ref={removeButton}
                     type="button"
-                    class={`${controls.iconBtn} ${controls.small} ${styles.danger} ${props.tabCount > 0 ? styles.muted : ""}`}
+                    class={`${controls.iconBtn} ${controls.small} ${styles.danger}`}
                     aria-label={strings.removeCategory(name)}
                     onClick={() => void remove()}
                 >

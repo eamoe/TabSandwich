@@ -104,8 +104,8 @@
 .renameInput { flex: 1; min-width: 0; }
 .count { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .actions { display: flex; opacity: 0; transition: opacity 0.15s ease; }
-.category:hover .actions, .category:focus-within .actions { opacity: 1; }
-.muted { opacity: 0.45; }
+/* Keyboard focus shows them; a mouse click's focus doesn't (a moved row would keep them showing). */
+.category:hover .actions, .category:has(:focus-visible) .actions { opacity: 1; }
 /* The moon: lit (accent, on a tint) when the category's tabs age; dim when they're kept. */
 .moon { color: var(--ink-3); opacity: 0.55; }
 .moon:hover { opacity: 1; }
@@ -115,10 +115,20 @@
 .fixed .colorDot { cursor: default; }
 .fixedName { flex: 1; min-width: 0; padding: 4px 6px; margin-left: -4px; font-weight: 500; color: var(--ink-2); }
 .fixed .actions { width: 84px; }
-/* Under the list: after how many days a tab in a lit category shows as waiting. */
-.waitingDays { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12.5px; color: var(--ink-2); }
+/* Above the list: after how many days a tab in a lit category shows as waiting, and under it the
+   moon's legend — on top, so a long list can't push them out of sight. */
+.waitingDays { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--ink-2); }
 .waitingDays > svg { color: var(--accent); flex-shrink: 0; }
 .waitingDays input { width: 64px; }
+.waitingHint { margin: 4px 0 6px 22px; font-size: 12px; line-height: 1.4; color: var(--ink-2); }
+/* Removing a category its tabs use: the question takes the row's place, at the row's height. */
+.confirming { padding-left: 8px; }
+.confirmText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.confirmText strong { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.confirmText span { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.confirmButtons { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.confirmBtn { height: 28px; padding: 0 10px; border-radius: 8px; font-size: 12.5px; }
+.removeBtn { color: var(--danger); }
 .danger:hover { color: var(--danger); }
 
 .palette {

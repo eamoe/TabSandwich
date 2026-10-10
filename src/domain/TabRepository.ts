@@ -2,6 +2,7 @@ import { SavedTab, TabGroup } from "../types";
 import { getGroups, getTabs, setTabs, setTabsAndGroups } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 import { urlsMatch } from "../util/url";
+import { UNCATEGORIZED } from "./CategoryRepository";
 
 export interface AddTabInput {
     title: string;
@@ -118,10 +119,13 @@ export async function editTab(
         }
         const updated = tabs.map((t): SavedTab => {
             if (t.id !== id) return t;
-            const { note: _old, ...rest } = { ...t, ...updates };
+            const { note: _old, category: _was, ...rest } = { ...t, ...updates };
             // A note emptied in the edit form is gone, not stored as "".
             const note = "note" in updates ? tidyNote(updates.note) : t.note;
-            return note ? { ...rest, note } : rest;
+            // Picking Uncategorized in the edit form means no category, stored the way every other
+            // save stores it (as the word, it counted as a real category, e.g. for suggestions).
+            const category = "category" in updates ? updates.category : t.category;
+            return { ...rest, ...(category && category !== UNCATEGORIZED ? { category } : {}), ...(note ? { note } : {}) };
         });
         await setTabs(updated);
         return { duplicateOf: null };

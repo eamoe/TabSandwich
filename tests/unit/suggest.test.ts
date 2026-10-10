@@ -46,4 +46,15 @@ describe("suggestCategory", () => {
         expect(suggestCategory("https://never.example.com/", tabs, CATEGORIES)).toBeUndefined();
         expect(suggestCategory("not a url", tabs, CATEGORIES)).toBeUndefined();
     });
+
+    it("treats a tab stored with the word Uncategorized (edited before 3.3.1) as having no category", () => {
+        const tabs = [
+            makeTab({ url: "https://chatgpt.com/c/1", category: "Uncategorized", savedAt: day(3) }),
+            makeTab({ url: "https://chatgpt.com/c/2", category: "Uncategorized", savedAt: day(2) }),
+            makeTab({ url: "https://chatgpt.com/c/3", category: "Work", savedAt: day(1) }),
+        ];
+        const withUncategorized = [...CATEGORIES, "Uncategorized"];
+        expect(suggestCategory("https://chatgpt.com/c/4", tabs, withUncategorized)).toBe("Work");
+        expect(suggestCategory("https://chatgpt.com/c/4", tabs.slice(0, 2), withUncategorized)).toBeUndefined();
+    });
 });

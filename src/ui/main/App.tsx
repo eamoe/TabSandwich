@@ -28,7 +28,7 @@ import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
 import { Icon } from "../Icon";
-import { Toast } from "../Toast";
+import { heightWithoutToastSpace, Toast, ToastSpace } from "../Toast";
 import { strings } from "../strings";
 import { Header } from "./Header";
 import { SaveCard } from "./SaveCard";
@@ -87,7 +87,7 @@ export function App(props: { whatsNew?: string | null }) {
     // Settings opens at least as tall as the main screen was, so the popup window doesn't
     // shrink on the way in and grow again on the way back.
     const openSettings = (tab: SettingsTabKey = "general") => {
-        raiseFloor(mainScreen.current?.offsetHeight ?? 0);
+        raiseFloor(heightWithoutToastSpace(mainScreen.current));
         setSettingsTab(tab);
         setView("settings");
     };
@@ -803,7 +803,7 @@ export function App(props: { whatsNew?: string | null }) {
                     onEscape={selecting ? stopSelecting : focusSearch}
                 />
             </main>
-
+            <ToastSpace />
         </div>
         {view === "settings" && (
             <SettingsScreen

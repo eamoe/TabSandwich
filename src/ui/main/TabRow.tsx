@@ -245,19 +245,8 @@ export function TabRow(props: RowProps) {
                 </span>
             )}
             {!props.selecting && !props.inArchive && (
+                // Pin last: it takes the place of the pin mark (and age badge) on hover, so it stays under the cursor.
                 <span class={styles.actions}>
-                    <button
-                        type="button"
-                        class={`${controls.iconBtn} ${controls.small} ${tab.pinned ? styles.pinned : ""}`}
-                        aria-label={tab.pinned ? strings.unpinTab(tab.title) : strings.pinTab(tab.title)}
-                        aria-pressed={!!tab.pinned}
-                        title={tab.pinned ? strings.unpinTooltip : strings.pinTooltip}
-                        tabIndex={tabIndex}
-                        data-row-action="pin"
-                        onClick={props.onTogglePin}
-                    >
-                        <Icon name="pin" size={14} />
-                    </button>
                     <button
                         type="button"
                         class={`${controls.iconBtn} ${controls.small}`}
@@ -279,6 +268,18 @@ export function TabRow(props: RowProps) {
                         onClick={() => void startDelete()}
                     >
                         <Icon name="archive" size={14} />
+                    </button>
+                    <button
+                        type="button"
+                        class={`${controls.iconBtn} ${controls.small} ${tab.pinned ? styles.pinned : ""}`}
+                        aria-label={tab.pinned ? strings.unpinTab(tab.title) : strings.pinTab(tab.title)}
+                        aria-pressed={!!tab.pinned}
+                        title={tab.pinned ? strings.unpinTooltip : strings.pinTooltip}
+                        tabIndex={tabIndex}
+                        data-row-action="pin"
+                        onClick={props.onTogglePin}
+                    >
+                        <Icon name="pin" size={14} />
                     </button>
                 </span>
             )}
