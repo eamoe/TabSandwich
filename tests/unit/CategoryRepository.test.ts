@@ -8,6 +8,7 @@ import {
     removeCategory,
     renameCategory,
     reorderCategories,
+    restoreCategory,
     setCategoryColor,
 } from "../../src/domain/CategoryRepository";
 import { makeTab, seed, storedSettings, storedTabs } from "./helpers";
@@ -73,26 +74,64 @@ describe("which categories age follows renames and removals", () => {
 describe("removeCategory", () => {
     it("removes an unused category and its color", async () => {
         seed([makeTab({ category: "Work" })], base);
-        expect(await removeCategory("Reading")).toEqual({ removed: true });
+        const result = await removeCategory("Reading");
+        expect(result.removed).toBe(true);
+        expect(result.removedCategory).toEqual({ name: "Reading", index: 2, colorKey: "teal", waiting: true, tabIds: [] }); // Reading ages by default
         expect(storedSettings().categories).toEqual(["Work", "Personal"]);
         expect(storedSettings().categoryColors).not.toHaveProperty("Reading");
+        expect(storedTabs()[0].category).toBe("Work");
     });
 
-    it("says so when only archived tabs still use it", async () => {
-        seed([makeTab({ category: "Personal", archivedAt: 1 })], base);
-        expect(await removeCategory("Personal")).toEqual({ removed: false, reason: "archived" });
-        seed([makeTab({ category: "Personal", archivedAt: 1 }), makeTab({ category: "Personal" })], base);
-        expect(await removeCategory("Personal")).toEqual({ removed: false, reason: "in-use" });
-    });
-
-    it("refuses while any tab still uses it", async () => {
-        seed([makeTab({ category: "Work" })], base);
-        expect(await removeCategory("Work")).toEqual({ removed: false, reason: "in-use" });
+    it("releases the tabs that use it, archived ones too: they're stored with no category", async () => {
+        const [a, b, c] = [makeTab({ category: "Personal" }), makeTab({ category: "Personal", archivedAt: 1 }), makeTab({ category: "Work" })];
+        seed([a, b, c], base);
+        const result = await removeCategory("Personal");
+        expect(result.removedCategory?.tabIds).toEqual([a.id, b.id]);
+        expect(storedSettings().categories).toEqual(["Work", "Reading"]);
+        expect(storedTabs()[0]).not.toHaveProperty("category");
+        expect(storedTabs()[1]).not.toHaveProperty("category");
+        expect(storedTabs()[1].archivedAt).toBe(1);
+        expect(storedTabs()[2].category).toBe("Work");
     });
 
     it("never removes Uncategorized", async () => {
         seed([], base);
-        expect((await removeCategory(UNCATEGORIZED)).removed).toBe(false);
+        expect(await removeCategory(UNCATEGORIZED)).toEqual({ removed: false, reason: "reserved" });
+    });
+});
+
+describe("restoreCategory (Undo of a removal)", () => {
+    it("puts the category back in its place, with its color, its Waiting setting and its tabs", async () => {
+        const [a, b] = [makeTab({ category: "Personal" }), makeTab({ category: "Personal", archivedAt: 1 })];
+        seed([a, b], { ...base, waitingCategories: ["Personal", "Uncategorized"] });
+        const before = { tabs: storedTabs(), settings: storedSettings() };
+        const { removedCategory } = await removeCategory("Personal");
+        await restoreCategory(removedCategory!);
+        expect(storedTabs()).toEqual(before.tabs);
+        expect(storedSettings().categories).toEqual(before.settings.categories);
+        expect(storedSettings().categoryColors).toEqual(before.settings.categoryColors);
+        expect(storedSettings().waitingCategories).toEqual(expect.arrayContaining(["Personal", "Uncategorized"]));
+    });
+
+    it("leaves a tab moved elsewhere in the meantime where it is", async () => {
+        const [a, b] = [makeTab({ category: "Personal" }), makeTab({ category: "Personal" })];
+        seed([a, b], base);
+        const { removedCategory } = await removeCategory("Personal");
+        seed([{ ...storedTabs()[0], category: "Work" }, storedTabs()[1]], storedSettings());
+        await restoreCategory(removedCategory!);
+        expect(storedTabs().map((t) => t.category)).toEqual(["Work", "Personal"]);
+    });
+
+    it("doesn't add a second category when one by that name was added since", async () => {
+        const a = makeTab({ category: "Personal" });
+        seed([a], base);
+        const { removedCategory } = await removeCategory("Personal");
+        await addCategory("Personal");
+        const colorNow = storedSettings().categoryColors.Personal;
+        await restoreCategory(removedCategory!);
+        expect(storedSettings().categories.filter((c) => c === "Personal")).toHaveLength(1);
+        expect(storedSettings().categoryColors.Personal).toBe(colorNow);
+        expect(storedTabs()[0].category).toBe("Personal");
     });
 });
 

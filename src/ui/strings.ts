@@ -297,7 +297,8 @@ export const strings = {
     waitingOnTitle: (days: number) => `Its tabs show as waiting after ${days} day${days === 1 ? "" : "s"}`,
     waitingOffTitle: "Kept: its tabs never show as waiting",
     waitingAfter: "Show as waiting after",
-    waitingAfterHint: "Only tabs in categories with the moon lit; the others are kept.",
+    /** Under the days field, at the top of Categories: the legend for every row's moon. */
+    waitingAfterHint: "Only in categories with the moon lit; others are kept.",
     days: "days",
     renameRefusal: {
         empty: "Name can't be empty.",
@@ -306,9 +307,17 @@ export const strings = {
     },
     removeRefusal: {
         reserved: '"Uncategorized" can\'t be removed.',
-        "in-use": "In use — reassign its tabs first.",
-        archived: "Tabs in your archive still use it — delete them there first.",
     },
+    /** Removing a category its tabs still use: asked in the row itself, then Undo in the toast. */
+    removeConfirmTitle: (name: string) => `Remove ${name}?`,
+    removeConfirmDetail: (count: number, archived: number) => {
+        const verb = count === 1 ? "becomes" : "become";
+        if (archived === 0) return `Its ${count === 1 ? "tab" : `${count} tabs`} ${verb} Uncategorized`;
+        if (archived === count) return `Its ${count === 1 ? "archived tab" : `${count} archived tabs`} ${verb} Uncategorized`;
+        return `${count} tabs (${archived} archived) ${verb} Uncategorized`;
+    },
+    removeConfirm: "Remove",
+    removedCategoryToast: (name: string) => `Removed ${name}`,
     storageFull: "Storage is full. Export your tabs, remove some, then try again.",
     couldntSave: "Couldn't save your changes. Try again.",
     colorNames: {

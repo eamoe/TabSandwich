@@ -45,16 +45,50 @@ test.describe("Categories in Settings", () => {
         });
     }
 
-    test("TC-035: a category in use can't be removed", async ({ popup }) => {
+    test("TC-035: removing a category in use asks in the row; its tabs become Uncategorized, with Undo", async ({ popup }) => {
+        const rows = categoryList(popup).getByRole("listitem");
+        const heights = await rows.evaluateAll((items) => items.map((li) => li.getBoundingClientRect().height));
         await popup.getByRole("button", { name: "Remove Work" }).click();
-        await expect(categoryList(popup)).toContainText("In use — reassign its tabs first.");
+        // The question takes the row's place, at the row's height: nothing moves.
+        const ask = rows.filter({ hasText: "Remove Work?" });
+        await expect(ask).toContainText("Its tab becomes Uncategorized");
+        expect(await rows.evaluateAll((items) => items.map((li) => li.getBoundingClientRect().height))).toEqual(heights);
+        await expect(ask.getByRole("button", { name: "Remove", exact: true })).toBeFocused();
+        // Escape cancels and hands focus back to the trash button.
+        await popup.keyboard.press("Escape");
+        await expect(popup.getByRole("button", { name: "Remove Work" })).toBeFocused();
         expect((await storedSettings(popup)).categories).toContain("Work");
+        // Remove for real.
+        await popup.getByRole("button", { name: "Remove Work" }).click();
+        await ask.getByRole("button", { name: "Remove", exact: true }).click();
+        await expect(categoryList(popup)).not.toContainText("Work");
+        await expect.poll(async () => (await storedTabs(popup))[0].category).toBeUndefined();
+        await expect(categoryList(popup).getByRole("listitem").filter({ hasText: "Uncategorized" })).toContainText("1 tab");
+        // Focus lands on the row that took its place.
+        await expect(popup.getByRole("button", { name: "Rename Personal" })).toBeFocused();
+        // Undo brings back the category, in its place, and its tab.
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(async () => (await storedSettings(popup)).categories).toEqual(["Work", "Personal", "Reading", "Entertainment"]);
+        await expect.poll(async () => (await storedTabs(popup))[0].category).toBe("Work");
     });
 
-    test("TC-034: an unused category can be removed", async ({ popup }) => {
+    test("TC-035: removing the category the list is filtered by leaves the list on All", async ({ popup }) => {
+        await popup.getByRole("button", { name: "Back", exact: true }).click();
+        await popup.getByRole("button", { name: "Work", exact: true }).click();
+        await openSettings(popup, "Categories");
+        await popup.getByRole("button", { name: "Remove Work" }).click();
+        await categoryList(popup).getByRole("listitem").filter({ hasText: "Remove Work?" }).getByRole("button", { name: "Remove", exact: true }).click();
+        await expect(categoryList(popup)).not.toContainText("Work");
+        await popup.getByRole("button", { name: "Back", exact: true }).click();
+        await expect(popup.getByRole("button", { name: "All", exact: true })).toHaveAttribute("aria-pressed", "true");
+        await expect(popup.getByRole("list", { name: "Saved tabs" }).getByRole("listitem").filter({ hasText: "Q3 Roadmap" })).toContainText("Uncategorized");
+    });
+
+    test("TC-034: an unused category is removed at once, with Undo", async ({ popup }) => {
         await popup.getByRole("button", { name: "Remove Entertainment" }).click();
         await expect(categoryList(popup)).not.toContainText("Entertainment");
         expect((await storedSettings(popup)).categories).not.toContain("Entertainment");
+        await expect(popup.getByRole("status").filter({ hasText: "Removed Entertainment" })).toBeVisible();
         await popup.getByRole("button", { name: "Back", exact: true }).click();
         expect(await manualEntryCategories(popup)).not.toContain("Entertainment");
     });

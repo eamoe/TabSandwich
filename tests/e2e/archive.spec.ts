@@ -88,7 +88,7 @@ test.describe("Archive", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Zulu"]);
     });
 
-    test("TC-267: a category only archived tabs use can't be removed, and says where they are", async ({ popup }) => {
+    test("TC-267: removing a category only archived tabs use says so; they become Uncategorized in the archive", async ({ popup }) => {
         await seedLibrary(popup, [
             { title: "Alpha", url: "https://alpha.example.com/", category: "Work" },
             { title: "Zulu", url: "https://zulu.example.com/", category: "Personal", archivedDaysAgo: 1 },
@@ -96,7 +96,13 @@ test.describe("Archive", () => {
         await openSettings(popup, "Categories");
         await expect(popup.getByRole("listitem").filter({ hasText: "Personal" })).toContainText("0 tabs");
         await popup.getByRole("button", { name: "Remove Personal" }).click();
-        await expect(popup.getByRole("status").filter({ hasText: "Tabs in your archive still use it — delete them there first." })).toBeVisible();
+        const ask = popup.getByRole("listitem").filter({ hasText: "Remove Personal?" });
+        await expect(ask).toContainText("Its archived tab becomes Uncategorized");
+        await ask.getByRole("button", { name: "Remove", exact: true }).click();
+        await expect.poll(async () => "category" in (await storedTabs(popup)).find((t) => t.title === "Zulu")!).toBe(false);
+        const zulu = (await storedTabs(popup)).find((t) => t.title === "Zulu")!;
+        expect(zulu).not.toHaveProperty("category");
+        expect(zulu).toHaveProperty("archivedAt");
     });
 
     test("TC-268: an archived page: the save card and the + form say so and offer Restore; Update brings it back too", async ({ context, popup }) => {
