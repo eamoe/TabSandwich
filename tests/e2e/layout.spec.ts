@@ -33,4 +33,28 @@ test.describe("Layout", () => {
         await popup.getByRole("button", { name: "See storage" }).click();
         await expect(popup.getByRole("main", { name: "Settings" })).toBeVisible();
     });
+
+    test("TC-280: while the Undo toast shows, the popup makes room for it, so it never covers the last row", async ({ popup }) => {
+        await seedLibrary(popup, [
+            { title: "Alpha", url: "https://alpha.example.com/" },
+            { title: "Bravo", url: "https://bravo.example.com/" },
+            { title: "Charlie", url: "https://charlie.example.com/" },
+        ]);
+        // A real popup is only as tall as its screen; the test window is always 580px.
+        const screenBottom = () => popup.evaluate(() => Math.ceil(document.getElementById("main-view")!.parentElement!.getBoundingClientRect().bottom));
+        // (Once the save card has finished filling in.)
+        await expect.poll(async () => { const first = await screenBottom(); await popup.waitForTimeout(300); return first === (await screenBottom()); }).toBe(true);
+        const before = await screenBottom();
+        await popup.getByRole("button", { name: "Archive Bravo" }).click();
+        const toast = popup.getByRole("button", { name: "Undo" }).locator("..");
+        await expect(toast).toBeInViewport();
+        await popup.setViewportSize({ width: 380, height: await screenBottom() });
+        await expect(toast).toBeInViewport();
+        const lastRow = await tabList(popup).getByRole("listitem").last().boundingBox();
+        const toastBox = await toast.boundingBox();
+        expect(lastRow!.y + lastRow!.height).toBeLessThanOrEqual(toastBox!.y);
+        // Gone with the toast: the popup is back to its own height.
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(screenBottom).toBe(before);
+    });
 });

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { Icon } from "../Icon";
+import { heightWithoutToastSpace, ToastSpace } from "../Toast";
 import { strings } from "../strings";
 import type { Library } from "../main/useLibrary";
 import { GeneralTab } from "./GeneralTab";
@@ -39,7 +40,7 @@ export function SettingsScreen(props: {
     const tabButtons = useRef<Record<string, HTMLButtonElement | null>>({});
     useLayoutEffect(() => backButton.current?.focus(), []);
     useLayoutEffect(() => {
-        if (screen.current) props.onHeight(screen.current.offsetHeight);
+        if (screen.current) props.onHeight(heightWithoutToastSpace(screen.current));
     }, [tab]);
 
     const moveTab = (from: SettingsTabKey, step: number | "first" | "last") => {
@@ -91,6 +92,7 @@ export function SettingsScreen(props: {
                 {tab === "backup" && <BackupTab reload={props.reload} />}
                 {tab === "about" && <AboutTab />}
             </div>
+            <ToastSpace />
         </main>
     );
 }

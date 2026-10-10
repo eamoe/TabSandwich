@@ -18,6 +18,8 @@
     transition: transform 0.2s ease-out;
 }
 .visible { transform: none; }
+/* ToastSpace: the toast's height, the gap under it and as much again above it. */
+.space { flex-shrink: 0; height: calc(36px + 12px + 8px); }
 .message { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .undo {
     border: 0;
