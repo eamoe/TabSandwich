@@ -26,7 +26,7 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 does: which categories age).
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
 10. Anything new in this release that isn't marked **[auto]** yet.
 
@@ -147,12 +147,12 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-034 — Removing an unused category (P1)** **[auto]**
 - Preconditions: a category with no tabs assigned to it.
 - Steps: Settings → **Categories** → hover the category → click its trash icon ("Remove …").
-- Expected: Category removed from the list, from all category selects, and from filter pills.
+- Expected: Removed at once, without asking: gone from the list, from all category selects, and from filter pills. The toast says "Removed …" with **Undo**. (Removing the category the main list is filtered by leaves the list on All.)
 
-**TC-035 — Removing an in-use category is blocked (P1)** **[auto]**
-- Preconditions: a category assigned to at least one tab.
-- Steps: Settings → **Categories** → hover the category → click its trash icon.
-- Expected: Not removed. A message floats just under that category ("In use — reassign its tabs first."), without moving the rows, and clears after ~3s. The trash icon is visually muted but remains clickable.
+**TC-035 — Removing an in-use category asks first; its tabs become Uncategorized (P1)** **[auto]**
+- Preconditions: a category assigned to at least one tab (and, for the last step, one archived tab too).
+- Steps: Settings → **Categories** → hover the category → click its trash icon. Press Escape. Click the trash icon again, then **Remove**. Then **Undo**.
+- Expected: The row turns into the question "Remove …?" with "Its tab becomes Uncategorized" (or "Its N tabs become…", "N tabs (M archived) become…"), **Remove** (focused) and ✕, at the row's own height: no row moves. Escape or ✕ puts the row back, focus on its trash icon. **Remove** removes it; its tabs, archived ones included, are now Uncategorized (stored with no category), and focus moves to the row that took its place. "Removed …" with **Undo**, which brings back the category in its place with its color and ☾, and its tabs in it (a tab you moved elsewhere in the meantime stays there).
 
 **TC-036 — "Uncategorized" cannot be removed or renamed (P1)**
 - Steps: Inspect the Settings category list.
@@ -166,9 +166,9 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 - Steps: Save a tab without assigning a category.
 - Expected: Row background is plain white (no colored tint), with a light grey outline and dot; the "Uncategorized" pill has the same grey dot.
 
-**TC-039 — Category-in-use status stays fresh across navigation (P2)**
-- Steps: In Settings, attempt to remove an in-use category (see the blocked message) → click **Back** → reassign that tab's category away from it elsewhere → reopen Settings.
-- Expected: The category now shows as removable (no stale "in use" state), and the old message is gone.
+**TC-039 — Whether removing asks first stays fresh across navigation (P2)**
+- Steps: In Settings, click remove on an in-use category (it asks) → ✕ → click **Back** → move that tab to another category → reopen Settings → click remove again.
+- Expected: Now it's removed at once, without asking (the count is current, not left over from before).
 
 ---
 
@@ -257,10 +257,10 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 
 **TC-063 — Defaults on a fresh install (P2)**
 - Steps: Clear storage, reopen popup, check Settings.
-- Expected: Settings › Categories: the days field under the list reads 7; the ☾ is lit on Reading and Uncategorized, dim on the others.
+- Expected: Settings › Categories: the days field above the list reads 7; the ☾ is lit on Reading and Uncategorized, dim on the others.
 
 **TC-064 — Changing the day threshold updates badges live (P2)** **[auto]**
-- Steps: In Settings › Categories, change the days field under the list to a smaller/larger value (press Enter or click away).
+- Steps: In Settings › Categories, change the days field above the list to a smaller/larger value (press Enter or click away).
 - Expected: Badges and the Waiting pill count update; a value outside 1–365 is corrected to the nearest limit.
 
 ---
@@ -309,7 +309,7 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 - Expected: All operable via Tab/Shift+Tab/Enter/Space; no dead ends.
 
 **TC-091 — Full keyboard pass: filter/edit/delete (P1)**
-- Steps: Tab to a category pill and the Waiting pill and activate each; Tab into the list (it's one stop: the current row's title, then its pin, edit and delete icons) and activate each; use the list's own keys too (TC-220 – TC-226).
+- Steps: Tab to a category pill and the Waiting pill and activate each; Tab into the list (it's one stop: the current row's title, then its edit, archive and pin icons) and activate each; use the list's own keys too (TC-220 – TC-226).
 - Expected: All operable via keyboard; edit mode's Save/Cancel reachable and usable, Escape cancels.
 
 **TC-092 — Full keyboard pass: Settings (P1)**
@@ -781,7 +781,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-220 — Arrow keys move through the list (P1)** **[auto]**
 - Steps: In the search box press ↓; then ↓, ↑, Home, End. Then Tab.
-- Expected: ↓ from search lands on the first row; arrows, Home and End move between rows (stopping at the ends), with a purple outline on the current row and its Edit and Delete showing. The list is one Tab stop: Tab goes to the current row's Edit, its Delete, then on past the list.
+- Expected: ↓ from search lands on the first row; arrows, Home and End move between rows (stopping at the ends), with a purple outline on the current row and its Edit, Archive and Pin showing. The list is one Tab stop: Tab goes to the current row's Edit, its Archive, its Pin, then on past the list.
 
 **TC-221 — Enter opens, E edits (P1)** **[auto]**
 - Steps: On a row press Enter. Then E, Escape. Then E, change the title, Enter.
@@ -930,9 +930,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (3.2.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (for 3.3.1: 3.3.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
-- Expected: Every tab, window, category, color, theme and sort is as it was; "New in 3.3" shows once. Only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
+- Expected: Every tab, window, category, color, theme and sort is as it was. From 3.3.0 to 3.3.1: no "What's new" note (a patch release has none), every ☾ as it was. From 3.2.x: "New in 3.3" shows once. Only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
 ## 21. Stay Organized (v3.3)
 
@@ -949,7 +949,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-259 — Kept and waiting categories (P1)** **[auto]**
 - Preconditions: tabs saved 10–30 days ago in Work, Reading and Uncategorized; days set to 7.
 - Steps: Look at the list; open Settings › Categories; click Reading's ☾ (dims) and Work's (lights); hover each to read what it means; go Back.
-- Expected: At first only the Reading and Uncategorized tabs have the ☾ age badge and are counted in "Waiting (N)"; Work's 30-day-old tab has neither. After the change Work's tab is waiting and Reading's isn't. A lit moon's tooltip says "Its tabs show as waiting after 7 days", a dim one "Kept: its tabs never show as waiting". Uncategorized has its own last row with only the ☾. A category added later starts kept (☾ dim); renaming a category keeps its ☾. Updating from 3.2: every category is kept except Uncategorized (none at all if "Outdated tabs" was switched off), checked by the robot tests on stored 3.2 data.
+- Expected: At first only the Reading and Uncategorized tabs have the ☾ age badge and are counted in "Waiting (N)"; Work's 30-day-old tab has neither. After the change Work's tab is waiting and Reading's isn't. A lit moon's tooltip says "Its tabs show as waiting after 7 days", a dim one "Kept: its tabs never show as waiting". Uncategorized has its own last row with only the ☾. The days field, and under it the line explaining the moon, sit above the list, so a long list never hides them. A category added later starts kept (☾ dim); renaming a category keeps its ☾. Updating from 3.2: every category is kept except Uncategorized (none at all if "Outdated tabs" was switched off), checked by the robot tests on stored 3.2 data.
 
 **TC-260 — Pin a tab (P1)** **[auto]**
 - Steps: Hover a row (an old one in an aging category, e.g. Reading) and click its pin; pin a second tab; then click the first one's pin again.
@@ -981,8 +981,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: All shows "Everything's in the archive" with **Show the archive** (not the first-run welcome); the filter row stays, with the Archived pill.
 
 **TC-267 — A category only the archive uses (P2)** **[auto]**
-- Steps: Settings › Categories: look at a category whose only tabs are archived, and click its remove button.
-- Expected: Its count says 0 tabs (counted as the list shows them); removing it is refused with "Tabs in your archive still use it — delete them there first."
+- Steps: Settings › Categories: look at a category whose only tabs are archived, and click its remove button; then **Remove**.
+- Expected: Its count says 0 tabs (counted as the list shows them), but removing it still asks: "Its archived tab becomes Uncategorized" (or "Its N archived tabs…"). After **Remove** those tabs stay in the archive, now Uncategorized.
 
 **TC-268 — An archived page on the save card and in the + form (P2)** **[auto]**
 - Steps: Open a page whose saved copy is archived; click **Restore** on the save card. Archive it again and click **Update** instead, then **Undo**. Then type its link into the + form and **Add**.
@@ -1029,3 +1029,21 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-278 — The + form suggests (P2)** **[auto]**
 - Steps: Open **+**, type a link from a site you've saved before, Tab out of the field; Add.
 - Expected: The picker moves to the suggestion, with the sparkle; Add saves it there. Pressing Enter straight from the URL field applies the suggestion too; a category picked by hand is never changed.
+
+## 22. Polish (v3.3.1)
+
+**TC-279 — A row's buttons: Pin last, and gone once the mouse leaves (P1)** **[auto]**
+- Steps: Hover a pinned row (its pin shows at the right end); click where the pin was. Pin another tab with the mouse, then move the pointer off the list. Then reach a row with ↓ from search.
+- Expected: Hovered, the row's buttons read Edit · Archive · Pin, so Unpin sits exactly where the pin mark was (never Archive). After a click with the mouse, the row stops showing its buttons as soon as the pointer leaves, though the button keeps focus. Reached with the keyboard, a row shows its buttons as before. The same goes for a category's buttons in Settings.
+
+**TC-280 — The Undo toast never covers the last row (P1)** **[auto]**
+- Steps: With a short list (no scrolling), archive a row; in Archived, delete one of two tabs for good; in Settings › Categories, remove a category.
+- Expected: While the toast shows, the popup grows by the toast's height (or, at its full height, the list gets that much shorter), so the last row stays visible above the toast; when the toast goes, the popup is back to its size. (Try it by hand too: the shrink when the toast leaves shouldn't feel jumpy.)
+
+**TC-281 — "Saved …" lines up with the site's name (P3)** **[auto]**
+- Steps: Open the popup on a page that's already saved; then on one whose saved copy is archived.
+- Expected: "✓ Saved N days ago" and "· site" sit on one baseline (approved screenshots: already-saved-light/dark); so do "In your archive" and the site (check by eye).
+
+**TC-282 — Editing a tab to Uncategorized (P2)** **[auto]**
+- Steps: Edit a tab in a category, pick Uncategorized, Save. Then open the popup on a new page from that site.
+- Expected: The tab shows as Uncategorized (stored with no category, like any other uncategorized tab), and it doesn't make Uncategorized a suggestion: the picker shows no sparkle on Uncategorized. Tabs edited this way before 3.3.1 don't count as suggestions either (logic-tested).

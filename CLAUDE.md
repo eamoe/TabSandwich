@@ -28,7 +28,7 @@ src/
   types.ts              SavedTab, TabGroup (a saved window), Settings, ThemeChoice, SortOrder
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
-                            tabs and saved windows written together in one write when a change touches both;
+                            tabs and saved windows (or tabs and settings) written together in one write when a change touches both;
                             the last "What's new" version seen, since when opens are counted and the cleanup tip's
                             "Not now" date — kept apart from Settings so backups can't revive them
     migration.ts          one-time legacy-localStorage → chrome.storage.local migration
@@ -40,7 +40,8 @@ src/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
                            move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
-    CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel
+    CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
+                            releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
@@ -79,7 +80,8 @@ src/
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
                              a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
     CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
-    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call
+    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call; ToastSpace makes
+                             room for it at the end of each screen while it shows, so it never covers the last row
     main/                   the main screen
       App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
                              and which screen shows; the main screen is hidden (not unmounted) while
@@ -103,7 +105,8 @@ src/
                              (count, Select all, Move to…, Archive, ✕; on Archived: Restore, Delete for good) at the same height, so the popup never resizes
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
                              "everything's in the archive", and the "What's new" note
-      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows; edit form; drag to reorder; entrance motion;
+      TabList.tsx / TabRow.tsx  the list: tinted, outlined rows (buttons Edit · Archive · Pin on hover or keyboard focus,
+                             Pin last so it takes the pin mark's place); edit form; drag to reorder; entrance motion;
                              the list's keys (arrows, Enter, E, P to pin, Delete, Alt+arrows to move, → ← for windows, Space to pick
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
@@ -114,9 +117,10 @@ src/
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
       GeneralTab.tsx        Light/Dark/System, keyboard shortcut and the list's keys, storage meter
-      CategoriesTab.tsx     add, rename (click the name), move, remove, drag; the ☾ on each row (its tabs age
-                             and show as Waiting, or are kept), Uncategorized's own row (☾ only), the days
-                             field under the list; color strip and messages float over the row so nothing shifts
+      CategoriesTab.tsx     add, rename (click the name), move, remove (in use: asks in the row first; Undo from the toast),
+                             drag; the days field and the moon's legend above the list; the ☾ on each row (its tabs age
+                             and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
+                             and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
   vite-env.d.ts             types for non-code imports, e.g. *.module.css

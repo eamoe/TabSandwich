@@ -76,13 +76,13 @@ Read later, or keep: only the categories you choose ever nag you about old tabs.
 
 Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the icon, large (`branding/icon.svg`):
 
-1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list (a pinned tab, a note) and save card
+1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list (a pinned tab, a note) and save card; its last line carries the privacy promise ("Stored only in your browser. No account, no tracking.")
 2. `screenshot-2-whole-window.png` — "Forty tabs open? Save them all at once": a window just saved, open as a saved window, with "Close N tabs" on offer
 3. `screenshot-3-dark-mode.png` — "Easy on the eyes, day or night": the list in dark mode
 4. `screenshot-4-search.png` — "Find any saved tab in a keystroke": search with highlighted matches
-5. `screenshot-5-private.png` — "Your tabs stay in your browser": Settings › About in dark mode
+5. `screenshot-5-read-later.png` — "Read it later, or keep it for good": the Waiting filter in dark mode, with "Archive all N waiting tabs"
 
-(Since 3.2 the categories screenshot is gone to make room for saving a whole window; the main list still shows categories.)
+(Since 3.2 the categories screenshot is gone to make room for saving a whole window; the main list still shows categories. Since 3.3.1 the About screenshot is gone too: it showed no feature, so read later / keep has its place, and the privacy promise moved onto the first screenshot.)
 
 They're rendered from the built extension, not edited by hand: `pnpm build && pnpm store:screenshots` (on a Mac, with network access — it visits each sample site once so the rows show real site icons). Re-run it whenever the look changes, and check the pictures before uploading: they're public.
 
@@ -133,6 +133,7 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
 4. Update the description/screenshots only if something user-facing actually changed (3.2.0 did: paste the summary and detailed description above, including its "New in 3.2" paragraph, and replace all five screenshots — delete the old ones first, since two were renamed — re-rendered with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - 3.3.1 keeps the description as it is but replaces all five screenshots (delete the old ones first: `screenshot-5-private.png` is gone, `screenshot-5-read-later.png` takes its place; screenshot 1 gains the privacy line, and every headline now breaks into balanced lines). No permission change, nothing new stored: **Privacy practices** stays as it is.
    - 3.3.0 changes the description (paste it again, with its "New in 3.3" paragraph) and all five screenshots (same names; re-render after the version bump). It adds no permission and sends nothing anywhere: the new data (pins, archive, notes, when a tab was last opened from Tab Sandwich) stays on the device like the rest, so the **Privacy practices** answers stay as they are; `PRIVACY.md` lists it.
    - 3.2.0 adds the optional `tabs` permission: in the **Privacy practices** tab, add its justification (Step 3 above). Being optional, it's asked for only when someone first saves a whole window, so updating doesn't disable the extension for existing users.
    - A new icon (3.1.0 has one) normally comes from the uploaded zip. If the **Store listing** tab also has its own 128×128 store icon field, upload `images/icon-128.png` there too, or the listing keeps the old one.
