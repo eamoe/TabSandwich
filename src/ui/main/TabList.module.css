@@ -127,12 +127,14 @@
     transform: translateX(6px);
     transition: opacity 0.15s ease, transform 0.15s ease;
 }
-/* Invisible but still clickable while hidden: the pointer is over the row by then, which shows them. */
-.row:hover .actions, .row:focus-within .actions { opacity: 1; transform: none; }
-.row:hover .age, .row:focus-within .age { visibility: hidden; }
+/* Invisible but still clickable while hidden: the pointer is over the row by then, which shows them.
+   Keyboard focus shows them too, but not the focus a mouse click leaves on a button: after a
+   click on Pin the row stays (it only moves), and would otherwise look hovered until the next click. */
+.row:hover .actions, .row:has(:focus-visible) .actions { opacity: 1; transform: none; }
+.row:hover .age, .row:has(:focus-visible) .age { visibility: hidden; }
 /* A pinned row's pin, where an age badge would be (a pinned tab never ages). */
 .pinMark { flex-shrink: 0; display: inline-flex; color: var(--accent); transform: rotate(35deg); }
-.row:hover .pinMark, .row:focus-within .pinMark { visibility: hidden; }
+.row:hover .pinMark, .row:has(:focus-visible) .pinMark { visibility: hidden; }
 .pinned { color: var(--accent); }
 .delete:hover { color: var(--danger); }
 
