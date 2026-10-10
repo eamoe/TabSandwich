@@ -224,6 +224,15 @@ describe("editTab", () => {
         expect(storedTabs()).toEqual([{ ...a, title: "Renamed", category: "Reading" }, b]);
     });
 
+    it("stores Uncategorized picked in the edit form as no category, like every other save", async () => {
+        const a = makeTab({ category: "Reading" });
+        seed([a]);
+        await editTab(a.id, { category: "Uncategorized" });
+        expect(storedTabs()[0]).not.toHaveProperty("category");
+        await editTab(a.id, { title: "Still none" });
+        expect(storedTabs()[0]).not.toHaveProperty("category");
+    });
+
     it("refuses to change a URL into one that's already saved, and changes nothing", async () => {
         const [a, b] = [makeTab({ url: "https://a.com/" }), makeTab({ url: "https://b.com/" })];
         seed([a, b]);

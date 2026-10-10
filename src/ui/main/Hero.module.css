@@ -129,7 +129,10 @@
 /* Wide enough for "✓ Updated!" too, so the row never shifts when it flashes. */
 .update { min-width: 108px; padding: 0 12px; }
 /* "✓ Saved 12 days ago" under the title of a page that's already saved. */
-.savedNote { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); font-weight: 600; }
+/* Plain inline text, so it shares the line's baseline with the site name (as a flex box it took the
+   icon's bottom edge as its baseline and sat higher); the icon is nudged down onto the letters. */
+.savedNote { color: var(--accent); font-weight: 600; }
+.savedNote svg { margin: -2px 3px -2px 0; vertical-align: -2px; } /* the negative margins keep the line its usual height */
 .duplicate, .duplicate:hover { background: var(--dup); color: var(--on-dup); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); animation: shake 0.35s ease; }
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
