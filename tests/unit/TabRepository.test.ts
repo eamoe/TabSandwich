@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH, recordOpen } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH, tidyTitle, MAX_TITLE_LENGTH, recordOpen } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -435,6 +435,47 @@ describe("notes", () => {
         expect(storedTabs()[0]).not.toHaveProperty("note");
         const { tab: plain } = await addTab({ title: "Plain", url: "https://plain.example.com/", note: "" });
         expect(plain).not.toHaveProperty("note");
+    });
+});
+
+describe("titles", () => {
+    const long = "Every keyword a page could think of ".repeat(20); // 720 characters
+
+    it("are trimmed and kept whole up to MAX_TITLE_LENGTH characters; a longer one is cut and ends in …", () => {
+        expect(tidyTitle("  Q3 Roadmap ")).toBe("Q3 Roadmap");
+        expect(tidyTitle("x".repeat(MAX_TITLE_LENGTH))).toBe("x".repeat(MAX_TITLE_LENGTH));
+        const cut = tidyTitle(long);
+        expect(Array.from(cut)).toHaveLength(MAX_TITLE_LENGTH);
+        expect(cut.endsWith("…")).toBe(true);
+        expect(long.startsWith(cut.slice(0, -1))).toBe(true);
+    });
+
+    it("are cut between characters as a person sees them, never through an emoji", () => {
+        const cut = tidyTitle("🥪".repeat(400));
+        expect(cut).toBe("🥪".repeat(MAX_TITLE_LENGTH - 1) + "…");
+    });
+
+    it("are capped by every way of saving: a page, a whole window, an edit, and Update", async () => {
+        seed([]);
+        const { tab } = await addTab({ title: long, url: "https://one.example.com/" });
+        await addTabs([{ title: long, url: "https://two.example.com/" }]);
+        expect(storedTabs().map((t) => Array.from(t.title).length)).toEqual([MAX_TITLE_LENGTH, MAX_TITLE_LENGTH]);
+
+        await editTab(tab.id, { title: "Short again" });
+        expect(storedTabs()[1].title).toBe("Short again");
+        await editTab(tab.id, { title: long });
+        expect(storedTabs()[1].title).toBe(tidyTitle(long));
+        await refreshTab(tab.id, { title: `${long}!`, url: "https://one.example.com/" });
+        expect(storedTabs()[1].title).toBe(tidyTitle(long));
+    });
+
+    it("saved before the cap stay as they are until an edit sets the title", async () => {
+        const old = makeTab({ title: long });
+        seed([old]);
+        await setPinned(old.id, true);
+        expect(storedTabs()[0].title).toBe(long);
+        await editTab(old.id, { title: long, note: "kept for later" });
+        expect(storedTabs()[0].title).toBe(tidyTitle(long));
     });
 });
 

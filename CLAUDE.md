@@ -38,7 +38,7 @@ src/
                             chrome.storage.local so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), counting opens (recordOpen), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
@@ -130,6 +130,8 @@ src/
 popup/popup.html               just the mount point for the Preact app
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon; "tabs" only as an
                                 optional permission, asked for when you first save a whole window
+release-notes/                 vX.Y.Z.md per release, added in its pull request; the release workflow publishes it
+                                as the GitHub release's notes (and refuses a tag without one)
 branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
                                 to its tile for 48 px), icon-32.svg and icon-16.svg (redrawn on whole pixels,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
@@ -147,7 +149,8 @@ tests/store/                   not tests: render the Chrome Web Store screenshot
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
-                                release.yml (version tags: checks, then zip the tested dist/)
+                                release.yml (version tags: checks, then zip the tested dist/ and publish it
+                                with release-notes/vX.Y.Z.md as the notes)
 ```
 
 ## Build & verify
@@ -227,7 +230,9 @@ animation smoothness, and the manual release pass at the top of
 - **Build output (`dist/`) is never committed.** CI
   (`.github/workflows/release.yml`) builds and packages a distributable
   zip on every `vX.Y.Z` tag push (after all checks pass, and only if the
-  tag matches `manifest.json`'s version) — that's the artifact that gets
+  tag matches `manifest.json`'s version and `release-notes/vX.Y.Z.md`
+  exists — the release is published with those notes, so GitHub's release
+  email carries them) — that's the artifact that gets
   distributed, not a locally-built copy, except when explicitly noted
   otherwise (e.g. `PUBLISHING.md` has a documented one-off exception for
   the first Store submission).

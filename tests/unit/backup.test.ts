@@ -52,6 +52,14 @@ describe("parseBackupFile", () => {
         expect(parsed?.tabs.map((t) => t.note)).toEqual(["why", undefined, undefined]);
     });
 
+    it("shortens a title longer than 300 characters, ending it in …", () => {
+        const long = "Imported title ".repeat(40).trim();
+        const parsed = parseBackupFile(fileWith({ tabs: [{ title: long, url: "https://a.com" }, { title: " Short ", url: "https://b.com" }] }));
+        expect(Array.from(parsed!.tabs[0].title)).toHaveLength(300);
+        expect(parsed!.tabs[0].title.endsWith("…")).toBe(true);
+        expect(parsed!.tabs[1].title).toBe("Short");
+    });
+
     it("keeps when a tab was last opened and how often", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [{ title: "a", url: "https://a.com", lastOpenedAt: 1700000000000, openCount: 3 }, { title: "b", url: "https://b.com", openCount: -1 }] }));
         expect(parsed?.tabs.map((t) => [t.lastOpenedAt, t.openCount])).toEqual([[1700000000000, 3], [undefined, undefined]]);

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
 import type { MatchRange, SearchMatch } from "../../domain/search";
 import { normalizeUrl } from "../../util/url";
-import { MAX_NOTE_LENGTH } from "../../domain/TabRepository";
+import { MAX_NOTE_LENGTH, MAX_TITLE_LENGTH } from "../../domain/TabRepository";
 import { daysSince } from "../../util/time";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
@@ -350,6 +350,7 @@ function EditForm(props: RowProps & { onDone: () => void }) {
                 class={controls.field}
                 type="text"
                 placeholder={strings.titlePlaceholder}
+                maxLength={MAX_TITLE_LENGTH}
                 value={title}
                 onInput={(e) => setTitle(e.currentTarget.value)}
             />

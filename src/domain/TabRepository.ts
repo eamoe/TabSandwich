@@ -12,6 +12,20 @@ export interface AddTabInput {
 }
 
 export const MAX_NOTE_LENGTH = 120;
+/** Far longer than any real page title; typed titles stop here, and longer ones from pages or backups are shortened. */
+export const MAX_TITLE_LENGTH = 300;
+
+/**
+ * A title as stored: trimmed, at most MAX_TITLE_LENGTH characters. A longer one is cut and ends in
+ * "…", so it's clear something was left out; counted in characters as a person sees them, so an
+ * emoji is never split in half.
+ */
+export function tidyTitle(raw: string): string {
+    const title = raw.trim();
+    const chars = Array.from(title);
+    if (chars.length <= MAX_TITLE_LENGTH) return title;
+    return chars.slice(0, MAX_TITLE_LENGTH - 1).join("").trimEnd() + "…";
+}
 
 /** A note as stored: one line, trimmed, at most MAX_NOTE_LENGTH characters; undefined when nothing's left. */
 export function tidyNote(raw: string | undefined): string | undefined {
@@ -40,7 +54,7 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
         const note = tidyNote(input.note);
         const newTab: SavedTab = {
             id: crypto.randomUUID(),
-            title: input.title,
+            title: tidyTitle(input.title),
             url: input.url,
             category: input.category,
             savedAt: Date.now(),
@@ -78,7 +92,7 @@ export async function addTabs(inputs: { title: string; url: string; category?: s
         const savedAt = Date.now();
         for (const input of inputs) {
             if (tabs.some((t) => urlsMatch(t.url, input.url)) || added.some((t) => urlsMatch(t.url, input.url))) continue;
-            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category: category ?? input.category, savedAt });
+            added.push({ id: crypto.randomUUID(), title: tidyTitle(input.title), url: input.url, category: category ?? input.category, savedAt });
         }
         let group: TabGroup | null = null;
         if (nameGroup && added.length >= 2) {
@@ -119,7 +133,8 @@ export async function editTab(
         }
         const updated = tabs.map((t): SavedTab => {
             if (t.id !== id) return t;
-            const { note: _old, category: _was, ...rest } = { ...t, ...updates };
+            const title = updates.title !== undefined ? tidyTitle(updates.title) : t.title;
+            const { note: _old, category: _was, ...rest } = { ...t, ...updates, title };
             // A note emptied in the edit form is gone, not stored as "".
             const note = "note" in updates ? tidyNote(updates.note) : t.note;
             // Picking Uncategorized in the edit form means no category, stored the way every other
@@ -146,7 +161,7 @@ export async function refreshTab(id: string, page: { title: string; url: string;
         if (!previous) return null;
         // Brought up to date is current again: an archived copy comes back to the list (Undo puts it back as it was).
         const { archivedAt: _archived, ...kept } = previous;
-        const refreshed: SavedTab = { ...kept, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
+        const refreshed: SavedTab = { ...kept, title: tidyTitle(page.title), url: page.url, category: page.category, savedAt: Date.now() };
         await setTabs(tabs.map((t) => (t.id === id ? refreshed : t)));
         return previous;
     });

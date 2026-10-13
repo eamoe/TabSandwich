@@ -2,7 +2,7 @@ import { SavedTab, Settings, SortOrder, TabGroup, ThemeChoice } from "../types";
 import { DEFAULT_SETTINGS } from "../storage/chromeStorage";
 import { normalizeUrl, urlsMatch } from "../util/url";
 import { CATEGORY_COLOR_PALETTE, UNCATEGORIZED } from "./CategoryRepository";
-import { tidyNote } from "./TabRepository";
+import { tidyNote, tidyTitle } from "./TabRepository";
 
 /** 2 since v3.2: adds saved windows (`groups`, and `groupId` on their tabs). Version 1 files still import. */
 export const BACKUP_FORMAT_VERSION = 2;
@@ -55,7 +55,7 @@ function readImportedTab(raw: unknown): ImportedTab | null {
     const url = normalizeUrl(raw.url);
     if (!url) return null;
     return {
-        title: raw.title,
+        title: tidyTitle(raw.title),
         url,
         category: typeof raw.category === "string" ? raw.category : undefined,
         savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now(),
