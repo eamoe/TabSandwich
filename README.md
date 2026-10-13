@@ -69,7 +69,7 @@ Then load the `dist/` folder (not the repository root) as an unpacked extension 
 - `pnpm icons` — renders the extension's icons into `images/` from the drawings in `branding/`.
 - `pnpm lint` / `pnpm typecheck` — code checks.
 - `pnpm check` — all of the above, in the same order CI runs them.
-- GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` (`.github/workflows/release.yml`); `dist/` itself is never committed.
+- GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` and published with that version's notes from `release-notes/` (`.github/workflows/release.yml`); `dist/` itself is never committed.
 
 ## License
 

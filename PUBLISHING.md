@@ -129,10 +129,11 @@ Most likely causes for a first submission: a permission that isn't clearly justi
 
 Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (account, category, description) — just:
 
-1. Bump `manifest.json`'s `version`.
-2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip.
+1. In the release pull request: bump `manifest.json`'s `version` and add the release notes as `release-notes/vX.Y.Z.md` (sections `### New` / `### Changed` / `### Fixed` / `### Under the hood`, only those that apply, ending with the **Full Changelog** link).
+2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip and publishes the GitHub release with those notes already in it, so GitHub's release email carries them (notes added by editing a release afterwards never reach that email). A tag without its notes file gets no release.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
 4. Update the description/screenshots only if something user-facing actually changed (3.2.0 did: paste the summary and detailed description above, including its "New in 3.2" paragraph, and replace all five screenshots — delete the old ones first, since two were renamed — re-rendered with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - 3.3.2 changes only the package: upload the new zip; the description, screenshots and **Privacy practices** stay as they are.
    - 3.3.1 keeps the description as it is but replaces all five screenshots (delete the old ones first: `screenshot-5-private.png` is gone, `screenshot-5-read-later.png` takes its place; screenshot 1 gains the privacy line, and every headline now breaks into balanced lines). No permission change, nothing new stored: **Privacy practices** stays as it is.
    - 3.3.0 changes the description (paste it again, with its "New in 3.3" paragraph) and all five screenshots (same names; re-render after the version bump). It adds no permission and sends nothing anywhere: the new data (pins, archive, notes, when a tab was last opened from Tab Sandwich) stays on the device like the rest, so the **Privacy practices** answers stay as they are; `PRIVACY.md` lists it.
    - 3.2.0 adds the optional `tabs` permission: in the **Privacy practices** tab, add its justification (Step 3 above). Being optional, it's asked for only when someone first saves a whole window, so updating doesn't disable the extension for existing users.
