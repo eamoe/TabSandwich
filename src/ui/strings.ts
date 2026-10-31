@@ -100,12 +100,14 @@ export const strings = {
     setShortcut: "Set one",
     tipCategories: "Make the categories yours.",
 
+    menuSave: "Save to Tab Sandwich",
+
     welcomeTitle: "Welcome to Tab Sandwich",
     welcomeLead: "Save the tabs you want to keep, close them, and find them again in seconds.",
     welcomePinTitle: "Pin it to your toolbar",
     welcomePinText: "Click the puzzle piece next to the address bar, then the pin beside Tab Sandwich.",
     welcomeSaveTitle: "Save a page",
-    welcomeSaveText: "On any page, click the icon, pick a category and press Save.",
+    welcomeSaveText: "On any page, click the icon, pick a category and press Save. Or right-click any link.",
     welcomeShortcutTitle: "Open it from anywhere",
     welcomeShortcutText: "Press",
     welcomePromise: "Everything stays in this browser. No account, no tracking.",

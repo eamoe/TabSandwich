@@ -44,6 +44,15 @@ export function onLibraryChanged(listener: () => void): () => void {
     return () => chrome.storage.onChanged.removeListener(onChanged);
 }
 
+/** Calls `listener` whenever the list of categories changes, whoever changed it. */
+export function onCategoriesChanged(listener: () => void): void {
+    chrome.storage.onChanged.addListener((changes, area) => {
+        const change = changes[SETTINGS_KEY];
+        const categories = (settings: unknown) => JSON.stringify((settings as Partial<Settings> | undefined)?.categories);
+        if (area === "local" && change && categories(change.oldValue) !== categories(change.newValue)) listener();
+    });
+}
+
 export const DEFAULT_SETTINGS: Settings = {
     outdatedDays: 7,
     // A fresh install: a reading list and quick, unsorted saves are what reminders are for;

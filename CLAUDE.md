@@ -67,7 +67,10 @@ src/
     SettingsRepository.ts  theme, sort, the waiting days and which categories age; clamps the day count to 1–365
   worker/
     install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
-                            opens the welcome page (fresh installs only)
+                            builds the right-click menu, opens the welcome page (fresh installs only)
+    contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change; saves the link or page,
+                            titled with the link's own words (readLinkText, run in the page at that moment)
+    feedback.ts            the toolbar badge flashing ✓ or ! after a save, with no popup open to say so
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -146,8 +149,8 @@ src/
 
 popup/popup.html               just the mount point for the Preact app
 welcome/welcome.html           the same, for the welcome page
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon; "tabs" only as an
-                                optional permission, asked for when you first save a whole window
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting;
+                                "tabs" only as an optional permission, asked for when you first save a whole window
 release-notes/                 vX.Y.Z.md per release, added in its pull request; the release workflow publishes it
                                 as the GitHub release's notes (and refuses a tag without one)
 branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
@@ -229,8 +232,12 @@ animation smoothness, and the manual release pass at the top of
   `MIGRATIONS`, with tests (see `tests/unit/upgrade.test.ts`). Never
   reshape stored data anywhere else.
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
-  `favicon`, plus the optional `tabs`, requested at the moment you first save
-  a whole window). If a new feature needs a new permission, that's a deliberate,
+  `favicon`, `contextMenus`, `scripting`, plus the optional `tabs`, requested at
+  the moment you first save a whole window). There are no content scripts: the
+  only code that runs in a page is `readLinkText`, once, when you pick a category
+  in the right-click menu (that click is what grants `activeTab`). Never put a
+  permission that shows a warning in the required list: an update adding one
+  disables the extension until the user accepts it. If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
 - **Preact for screens, no state library.** Preact was adopted for the
   v3.0 redesign; don't add another UI or state library. Components keep

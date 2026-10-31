@@ -28,7 +28,8 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
 8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. Anything new in this release that isn't marked **[auto]** yet.
+10. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+11. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -346,7 +347,7 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
+- Expected: `permissions` is exactly `["activeTab", "storage", "favicon", "contextMenus", "scripting"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `pnpm build`.
@@ -1050,6 +1051,10 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 ## 23. Beyond the Popup (v4.0)
 
+**TC-283 — Titles stop at 300 characters (P2)** **[auto]**
+- Steps: Save a page whose title is longer than 300 characters. In the + form, paste a title of 400 characters; then edit a saved tab and paste one into its Title field. Import a backup whose tab has a 400-character title.
+- Expected: In both forms the field stops taking text at 300 characters (like a note at 120). The page's title and the imported one are shortened to 300 characters, ending in "…" (never cutting an emoji in half; logic-tested, like saving a whole window and Update). Titles saved before 4.0 stay as they were until their tab is edited; nothing stored is upgraded.
+
 **TC-284 — The welcome page, once, after a fresh install (P1)** **[auto]**
 - Steps: Install the extension on a new profile. Open the popup, then close and reopen it. Press **Got it** on the welcome page. Then update an existing install in place (TC-256; by hand).
 - Expected: One welcome page opens by itself: pin it, save a page, the keyboard shortcut as Chrome words it (with **Set one** if there's none), and the local-only promise. Opening the popup doesn't bring it back, no "What's new" note shows, and **Got it** closes the page. An update opens nothing (logic-tested).
@@ -1062,6 +1067,18 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: With two places open, save something in each at the same moment, while a third is in the middle of writing.
 - Expected: They take turns: nothing is written until the third finishes, then both saves land and show in both places.
 
-**TC-283 — Titles stop at 300 characters (P2)** **[auto]**
-- Steps: Save a page whose title is longer than 300 characters. In the + form, paste a title of 400 characters; then edit a saved tab and paste one into its Title field. Import a backup whose tab has a 400-character title.
-- Expected: In both forms the field stops taking text at 300 characters (like a note at 120). The page's title and the imported one are shortened to 300 characters, ending in "…" (never cutting an emoji in half; logic-tested, like saving a whole window and Update). Titles saved before 4.0 stay as they were until their tab is edited; nothing stored is upgraded.
+**TC-287 — Save a link by right-clicking it (P1)** **[auto]**
+- Steps: On a web page, right-click a link, then **Save to Tab Sandwich** › a category. Do it again with a popup or side panel open beside it.
+- Expected: The link is saved into that category, titled with the link's own words (spaces tidied); the toolbar icon flashes ✓ for a couple of seconds, and it appears in whatever's open without a refresh. The robot test delivers the click Chrome would send: **check the real menu by hand each release**.
+
+**TC-288 — A link with no words of its own (P2)** **[auto]**
+- Steps: Right-click a picture that's a link; a link with neither (with some text selected, then with none); a link on a page Chrome won't let extensions read, such as the Chrome Web Store.
+- Expected: The title is the first of: the link's words, its spoken name or tooltip, its picture's description, the selected text, the site's name. The save always goes through. Pick Uncategorized and the tab has no category.
+
+**TC-289 — The other things you can right-click (P2)** **[auto]**
+- Steps: Right-click the page away from any link, and save. Right-click a link that's already saved, in another category. Right-click a `mailto:` link, and save.
+- Expected: The page itself is saved, with its title. The saved link stays one copy, as it was, and the icon still flashes ✓: it's in your library. The `mailto:` link saves nothing, and the icon flashes ! (as it does when a save fails).
+
+**TC-290 — The menu follows your categories (P1)** **[auto]**
+- Steps: Add, rename, remove or reorder a category in Settings, or import a backup; right-click a link.
+- Expected: The menu lists your categories in your order, Uncategorized last, straight away. It's still there after restarting Chrome.

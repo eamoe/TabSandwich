@@ -98,9 +98,11 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
    ```
 
 2. **Permission justifications:**
-   - `activeTab`: "Used only after the user clicks the extension icon or its keyboard shortcut, to read the title/URL of the currently active tab: the popup shows them, and saves them if the user clicks Save. No access to any other tab."
+   - `activeTab`: "Used only after the user clicks the extension icon, its keyboard shortcut or its right-click menu item, to read the title/URL of the currently active tab: the popup shows them, and saves them if the user clicks Save. No access to any other tab."
    - `storage`: "Used to persist the user's saved tabs and settings locally via chrome.storage.local. No data is transmitted off-device."
    - `tabs` (optional permission): "Requested only when the user first clicks 'Save all tabs in this window', never at install. Used to read the titles and URLs of the tabs open in the popup's window, so they can be saved in one action and the popup can say how many are new; read only while the popup is open, stored only for pages the user chooses to save, never transmitted. Declining leaves every other feature working."
+   - `contextMenus`: "Adds 'Save to Tab Sandwich' to the right-click menu, with one item per category, so the user can save a link or page without opening the popup."
+   - `scripting`: "Used only when the user picks 'Save to Tab Sandwich' on a link in the right-click menu: reads the words on that one link, in that one tab, so the saved tab has a recognizable title (Chrome gives extensions a link's address but not its text). Nothing runs on any page until the user makes that choice, and nothing is sent anywhere."
    - `favicon`: "Used to show each saved tab's icon by reading it from Chrome's own local favicon cache, instead of fetching it from the page's own site. No favicon data is stored, and no request is ever made to the saved page's site for this."
 
 3. **Data usage:**

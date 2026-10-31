@@ -25,7 +25,9 @@
     "permissions": [
         "activeTab",
         "storage",
-        "favicon"
+        "favicon",
+        "contextMenus",
+        "scripting"
     ],
     "optional_permissions": [
         "tabs"
