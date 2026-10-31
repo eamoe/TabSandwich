@@ -1,6 +1,6 @@
-import type { BrowserContext, Page, Worker } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { test, expect, TEST_SITE } from "./fixtures";
-import { openSettings, openSiteTab, row, seedLibrary, storedTabs } from "./helpers";
+import { clickMenu, openSettings, openSiteTab, row, seedLibrary, storedTabs, worker } from "./helpers";
 
 const PAGE_TITLE = "Links";
 const PAGE = `<!doctype html><title>${PAGE_TITLE}</title>
@@ -9,18 +9,6 @@ const PAGE = `<!doctype html><title>${PAGE_TITLE}</title>
     <a href="/picture"><img alt="A photo of Lisbon" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="></a>
     <a href="/bare"></a>
     <a href="mailto:someone@example.test">Write to us</a>`;
-
-const worker = async (context: BrowserContext): Promise<Worker> => context.serviceWorkers()[0] ?? context.waitForEvent("serviceworker");
-
-/** Chrome's own menu can't be opened from a test, so this delivers the click it would send. */
-async function clickMenu(context: BrowserContext, popup: Page, category: string, target: { linkUrl?: string; selectionText?: string }) {
-    const tab = await popup.evaluate(async () => (await chrome.tabs.query({ active: true, currentWindow: true }))[0]);
-    const sw = await worker(context);
-    await sw.evaluate(
-        ([info, tab]) => (chrome.contextMenus.onClicked as unknown as { dispatch: (...args: unknown[]) => void }).dispatch(info, tab),
-        [{ menuItemId: `save:${category}`, pageUrl: tab.url, frameId: 0, editable: false, ...target }, tab] as const
-    );
-}
 
 const badge = (popup: Page) => popup.evaluate(() => chrome.action.getBadgeText({}));
 

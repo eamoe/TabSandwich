@@ -28,8 +28,9 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
 8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-11. Anything new in this release that isn't marked **[auto]** yet.
+10. The side panel in real Chrome: the popup's button, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
+11. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+12. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -347,7 +348,7 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is exactly `["activeTab", "storage", "favicon", "contextMenus", "scripting"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
+- Expected: `permissions` is exactly `["activeTab", "storage", "favicon", "contextMenus", "scripting", "sidePanel"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `pnpm build`.
@@ -1050,6 +1051,22 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: The tab shows as Uncategorized (stored with no category, like any other uncategorized tab), and it doesn't make Uncategorized a suggestion: the picker shows no sparkle on Uncategorized. Tabs edited this way before 3.3.1 don't count as suggestions either (logic-tested).
 
 ## 23. Beyond the Popup (v4.0)
+
+**TC-291 — The side panel (P1)** **[auto]**
+- Steps: Open the side panel beside a page and browse. Drag it wider and narrower. Save a link by right-clicking it. Change something in a popup while the panel is open.
+- Expected: It's the whole app: save card, list, Settings. It's as tall as the window, only the list scrolls, nothing is cut off at any width, and a right-click save appears without a refresh. A popup and the panel stay in step, both ways.
+
+**TC-292 — The panel asks once, on the first Save (P1)** **[auto]**
+- Steps: On a profile without the "tabs" permission, open the panel on a web page. Press **Save** and say no. Press it again and say yes. Browse on.
+- Expected: Before asking, the card says "The page you're on" and that Chrome asks once. No prompt appears until Save. A no saves nothing and says why; a yes saves the page, and from then on the card shows each page you're on, with no more asking. Someone who allowed it for saving a whole window never sees the prompt. Chrome's real prompt: **by hand**.
+
+**TC-293 — What the toolbar icon opens (P1)** **[auto]**
+- Steps: Settings › General › Toolbar icon: pick **Side panel**. Click the icon, press the shortcut, restart Chrome and click again. Pick **Popup** from the panel's Settings.
+- Expected: With Side panel, the icon and the shortcut open the panel instead of the popup, and it stays that way after a restart; the popup is the default, and comes back when picked. A backup carries the choice. The real click and restart: **by hand**.
+
+**TC-294 — The popup's button opens the panel (P2)** **[auto]**
+- Steps: In the popup, press the panel button next to +. Try it in a second window.
+- Expected: The panel opens in that window and the popup closes. If Chrome refuses, the popup stays open and says so. The panel itself has no such button.
 
 **TC-283 — Titles stop at 300 characters (P2)** **[auto]**
 - Steps: Save a page whose title is longer than 300 characters. In the + form, paste a title of 400 characters; then edit a saved tab and paste one into its Title field. Import a backup whose tab has a 400-character title.

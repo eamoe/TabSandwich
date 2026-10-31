@@ -1,5 +1,5 @@
-import type { ThemeChoice } from "../../types";
-import { setTheme } from "../../domain/SettingsRepository";
+import type { ThemeChoice, ToolbarChoice } from "../../types";
+import { setTheme, setToolbarOpens } from "../../domain/SettingsRepository";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast } from "../toastStore";
@@ -30,6 +30,11 @@ const THEMES: Array<{ value: ThemeChoice; label: string }> = [
     { value: "light", label: strings.themeLight },
     { value: "dark", label: strings.themeDark },
     { value: "system", label: strings.themeSystem },
+];
+
+const TOOLBAR_CHOICES: Array<{ value: ToolbarChoice; label: string }> = [
+    { value: "popup", label: strings.toolbarPopup },
+    { value: "panel", label: strings.toolbarPanel },
 ];
 
 /** Runs a settings write; on failure says why and reloads, which puts every control back to what's actually stored. */
@@ -66,6 +71,26 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                     ))}
                 </div>
                 <p class={styles.hint}>{strings.themeHint}</p>
+            </section>
+
+            <section class={styles.group} aria-labelledby="toolbar-title">
+                <h2 id="toolbar-title" class={styles.groupTitle}>
+                    {strings.toolbarIcon}
+                </h2>
+                <div class={styles.segmented} role="group" aria-label={strings.toolbarGroup}>
+                    {TOOLBAR_CHOICES.map((c) => (
+                        <button
+                            key={c.value}
+                            type="button"
+                            class={styles.tab}
+                            aria-pressed={settings.toolbarOpens === c.value}
+                            onClick={() => void attempt(() => setToolbarOpens(c.value), reload)}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
+                <p class={styles.hint}>{strings.toolbarHint}</p>
             </section>
 
             <section class={styles.group} aria-label={strings.keyboardShortcut}>

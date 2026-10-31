@@ -51,8 +51,12 @@ const STORAGE_WARNING_PCT = 80;
 /** Rows rise in when the popup opens; after this, a row that appears (saved, restored) drops in instead. */
 const ENTRANCE_MS = 900;
 
-export function App(props: { whatsNew?: string | null }) {
+/** Where the app is running: the toolbar popup, or the side panel beside the page. */
+export type Surface = "popup" | "panel";
+
+export function App(props: { surface: Surface; whatsNew?: string | null }) {
     const { library, reload } = useLibrary();
+    const inPanel = props.surface === "panel";
     const [view, setView] = useState<"main" | "settings">("main");
     const [settingsTab, setSettingsTab] = useState<SettingsTabKey>("general");
     const [whatsNew, setWhatsNew] = useState(props.whatsNew ?? null);
@@ -81,7 +85,8 @@ export function App(props: { whatsNew?: string | null }) {
     // tall, so switching screens or Settings tabs can grow the popup window but never shrink it
     // back and forth.
     const [floorHeight, setFloorHeight] = useState(0);
-    const raiseFloor = useCallback((height: number) => setFloorHeight((h) => Math.max(h, height)), []);
+    // (The side panel is as tall as the window whatever it shows, so there's nothing to hold up.)
+    const raiseFloor = useCallback((height: number) => setFloorHeight((h) => (inPanel ? 0 : Math.max(h, height))), [inPanel]);
     const highlightSeq = useRef(0);
 
     // Settings opens at least as tall as the main screen was, so the popup window doesn't
@@ -140,6 +145,13 @@ export function App(props: { whatsNew?: string | null }) {
         rangeStart.current = null;
     }, [filter, query]);
 
+    const windowId = useRef<number | undefined>(undefined);
+    useEffect(() => {
+        void chrome.windows.getCurrent().then((current) => {
+            windowId.current = current.id;
+        });
+    }, []);
+
     // Keys that work anywhere on the main screen (but never while typing in a field):
     // "/" jumps to search, Ctrl+Z / ⌘Z undoes whatever the toast offers to undo.
     useEffect(() => {
@@ -163,6 +175,12 @@ export function App(props: { whatsNew?: string | null }) {
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
     }, [view, stopSelecting]);
+
+    // Chrome only opens the side panel for a click, so the window has to be known before it.
+    const openPanel = () => {
+        const opening = windowId.current === undefined ? Promise.reject() : chrome.sidePanel.open({ windowId: windowId.current });
+        opening.then(() => window.close()).catch(() => showErrorToast(strings.sidePanelFailed));
+    };
 
     const focusSearch = () => document.getElementById("search-input")?.focus();
     const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view li[data-tab-id] [data-row-title]")?.focus();
@@ -678,6 +696,7 @@ export function App(props: { whatsNew?: string | null }) {
                     onArrowDown={focusFirstRow}
                     manualOpen={manualOpen}
                     onToggleManual={() => setManualOpen((open) => !open)}
+                    onOpenPanel={inPanel ? undefined : openPanel}
                     onOpenSettings={() => openSettings()}
                     settingsButtonRef={settingsButton}
                     hops={hops}
@@ -694,6 +713,7 @@ export function App(props: { whatsNew?: string | null }) {
                     />
                 ) : (
                     <SaveCard
+                        inPanel={inPanel}
                         tabs={library.tabs}
                         categoryOptions={saveOptions}
                         colorOf={colorOf}

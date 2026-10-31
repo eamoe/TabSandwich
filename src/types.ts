@@ -41,6 +41,9 @@ export type SortOrder = "custom" | "newest" | "oldest" | "title" | "site" | "ope
 /** "system" follows the OS light/dark setting; the other two pin the popup to one theme. */
 export type ThemeChoice = "system" | "light" | "dark";
 
+/** What clicking the toolbar icon (or pressing the shortcut) opens. */
+export type ToolbarChoice = "popup" | "panel";
+
 export interface Settings {
     /** How many days a tab in a waiting category waits before it shows as "Waiting" (1–365). */
     outdatedDays: number;
@@ -62,4 +65,6 @@ export interface Settings {
     theme: ThemeChoice;
     /** Added in v3.1, filled in on read like theme. Remembered between opens. */
     sort: SortOrder;
+    /** Added in v4.0, filled in on read like theme. */
+    toolbarOpens: ToolbarChoice;
 }

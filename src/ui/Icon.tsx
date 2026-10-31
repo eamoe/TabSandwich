@@ -119,6 +119,12 @@ const PATHS: Record<IconName, JSX.Element> = {
         </>
     ),
     check: <polyline points="5 12 10 17 19 7" />,
+    panel: (
+        <>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <line x1="15" y1="4" x2="15" y2="20" />
+        </>
+    ),
     chevronDown: <polyline points="6 9 12 15 18 9" />,
     chevronUp: <polyline points="18 15 12 9 6 15" />,
     chevronLeft: <polyline points="15 18 9 12 15 6" />,
@@ -162,6 +168,7 @@ const PATHS: Record<IconName, JSX.Element> = {
 };
 
 export type IconName =
+    | "panel"
     | "search"
     | "sort"
     | "download"

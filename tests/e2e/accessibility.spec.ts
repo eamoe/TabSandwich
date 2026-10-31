@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { test, expect, WELCOME_URL } from "./fixtures";
+import { test, expect, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "./fixtures";
 import { openSettings, openSiteTab, seedLibrary, tabList } from "./helpers";
 
 /**
@@ -222,6 +222,25 @@ for (const colorScheme of ["light", "dark"] as const) {
         test("undo toast showing", async ({ popup }) => {
             await popup.getByRole("button", { name: "Archive Q3 Roadmap" }).click();
             await expect(popup.getByRole("button", { name: "Undo" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("the side panel", async ({ popup }) => {
+            await popup.goto(SIDE_PANEL_URL);
+            await waitUntilReady(popup);
+            await expect(tabList(popup)).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("the side panel, before it may see the page", async ({ context, popup }) => {
+            const url = "https://unseen.example.org/article";
+            await context.route(url, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Unseen</title>" }));
+            await popup.goto(SIDE_PANEL_URL);
+            await waitUntilReady(popup);
+            const opened = context.waitForEvent("page");
+            await popup.evaluate((u) => chrome.tabs.create({ url: u, active: true }), url);
+            await (await opened).waitForLoadState();
+            await expect(popup.getByRole("region", { name: "Current tab" })).toContainText("The page you're on");
             expect(await scan(popup)).toEqual([]);
         });
 

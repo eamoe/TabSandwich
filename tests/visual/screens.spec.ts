@@ -1,4 +1,4 @@
-import { test, expect, WELCOME_URL } from "../e2e/fixtures";
+import { test, expect, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
 import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
@@ -214,6 +214,35 @@ for (const colorScheme of ["light", "dark"] as const) {
         await seedLibrary(popup, []);
         await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
         await expect(popup).toHaveScreenshot(`empty-${colorScheme}.png`);
+    });
+
+    test(`the side panel (${colorScheme})`, async ({ context, popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, LIBRARY, SETTINGS);
+        await popup.setViewportSize({ width: 360, height: 800 });
+        await popup.goto(SIDE_PANEL_URL);
+        await waitUntilReady(popup);
+        await openSiteTab(context, popup, "Designing calm interfaces");
+        await popup.mouse.move(0, 799);
+        await expect(popup).toHaveScreenshot(`side-panel-${colorScheme}.png`);
+    });
+
+    test(`the side panel, before it may see the page (${colorScheme})`, async ({ context, popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, LIBRARY, SETTINGS);
+        await popup.setViewportSize({ width: 360, height: 800 });
+        await popup.goto(SIDE_PANEL_URL);
+        await waitUntilReady(popup);
+        const url = "https://unseen.example.org/article";
+        await context.route(url, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Unseen</title>" }));
+        const opened = context.waitForEvent("page");
+        await popup.evaluate((u) => chrome.tabs.create({ url: u, active: true }), url);
+        await (await opened).waitForLoadState();
+        await expect(popup.getByRole("region", { name: "Current tab" })).toContainText("The page you're on");
+        await popup.mouse.move(0, 799);
+        await expect(popup).toHaveScreenshot(`side-panel-unseen-${colorScheme}.png`);
     });
 
     test(`the welcome page (${colorScheme})`, async ({ popup }) => {

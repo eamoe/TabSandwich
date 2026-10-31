@@ -25,6 +25,7 @@ function extensionIdFromKey(base64Key: string): string {
 
 export const EXTENSION_ID = extensionIdFromKey(TEST_KEY);
 export const POPUP_URL = `chrome-extension://${EXTENSION_ID}/popup/popup.html`;
+export const SIDE_PANEL_URL = `chrome-extension://${EXTENSION_ID}/sidepanel/sidepanel.html`;
 export const WELCOME_URL = `chrome-extension://${EXTENSION_ID}/welcome/welcome.html`;
 
 /** A fake website the tests can "visit" with no network: every request to it is answered here. */

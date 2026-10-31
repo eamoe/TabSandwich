@@ -54,6 +54,6 @@ export function useWindowTabs(): WindowTabs | undefined {
 
 /** Permission granted or taken back (in Chrome's extension settings, say). Typed as full events:
  *  @types/chrome leaves out their removeListener, which Chrome has like every other event. */
-function permissionEvents(): chrome.events.Event<() => void>[] {
+export function permissionEvents(): chrome.events.Event<() => void>[] {
     return [chrome.permissions.onAdded, chrome.permissions.onRemoved] as unknown as chrome.events.Event<() => void>[];
 }

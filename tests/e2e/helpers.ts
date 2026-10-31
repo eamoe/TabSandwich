@@ -1,4 +1,4 @@
-import type { BrowserContext, Locator, Page } from "@playwright/test";
+import type { BrowserContext, Locator, Page, Worker } from "@playwright/test";
 import { expect, TEST_SITE, waitUntilReady } from "./fixtures";
 
 export interface SeedTab {
@@ -212,4 +212,16 @@ export async function expectMenuFullyVisible(popup: Page): Promise<void> {
         });
         expect(covered).toBe(false);
     }
+}
+
+export const worker = async (context: BrowserContext): Promise<Worker> => context.serviceWorkers()[0] ?? context.waitForEvent("serviceworker");
+
+/** Chrome's own menu can't be opened from a test, so this delivers the click it would send, on the active tab. */
+export async function clickMenu(context: BrowserContext, page: Page, category: string, target: { linkUrl?: string; selectionText?: string }): Promise<void> {
+    const tab = await page.evaluate(async () => (await chrome.tabs.query({ active: true, currentWindow: true }))[0]);
+    const sw = await worker(context);
+    await sw.evaluate(
+        ([info, tab]) => (chrome.contextMenus.onClicked as unknown as { dispatch: (...args: unknown[]) => void }).dispatch(info, tab),
+        [{ menuItemId: `save:${category}`, pageUrl: tab.url, frameId: 0, editable: false, ...target }, tab] as const
+    );
 }

@@ -3,7 +3,7 @@ import { getLastSeenVersion } from "../../src/storage/chromeStorage";
 import { CURRENT_SCHEMA_VERSION, SCHEMA_VERSION_KEY } from "../../src/storage/upgrade";
 import { WELCOME_PAGE, handleInstalled } from "../../src/worker/install";
 import { storage } from "./setup";
-import { SETTINGS_KEY } from "./helpers";
+import { SETTINGS_KEY, seed } from "./helpers";
 
 const welcome = `chrome-extension://test-extension-id/${WELCOME_PAGE}`;
 
@@ -19,6 +19,13 @@ describe("handleInstalled", () => {
         expect(await getLastSeenVersion()).toBe("9.9.9");
         expect(storage.data[SCHEMA_VERSION_KEY]).toBe(CURRENT_SCHEMA_VERSION);
         expect(storage.openedTabs).toEqual([welcome]);
+    });
+
+    it("sets what the toolbar icon opens, on an update too", async () => {
+        seed([], { toolbarOpens: "panel" });
+        await handleInstalled("update");
+        expect(storage.toolbarPopup).toBe("");
+        expect(storage.panelOnClick).toBe(true);
     });
 
     it("still welcomes a new user if the first write fails", async () => {

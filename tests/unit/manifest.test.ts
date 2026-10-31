@@ -10,7 +10,7 @@ const manifest = JSON.parse(readFileSync(new URL("../../manifest.json", import.m
  */
 describe("manifest.json", () => {
     it("TC-103: asks for exactly the minimal permission set", () => {
-        expect(manifest.permissions).toEqual(["activeTab", "storage", "favicon", "contextMenus", "scripting"]);
+        expect(manifest.permissions).toEqual(["activeTab", "storage", "favicon", "contextMenus", "scripting", "sidePanel"]);
         // Asked for only when you first save a whole window (v3.2), never at install.
         expect(manifest.optional_permissions).toEqual(["tabs"]);
         expect(manifest.host_permissions).toBeUndefined();

@@ -1,4 +1,4 @@
-.app { display: flex; flex-direction: column; max-height: 600px; }
+.app { display: flex; flex-direction: column; max-height: var(--screen-max); }
 /* The filter pills scroll sideways; the sort button stays put at the row's right end. */
 .filterBar { display: flex; align-items: flex-start; flex-shrink: 0; position: relative; z-index: 2; }
 .filterBar > [role="group"] {

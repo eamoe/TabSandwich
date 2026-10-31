@@ -13,6 +13,13 @@ export const strings = {
     clearSearch: "Clear search",
     matches: (count: number) => (count === 0 ? "No matching tabs" : `${count} matching tab${count === 1 ? "" : "s"}`),
     addLinkManually: "Add link manually",
+    openSidePanel: "Open side panel",
+    sidePanelFailed: "Chrome couldn't open the side panel.",
+    // The save card in the side panel, which can't see the page until Chrome has been asked.
+    panelPageTitle: "The page you're on",
+    panelPageHint: "Chrome asks once before the first save.",
+    panelDenied: "Tab Sandwich needs that to see the page, so nothing was saved.",
+
     openSettings: "Open settings",
     settingsTooltip: "Settings",
 
@@ -101,6 +108,11 @@ export const strings = {
     tipCategories: "Make the categories yours.",
 
     menuSave: "Save to Tab Sandwich",
+    toolbarIcon: "Toolbar icon",
+    toolbarGroup: "What the toolbar icon opens",
+    toolbarPopup: "Popup",
+    toolbarPanel: "Side panel",
+    toolbarHint: "What clicking the icon or pressing the shortcut opens.",
 
     welcomeTitle: "Welcome to Tab Sandwich",
     welcomeLead: "Save the tabs you want to keep, close them, and find them again in seconds.",
@@ -292,7 +304,7 @@ export const strings = {
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "System",
-    themeHint: "System follows your computer's light or dark setting, even while the popup is open.",
+    themeHint: "System follows your computer's light or dark setting, even while Tab Sandwich is open.",
     keyboardShortcut: "Keyboard shortcut",
     shortcutNotSet: "Not set",
     customize: "Customize",

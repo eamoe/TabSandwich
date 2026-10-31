@@ -20,6 +20,9 @@ export interface StorageFake {
     menu: { id: string; parentId?: string; title: string }[];
     /** The toolbar icon's badge. */
     badge: { text: string; color: string };
+    /** What the toolbar icon opens: its popup page ("" for none), and whether a click opens the side panel. */
+    toolbarPopup: string | null;
+    panelOnClick: boolean | null;
     /** What the page answers when read for a link's text; an Error makes the read fail. */
     pageReply: string | Error;
 }
@@ -40,7 +43,7 @@ function selectKeys(data: Record<string, unknown>, keys?: string | string[] | Re
 }
 
 export function installChromeFake(): StorageFake {
-    const fake: StorageFake = { data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null, openedTabs: [], menu: [], badge: { text: "", color: "" }, pageReply: "" };
+    const fake: StorageFake = { data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null, openedTabs: [], menu: [], badge: { text: "", color: "" }, pageReply: "", toolbarPopup: null, panelOnClick: null };
 
     const local = {
         QUOTA_BYTES,
@@ -95,6 +98,14 @@ export function installChromeFake(): StorageFake {
             },
             async setBadgeBackgroundColor({ color }: { color: string }) {
                 fake.badge.color = color;
+            },
+            async setPopup({ popup }: { popup: string }) {
+                fake.toolbarPopup = popup;
+            },
+        },
+        sidePanel: {
+            async setPanelBehavior({ openPanelOnActionClick }: { openPanelOnActionClick: boolean }) {
+                fake.panelOnClick = openPanelOnActionClick;
             },
         },
         scripting: {

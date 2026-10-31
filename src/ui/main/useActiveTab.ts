@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
+import { permissionEvents } from "./useWindowTabs";
 
 /**
  * The tab the save card describes. Read when the popup opens (the toolbar click grants
@@ -22,10 +23,12 @@ export function useActiveTab(): chrome.tabs.Tab | null | undefined {
         void read();
         chrome.tabs.onActivated.addListener(onActivated);
         chrome.tabs.onUpdated.addListener(onUpdated);
+        permissionEvents().forEach((event) => event.addListener(onActivated));
         return () => {
             live = false;
             chrome.tabs.onActivated.removeListener(onActivated);
             chrome.tabs.onUpdated.removeListener(onUpdated);
+            permissionEvents().forEach((event) => event.removeListener(onActivated));
         };
     }, []);
 

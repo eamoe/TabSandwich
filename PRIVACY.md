@@ -30,11 +30,11 @@ Alongside it, Tab Sandwich keeps a data-format version number, the version numbe
 
 "Save to Tab Sandwich" in the right-click menu saves the link you clicked (or the page, away from any link) into the category you pick. Chrome tells extensions where a link goes but not what it says, so at that moment, and only then, Tab Sandwich reads the words on that one link from that one page, to use as the saved tab's title. It reads nothing else on the page, nothing runs on any page until you make that choice, and the words stay on your device like the rest.
 
-## Saving a whole window (optional)
+## Saving a whole window, or from the side panel (optional)
 
-"Save all tabs in this window" saves every web page open in the current window in one go. To read those tabs' titles and addresses, Tab Sandwich needs Chrome's optional **`tabs`** permission. It is not requested at install: Chrome asks you the first time you use this feature, and Tab Sandwich works fully without it if you say no. You can take it back at any time in Chrome's extension settings.
+"Save all tabs in this window" saves every web page open in the current window in one go. To read those tabs' titles and addresses, Tab Sandwich needs Chrome's optional **`tabs`** permission. The side panel needs it too, to show and save the page you're on, because it stays open while you browse. It is not requested at install: Chrome asks you the first time you save a whole window or save from the side panel, and Tab Sandwich works without it if you say no (the side panel then shows your list, but can't save the page you're on). You can take it back at any time in Chrome's extension settings.
 
-With the permission granted, the popup reads the titles and addresses of the tabs open in its window, only while the popup is open, so the save card can say how many of them are new. Nothing is stored unless you click to save them, and then only the same four things as for any saved tab (title, URL, category, date). Without the permission, the popup only counts how many tabs are open, without seeing what they are. Closing the saved tabs afterwards happens only when you click to close them.
+With the permission granted, the popup or side panel reads the titles and addresses of the tabs open in its window, only while it is open, so the save card can say how many of them are new. Nothing is stored unless you click to save them, and then only the same four things as for any saved tab (title, URL, category, date). Without the permission, the popup only counts how many tabs are open, without seeing what they are. Closing the saved tabs afterwards happens only when you click to close them.
 
 ## Favicons
 
@@ -47,7 +47,7 @@ Settings includes an optional Export/Import feature. Export writes everything li
 ## What Tab Sandwich does not do
 
 - It does not send any data to a server. Tab Sandwich has no server or backend of any kind.
-- It does not track your browsing activity beyond the specific tabs you explicitly choose to save. With the optional `tabs` permission, it looks at the tabs open in a window only while its popup is open there, and keeps nothing it hasn't been asked to save.
+- It does not track your browsing activity beyond the specific tabs you explicitly choose to save. With the optional `tabs` permission, it looks at the tabs open in a window only while its popup or side panel is open there, and keeps nothing it hasn't been asked to save.
 - It does not use analytics, telemetry, or third-party tracking of any kind.
 - It does not sell, rent, or share your data with anyone, because it never leaves your device in the first place.
 - It does not use your data for advertising, credit, lending, or any purpose other than letting you see and manage the tabs you saved.
@@ -58,7 +58,8 @@ Settings includes an optional Export/Import feature. Export writes everything li
 - **`contextMenus`** — adds "Save to Tab Sandwich" to the right-click menu.
 - **`scripting`** — lets that menu item read the words on the one link you right-clicked, at that moment. See "Saving from the right-click menu" above.
 - **`storage`** — used to save your saved tabs and settings locally via `chrome.storage.local`, so they persist between browser sessions.
-- **`tabs`** (optional, asked for only when you first save a whole window) — lets the popup read the titles and addresses of the tabs open in its window, so it can save them all at once and say how many are new. See "Saving a whole window" above. Saying no leaves every other feature working.
+- **`sidePanel`** — lets you keep Tab Sandwich open in Chrome's side panel, beside the page you're on.
+- **`tabs`** (optional, asked for only when you first save a whole window or save from the side panel) — lets the popup or side panel read the titles and addresses of the tabs open in its window, so it can save them all at once and say how many are new. See "Saving a whole window" above. Saying no leaves every other feature working.
 - **`favicon`** — lets the popup read icons out of Chrome's own local favicon cache to show next to each saved tab, instead of fetching them from the page's own site. See "Favicons" above.
 
 ## Data deletion

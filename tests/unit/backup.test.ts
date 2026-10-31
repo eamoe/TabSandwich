@@ -81,6 +81,11 @@ describe("parseBackupFile", () => {
         expect(parseBackupFile(fileWith({ tabs: [], settings: { sort: "random" } }))?.settingsFields.sort).toBeUndefined();
     });
 
+    it("reads what the toolbar icon opens, ignoring a value it doesn't recognize", () => {
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { toolbarOpens: "panel" } }))?.settingsFields.toolbarOpens).toBe("panel");
+        expect(parseBackupFile(fileWith({ tabs: [], settings: { toolbarOpens: "window" } }))?.settingsFields.toolbarOpens).toBeUndefined();
+    });
+
     it("ignores a theme value it doesn't recognize", () => {
         const parsed = parseBackupFile(fileWith({ tabs: [], settings: { theme: "sepia" } }));
         expect(parsed?.settingsFields).toEqual({});

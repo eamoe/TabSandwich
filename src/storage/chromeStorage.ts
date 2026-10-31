@@ -44,12 +44,12 @@ export function onLibraryChanged(listener: () => void): () => void {
     return () => chrome.storage.onChanged.removeListener(onChanged);
 }
 
-/** Calls `listener` whenever the list of categories changes, whoever changed it. */
-export function onCategoriesChanged(listener: () => void): void {
+/** Calls `listener` whenever the part of the settings that `read` picks out changes, whoever changed it. */
+export function onSettingChanged(read: (settings: Partial<Settings>) => unknown, listener: () => void): void {
     chrome.storage.onChanged.addListener((changes, area) => {
         const change = changes[SETTINGS_KEY];
-        const categories = (settings: unknown) => JSON.stringify((settings as Partial<Settings> | undefined)?.categories);
-        if (area === "local" && change && categories(change.oldValue) !== categories(change.newValue)) listener();
+        const value = (settings: unknown) => JSON.stringify(read((settings ?? {}) as Partial<Settings>));
+        if (area === "local" && change && value(change.oldValue) !== value(change.newValue)) listener();
     });
 }
 
@@ -62,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
     theme: "system",
     sort: "custom",
+    toolbarOpens: "popup",
 };
 
 export async function hasStoredTabs(): Promise<boolean> {

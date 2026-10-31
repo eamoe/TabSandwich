@@ -17,6 +17,8 @@ export function Header(props: {
     onArrowDown: () => void;
     manualOpen: boolean;
     onToggleManual: () => void;
+    /** Only where it makes sense: the popup. */
+    onOpenPanel?: () => void;
     onOpenSettings: () => void;
     settingsButtonRef: Ref<HTMLButtonElement>;
     /** Counts new saves; each one makes the logo hop once (none before the first). */
@@ -89,6 +91,11 @@ export function Header(props: {
             >
                 <Icon name="plus" size={18} />
             </button>
+            {props.onOpenPanel && (
+                <button type="button" class={styles.heroBtn} aria-label={strings.openSidePanel} title={strings.openSidePanel} onClick={props.onOpenPanel}>
+                    <Icon name="panel" size={17} />
+                </button>
+            )}
             <button
                 ref={props.settingsButtonRef}
                 type="button"
