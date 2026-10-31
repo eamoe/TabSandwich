@@ -1,5 +1,6 @@
 import "./ui/tokens.css";
 import "./ui/base.css";
+import "./ui/popup.css";
 import { h, render } from "preact";
 import { migrateFromLocalStorageIfNeeded } from "./storage/migration";
 import { upgradeStoredData } from "./storage/upgrade";

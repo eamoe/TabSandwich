@@ -1050,6 +1050,18 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 ## 23. Beyond the Popup (v4.0)
 
+**TC-284 — The welcome page, once, after a fresh install (P1)** **[auto]**
+- Steps: Install the extension on a new profile. Open the popup, then close and reopen it. Press **Got it** on the welcome page. Then update an existing install in place (TC-256; by hand).
+- Expected: One welcome page opens by itself: pin it, save a page, the keyboard shortcut as Chrome words it (with **Set one** if there's none), and the local-only promise. Opening the popup doesn't bring it back, no "What's new" note shows, and **Got it** closes the page. An update opens nothing (logic-tested).
+
+**TC-285 — Everything open stays up to date (P1)** **[auto]**
+- Steps: Open the popup in two places (or, once they exist, the popup and the side panel). Start editing a row in one, type something; save a link in the other; change the theme there.
+- Expected: The new link shows up in the first without a refresh, the half-typed edit stays as it was, and the theme follows. A screen's own saves keep their timing: a deleted row still slides away, then Undo appears.
+
+**TC-286 — Saves from different places never overwrite each other (P1)** **[auto]**
+- Steps: With two places open, save something in each at the same moment, while a third is in the middle of writing.
+- Expected: They take turns: nothing is written until the third finishes, then both saves land and show in both places.
+
 **TC-283 — Titles stop at 300 characters (P2)** **[auto]**
 - Steps: Save a page whose title is longer than 300 characters. In the + form, paste a title of 400 characters; then edit a saved tab and paste one into its Title field. Import a backup whose tab has a 400-character title.
 - Expected: In both forms the field stops taking text at 300 characters (like a note at 120). The page's title and the imported one are shortened to 300 characters, ending in "…" (never cutting an emoji in half; logic-tested, like saving a whole window and Update). Titles saved before 4.0 stay as they were until their tab is edited; nothing stored is upgraded.

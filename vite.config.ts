@@ -48,7 +48,15 @@ export default defineConfig({
         // page's content security policy refuses to run.
         modulePreload: { polyfill: false },
         rollupOptions: {
-            input: resolve(ROOT, "popup/popup.html"),
+            input: {
+                popup: resolve(ROOT, "popup/popup.html"),
+                welcome: resolve(ROOT, "welcome/welcome.html"),
+                background: resolve(ROOT, "src/background.ts"),
+            },
+            output: {
+                // The manifest names the worker's file, so it's the one bundle without a hashed name.
+                entryFileNames: (chunk) => (chunk.name === "background" ? "background.js" : "assets/[name]-[hash].js"),
+            },
         },
     },
 });

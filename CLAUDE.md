@@ -5,7 +5,7 @@ Guidance for Claude Code (or any AI collaborator) working in this repo.
 ## What this is
 
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
-revisiting browser tabs. Popup-only UI (no background/content scripts),
+revisiting browser tabs. A toolbar popup plus a small background worker,
 category tagging with color coding, a "Waiting" reminder for categories you read later (others are kept), drag-to-reorder,
 saving a whole window at once,
 keyboard shortcut to open. Everything is stored locally via
@@ -16,9 +16,15 @@ keyboard shortcut to open. Everything is stored locally via
 TypeScript, built with Vite, no state library. Since v3.0 the screens are
 Preact (a ~4 KB component library): every screen is a `.tsx` component in
 `src/ui/`, styled with CSS modules and the shared tokens.
-`popup/popup.html` points straight
-at `src/popup.ts`; `pnpm build` type-checks with `tsc` (Vite itself
-doesn't), then Vite bundles the popup into `dist/` and copies in
+Each page has its own folder and entry: `popup/popup.html` points straight
+at `src/popup.ts`, `welcome/welcome.html` at `src/welcome.ts`. Since v4.0 the
+background worker (`src/background.ts`, always `dist/background.js`, the name
+the manifest uses) runs beside them; it shares the domain and storage modules,
+so nothing it imports may touch the DOM. Several parts of the extension can now
+be open and writing at once: `withStorageLock` is shared by all of them, and
+each screen refreshes itself when another one changes the library. `pnpm build`
+type-checks with `tsc` (Vite itself
+doesn't), then Vite bundles everything into `dist/` and copies in
 `manifest.json` and `images/`. `dist/` is the complete, loadable extension —
 the folder you load unpacked, the one the robot tests run against, and the
 one the release zip is made from.
@@ -28,6 +34,8 @@ src/
   types.ts              SavedTab, TabGroup (a saved window), Settings, ThemeChoice, SortOrder
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
+                            onLibraryChanged: another part of the extension changed the library (each write
+                            says who made it, so a screen never reacts to its own);
                             tabs and saved windows (or tabs and settings) written together in one write when a change touches both;
                             the last "What's new" version seen, since when opens are counted and the cleanup tip's
                             "Not now" date — kept apart from Settings so backups can't revive them
@@ -35,7 +43,8 @@ src/
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
                             backup before writing, original restored if anything fails (version 2 = v3.2: saved windows; 3 = v3.3: which categories age)
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
-                            chrome.storage.local so two overlapping mutations can't lose one's update
+                            chrome.storage.local, across every page and the worker (Web Locks),
+                            so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
                            move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
@@ -56,6 +65,9 @@ src/
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
     SettingsRepository.ts  theme, sort, the waiting days and which categories age; clamps the day count to 1–365
+  worker/
+    install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
+                            opens the welcome page (fresh installs only)
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -69,6 +81,7 @@ src/
     tokens.css              every color/shadow/size, light + dark; "System" = no data-theme attribute
                             (CSS follows the OS, even while open), Light/Dark = data-theme on <html>
     base.css                page-level basics (body, color-scheme, focus ring, reduced motion, .visually-hidden)
+    popup.css               the toolbar popup's size; every other page fills what it's given
     controls.module.css     buttons, fields, the color dot — shared by several components
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
@@ -87,7 +100,7 @@ src/
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use (+ open-counting and tip dates) for both screens;
-                             only the newest load paints
+                             only the newest load paints; reloads by itself when another part of the extension changes them
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo (hops on each new save), search, + (add link manually), gear
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
@@ -123,11 +136,16 @@ src/
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
+    welcome/
+      Welcome.tsx           the one page shown after a fresh install: pin it, save a page, the shortcut, the local-only promise
   vite-env.d.ts             types for non-code imports, e.g. *.module.css
   popup.ts                  entry point — note a fresh install → migrate → upgrade → apply theme → render App
                             (with the "What's new" release to show, if any)
+  welcome.ts                entry point of the welcome page
+  background.ts             entry point of the background worker: registers its listeners, the work is in worker/
 
 popup/popup.html               just the mount point for the Preact app
+welcome/welcome.html           the same, for the welcome page
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon; "tabs" only as an
                                 optional permission, asked for when you first save a whole window
 release-notes/                 vX.Y.Z.md per release, added in its pull request; the release workflow publishes it
@@ -137,11 +155,12 @@ branding/                      the icon's drawings: icon.svg (128 px Store icon,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
 images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
-vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
+vite.config.ts                 build: bundles each page and the worker, copies manifest + icons into dist/
 tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
                                 component tests (*.test.tsx, simulated DOM via happy-dom)
 tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
-                                the popup, and runs an accessibility scan (axe) in light and dark
+                                the popup, and runs an accessibility scan (axe) in light and dark; each test
+                                starts as a fresh install (the fixture closes the welcome page unless asked not to)
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
                                 pixel (playwright.visual.config.ts); baselines in __screenshots__/
 tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/

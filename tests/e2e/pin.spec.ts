@@ -71,6 +71,7 @@ test.describe("Pinned tabs", () => {
     test("TC-263: Alt+arrows stop at the line between pinned tabs and the rest", async ({ popup }) => {
         await seed(popup);
         await popup.getByRole("button", { name: "Pin Echo" }).click();
+        await expect.poll(async () => (await rowTitles(popup))[0]).toBe("Echo");
         const alpha = tabList(popup).getByRole("button", { name: "Alpha", exact: true });
         await alpha.focus();
         await popup.keyboard.press("Alt+ArrowUp");

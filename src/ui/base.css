@@ -10,9 +10,6 @@ html { color-scheme: light; }
 
 body {
     margin: 0;
-    width: 380px;
-    /* Chrome caps a popup at 600px tall; the main screen fills up to that and scrolls its list. */
-    max-height: 600px;
     background: var(--ground);
     color: var(--ink);
     font-family: var(--font);

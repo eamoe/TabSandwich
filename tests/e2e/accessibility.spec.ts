@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { test, expect } from "./fixtures";
+import { test, expect, WELCOME_URL } from "./fixtures";
 import { openSettings, openSiteTab, seedLibrary, tabList } from "./helpers";
 
 /**
@@ -222,6 +222,13 @@ for (const colorScheme of ["light", "dark"] as const) {
         test("undo toast showing", async ({ popup }) => {
             await popup.getByRole("button", { name: "Archive Q3 Roadmap" }).click();
             await expect(popup.getByRole("button", { name: "Undo" })).toBeVisible();
+            expect(await scan(popup)).toEqual([]);
+        });
+
+        test("the welcome page", async ({ popup }) => {
+            await popup.goto(WELCOME_URL);
+            await expect(popup.getByRole("heading", { name: "Welcome to Tab Sandwich" })).toBeVisible();
+            await expect(popup.getByRole("main")).toContainText("Press");
             expect(await scan(popup)).toEqual([]);
         });
     });

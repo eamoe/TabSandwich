@@ -1,0 +1,6 @@
+/* The toolbar popup's size. Every other page of the extension fills what it's given. */
+body {
+    width: 380px;
+    /* Chrome caps a popup at 600px tall; the main screen fills up to that and scrolls its list. */
+    max-height: 600px;
+}

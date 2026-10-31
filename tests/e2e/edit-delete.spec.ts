@@ -83,6 +83,7 @@ test.describe("Editing and deleting", () => {
         await expect(popup.getByRole("status").filter({ hasText: "Couldn't save your changes. Try again." })).toBeVisible();
         await expect(popup.getByRole("button", { name: "Undo" })).toHaveCount(0);
         await expect(row(popup, "Bravo")).toBeVisible();
-        expect(await row(popup, "Bravo").evaluate((li) => li.getBoundingClientRect().height)).toBeGreaterThan(30);
+        // It starts sliding away as the write begins, and comes back to full height once that fails.
+        await expect.poll(() => row(popup, "Bravo").evaluate((li) => li.getBoundingClientRect().height)).toBeGreaterThan(30);
     });
 });

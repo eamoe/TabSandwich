@@ -8,6 +8,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 ## Features
 
+- **A welcome page** — after a fresh install, one page shows how to pin the icon, save a page and open Tab Sandwich from the keyboard.
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
 - **Save a whole window** — "Save all tabs in this window", under Save, saves every web page open in the window into the picked category (Uncategorized when the page you're on is already saved, since its category is that one page's), skipping browser pages and pages already saved, and says exactly how many it saved and skipped. It then offers to close the saved tabs (never on its own; the tab you're on stays open). Chrome asks for permission to see your open tabs the first time; saying no leaves everything else working.
 - **Saved windows** — a window saved in one go stays together in the list as one row with a random sandwich name ("Toasted Rye"), its tab count and the date; click it (or press →) to open it and see its tabs. Its ⋯ menu opens all its tabs in a new window (keeping or archiving them), renames it, breaks it apart, or archives it with its tabs — restoring them puts the window back together (all undoable; nothing is closed in the browser). Filtering or searching shows every tab as its own row, so nothing stays hidden in a closed window. Drag a tab out of a window to take it out, or onto a window's tab to add it (Alt+↑ / Alt+↓ past a window's edge steps a tab out too); both say so and can be undone.

@@ -14,6 +14,8 @@ export interface StorageFake {
     setDelayMs: number;
     /** Finer-grained failure: return an error to reject a particular `set` call (checked on every call). */
     rejectSet: ((items: Record<string, unknown>) => Error | null) | null;
+    /** Addresses of the tabs the code asked Chrome to open, in order. */
+    openedTabs: string[];
 }
 
 export const QUOTA_BYTES = 10_485_760;
@@ -32,7 +34,7 @@ function selectKeys(data: Record<string, unknown>, keys?: string | string[] | Re
 }
 
 export function installChromeFake(): StorageFake {
-    const fake: StorageFake = { data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null };
+    const fake: StorageFake = { data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null, openedTabs: [] };
 
     const local = {
         QUOTA_BYTES,
@@ -63,7 +65,15 @@ export function installChromeFake(): StorageFake {
 
     (globalThis as unknown as { chrome: unknown }).chrome = {
         storage: { local },
-        runtime: { getURL: (path: string) => `chrome-extension://test-extension-id${path.startsWith("/") ? "" : "/"}${path}` },
+        runtime: {
+            getURL: (path: string) => `chrome-extension://test-extension-id${path.startsWith("/") ? "" : "/"}${path}`,
+            getManifest: () => ({ version: "9.9.9" }),
+        },
+        tabs: {
+            async create({ url }: { url: string }) {
+                fake.openedTabs.push(url);
+            },
+        },
     };
     return fake;
 }

@@ -1,0 +1,76 @@
+.page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.card {
+    width: 100%;
+    max-width: 560px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+}
+
+.hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 26px 32px;
+    background: linear-gradient(120deg, var(--hero-a), var(--hero-b));
+    color: var(--on-hero);
+}
+.mark { display: inline-flex; flex-shrink: 0; }
+.mark svg { width: 36px; height: 30px; }
+.title { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+
+.body { display: flex; flex-direction: column; gap: 22px; padding: 26px 32px 28px; }
+.lead { margin: 0; color: var(--ink-2); text-wrap: pretty; }
+
+.steps { display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.step { display: flex; gap: 14px; }
+.stepIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    color: var(--accent);
+}
+.stepTitle { margin: 0; font-size: 15px; font-weight: 600; }
+.stepText { margin: 1px 0 0; font-size: 13.5px; color: var(--ink-2); text-wrap: pretty; }
+
+.kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    margin: 0 2px;
+    padding: 0 6px;
+    border-radius: 5px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    background: var(--surface-2);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink);
+}
+.link { padding: 0; border: 0; background: none; font: inherit; color: var(--accent); font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+.footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
+.promise { margin: 0; font-size: 13px; color: var(--ink-3); text-wrap: pretty; }

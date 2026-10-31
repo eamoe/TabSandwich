@@ -79,7 +79,7 @@ describe("addTabs", () => {
         expect(group).toEqual(expect.objectContaining({ name: "Toasted Rye", collapsed: true }));
         expect(added.every((t) => t.groupId === group!.id)).toBe(true);
         expect(storedGroups().map((g) => g.name)).toEqual(["Toasted Rye", "Crispy Bagel"]);
-        expect(writes).toEqual([["tabSandwich.groups", "tabSandwich.tabs"]]);
+        expect(writes).toEqual([["tabSandwich.groups", "tabSandwich.lastWrite", "tabSandwich.tabs"]]);
     });
 
     it("doesn't count the name of a window none of whose tabs are saved any more as taken", async () => {

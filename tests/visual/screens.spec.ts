@@ -1,4 +1,4 @@
-import { test, expect } from "../e2e/fixtures";
+import { test, expect, WELCOME_URL } from "../e2e/fixtures";
 import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
@@ -214,5 +214,13 @@ for (const colorScheme of ["light", "dark"] as const) {
         await seedLibrary(popup, []);
         await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
         await expect(popup).toHaveScreenshot(`empty-${colorScheme}.png`);
+    });
+
+    test(`the welcome page (${colorScheme})`, async ({ popup }) => {
+        await popup.setViewportSize({ width: 1000, height: 640 });
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await popup.goto(WELCOME_URL);
+        await expect(popup.getByRole("main")).toContainText("Press");
+        await expect(popup).toHaveScreenshot(`welcome-${colorScheme}.png`);
     });
 }

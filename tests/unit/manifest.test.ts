@@ -16,6 +16,10 @@ describe("manifest.json", () => {
         expect(manifest.host_permissions).toBeUndefined();
     });
 
+    it("runs one background worker, as a module, from the file the build names", () => {
+        expect(manifest.background).toEqual({ service_worker: "background.js", type: "module" });
+    });
+
     it("TC-142 / TC-179: no downloads or unlimitedStorage permission", () => {
         expect(manifest.permissions).not.toContain("downloads");
         expect(manifest.permissions).not.toContain("unlimitedStorage");

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab, Settings, TabGroup } from "../../types";
-import { getCleanupTipHiddenUntil, getGroups, getOpenTrackingSince, getSettings, getStorageUsage, getTabs } from "../../storage/chromeStorage";
+import { getCleanupTipHiddenUntil, getGroups, getOpenTrackingSince, getSettings, getStorageUsage, getTabs, onLibraryChanged } from "../../storage/chromeStorage";
 
 export interface Library {
     tabs: SavedTab[];
@@ -16,9 +16,10 @@ export interface Library {
 }
 
 /**
- * Loads everything the popup shows (both screens read from it), and reloads on demand after
- * any change. Each load gets a number and only the newest may update the screen: loads are
- * several async reads, and a slow older one must never paint over a newer one.
+ * Loads everything the popup shows (both screens read from it). It reloads on demand after its
+ * own changes, and by itself after another part of the extension's. Each load gets a number and
+ * only the newest may update the screen: loads are several async reads, and a slow older one
+ * must never paint over a newer one.
  */
 export function useLibrary(): { library: Library | null; reload: () => Promise<void> } {
     const [library, setLibrary] = useState<Library | null>(null);
@@ -41,6 +42,7 @@ export function useLibrary(): { library: Library | null; reload: () => Promise<v
 
     useEffect(() => {
         void reload();
+        return onLibraryChanged(() => void reload());
     }, [reload]);
 
     return { library, reload };

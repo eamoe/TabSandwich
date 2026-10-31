@@ -99,6 +99,17 @@ export const strings = {
     tipShortcutUnset: "Open Tab Sandwich from anywhere with a keyboard shortcut.",
     setShortcut: "Set one",
     tipCategories: "Make the categories yours.",
+
+    welcomeTitle: "Welcome to Tab Sandwich",
+    welcomeLead: "Save the tabs you want to keep, close them, and find them again in seconds.",
+    welcomePinTitle: "Pin it to your toolbar",
+    welcomePinText: "Click the puzzle piece next to the address bar, then the pin beside Tab Sandwich.",
+    welcomeSaveTitle: "Save a page",
+    welcomeSaveText: "On any page, click the icon, pick a category and press Save.",
+    welcomeShortcutTitle: "Open it from anywhere",
+    welcomeShortcutText: "Press",
+    welcomePromise: "Everything stays in this browser. No account, no tracking.",
+    welcomeDone: "Got it",
     editCategories: "Edit categories",
     noMatchesTitle: (query: string) => `No saved tabs match “${query}”`,
     noMatchesHint: "Search looks at titles, sites, categories and saved windows. Try fewer letters, or part of a name.",
@@ -109,6 +120,11 @@ export const strings = {
     whatsNewTitle: (release: string) => `New in ${release}`,
     dismissWhatsNew: "Dismiss what's new",
     whatsNewNotes: {
+        "4.0": [
+            "Right-click any link to save it, right into a category.",
+            "Keep your list open in a side panel, or browse it all on a full page.",
+            "Search from the address bar with ts, and set reminders on any tab.",
+        ],
         "3.3": [
             "Categories no longer age. Light the ☾ for the ones you read later, in Settings › Categories.",
             "Archive instead of delete, pin tabs to the top, and add a note on why you saved something.",
