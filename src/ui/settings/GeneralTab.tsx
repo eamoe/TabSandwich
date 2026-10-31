@@ -1,5 +1,6 @@
 import type { ThemeChoice, ToolbarChoice } from "../../types";
 import { setTheme, setToolbarOpens } from "../../domain/SettingsRepository";
+import { LIBRARY_PAGE, openLibrary } from "../../util/openLibrary";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast } from "../toastStore";
@@ -91,6 +92,18 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                     ))}
                 </div>
                 <p class={styles.hint}>{strings.toolbarHint}</p>
+            </section>
+
+            <section class={styles.group} aria-label={strings.library} hidden={location.pathname === `/${LIBRARY_PAGE}`}>
+                <div class={styles.row}>
+                    <div>
+                        <p class={styles.label}>{strings.library}</p>
+                        <p class={styles.hint}>{strings.libraryHint}</p>
+                    </div>
+                    <button type="button" class={controls.btn} onClick={() => void openLibrary()}>
+                        {strings.openLibrary}
+                    </button>
+                </div>
             </section>
 
             <section class={styles.group} aria-label={strings.keyboardShortcut}>

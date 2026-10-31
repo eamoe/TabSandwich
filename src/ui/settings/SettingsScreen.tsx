@@ -26,7 +26,8 @@ export type SettingsTabKey = (typeof TABS)[number]["key"];
 export function SettingsScreen(props: {
     library: Library;
     reload: () => Promise<void>;
-    onBack: () => void;
+    /** Left out on a page that has its own way around (the library): no Back, no bar of its own. */
+    onBack?: () => void;
     /** The tab to open on (General unless a shortcut elsewhere asked for another). */
     initialTab?: SettingsTabKey;
     /** At least this tall (see App: the popup never shrinks while open). */
@@ -34,11 +35,14 @@ export function SettingsScreen(props: {
     /** Reports this screen's height after each tab switch, so the floor can rise to the tallest tab. */
     onHeight: (height: number) => void;
 }) {
+    // A page of its own in the popup; part of the page around it in the library.
+    const Root = (props.onBack ? "main" : "div") as "main";
     const [tab, setTab] = useState<SettingsTabKey>(props.initialTab ?? "general");
     const backButton = useRef<HTMLButtonElement>(null);
     const screen = useRef<HTMLElement>(null);
     const tabButtons = useRef<Record<string, HTMLButtonElement | null>>({});
-    useLayoutEffect(() => backButton.current?.focus(), []);
+    // No Back of its own: focus lands on the tab bar, without the ring a mouse user has no need of.
+    useLayoutEffect(() => (backButton.current ? backButton.current.focus() : tabButtons.current[tab]?.focus({ focusVisible: false } as FocusOptions)), []);
     useLayoutEffect(() => {
         if (screen.current) props.onHeight(heightWithoutToastSpace(screen.current));
     }, [tab]);
@@ -52,15 +56,17 @@ export function SettingsScreen(props: {
     };
 
     return (
-        <main ref={screen} class={styles.settings} style={{ minHeight: props.minHeight ? `${props.minHeight}px` : undefined }} aria-label={strings.settingsTitle}>
-            <div class={styles.header}>
-                <button ref={backButton} type="button" class={styles.back} onClick={props.onBack}>
-                    <Icon name="chevronLeft" size={16} />
-                    {strings.back}
-                </button>
-                <h1 class={styles.title}>{strings.settingsTitle}</h1>
-            </div>
-            <div class={styles.tabs} role="tablist" aria-label={strings.settingsSections}>
+        <Root ref={screen} class={styles.settings} style={{ minHeight: props.minHeight ? `${props.minHeight}px` : undefined }} aria-label={props.onBack ? strings.settingsTitle : undefined}>
+            {props.onBack && (
+                <div class={styles.header}>
+                    <button ref={backButton} type="button" class={styles.back} onClick={props.onBack}>
+                        <Icon name="chevronLeft" size={16} />
+                        {strings.back}
+                    </button>
+                    <h1 class={styles.title}>{strings.settingsTitle}</h1>
+                </div>
+            )}
+            <div class={styles.nav} role="tablist" aria-label={strings.settingsSections}>
                 {TABS.map((t) => (
                     <button
                         key={t.key}
@@ -70,7 +76,7 @@ export function SettingsScreen(props: {
                         id={`settings-tab-${t.key}`}
                         type="button"
                         role="tab"
-                        class={styles.tab}
+                        class={styles.navTab}
                         aria-selected={tab === t.key}
                         aria-controls="settings-panel"
                         tabIndex={tab === t.key ? 0 : -1}
@@ -93,6 +99,6 @@ export function SettingsScreen(props: {
                 {tab === "about" && <AboutTab />}
             </div>
             <ToastSpace />
-        </main>
+        </Root>
     );
 }

@@ -25,6 +25,7 @@ function extensionIdFromKey(base64Key: string): string {
 
 export const EXTENSION_ID = extensionIdFromKey(TEST_KEY);
 export const POPUP_URL = `chrome-extension://${EXTENSION_ID}/popup/popup.html`;
+export const LIBRARY_URL = `chrome-extension://${EXTENSION_ID}/library/library.html`;
 export const SIDE_PANEL_URL = `chrome-extension://${EXTENSION_ID}/sidepanel/sidepanel.html`;
 export const WELCOME_URL = `chrome-extension://${EXTENSION_ID}/welcome/welcome.html`;
 

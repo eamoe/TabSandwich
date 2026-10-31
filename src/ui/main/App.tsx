@@ -41,6 +41,7 @@ import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
 import { leaveDurationMs, type EditOutcome } from "./TabRow";
 import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, applyFilter, isArchived, staleKeptTabs, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
+import { openLibrary } from "../../util/openLibrary";
 import { useLibrary } from "./useLibrary";
 import { SettingsScreen, type SettingsTabKey } from "../settings/SettingsScreen";
 import heroStyles from "./Hero.module.css";
@@ -697,6 +698,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
                     manualOpen={manualOpen}
                     onToggleManual={() => setManualOpen((open) => !open)}
                     onOpenPanel={inPanel ? undefined : openPanel}
+                    onOpenLibrary={() => void openLibrary()}
                     onOpenSettings={() => openSettings()}
                     settingsButtonRef={settingsButton}
                     hops={hops}

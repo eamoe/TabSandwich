@@ -1,4 +1,4 @@
-import { test, expect, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
+import { test, expect, LIBRARY_URL, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
 import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
@@ -182,6 +182,12 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);
         });
 
+        test("the header's Open in menu", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Open in" }).click();
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`open-in-${colorScheme}.png`);
+        });
+
         test("settings: categories with the color strip open", async ({ popup }) => {
             await openSettings(popup, "Categories");
             await popup.getByRole("button", { name: "Color for Reading" }).click();
@@ -214,6 +220,55 @@ for (const colorScheme of ["light", "dark"] as const) {
         await seedLibrary(popup, []);
         await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
         await expect(popup).toHaveScreenshot(`empty-${colorScheme}.png`);
+    });
+
+    test(`the library (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY.map((t, i) => (i === 5 ? { ...t, note: "numbers for Thursday's board meeting", pinned: true } : t)), SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-${colorScheme}.png`);
+    });
+
+    test(`the library, with tabs picked and a row hovered (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("checkbox", { name: "Select Q3 Roadmap" }).click();
+        await popup.getByRole("checkbox", { name: "Select Local-first software" }).click();
+        await popup.getByRole("row").filter({ hasText: "Vite 8 release notes" }).hover();
+        await expect(popup).toHaveScreenshot(`library-picked-${colorScheme}.png`);
+    });
+
+    test(`the library's Settings (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("button", { name: "Open settings" }).click();
+        await expect(popup.getByRole("main", { name: "Settings" })).toBeVisible();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-settings-${colorScheme}.png`);
+    });
+
+    test(`the library's add dialog (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("button", { name: "Add link manually" }).click();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-add-${colorScheme}.png`);
     });
 
     test(`the side panel (${colorScheme})`, async ({ context, popup }) => {

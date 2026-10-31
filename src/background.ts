@@ -1,5 +1,6 @@
 import { onSettingChanged } from "./storage/chromeStorage";
-import { rebuildMenu, saveFromMenu } from "./worker/contextMenu";
+import { openLibrary } from "./util/openLibrary";
+import { LIBRARY_ID, rebuildMenu, saveFromMenu } from "./worker/contextMenu";
 import { handleInstalled } from "./worker/install";
 import { applyToolbarChoice } from "./worker/toolbar";
 
@@ -10,6 +11,6 @@ chrome.runtime.onStartup.addListener(() => {
     void rebuildMenu();
     void applyToolbarChoice();
 });
-chrome.contextMenus.onClicked.addListener((info, tab) => void saveFromMenu(info, tab));
+chrome.contextMenus.onClicked.addListener((info, tab) => void (info.menuItemId === LIBRARY_ID ? openLibrary() : saveFromMenu(info, tab)));
 onSettingChanged((settings) => settings.categories, () => void rebuildMenu());
 onSettingChanged((settings) => settings.toolbarOpens, () => void applyToolbarChoice());

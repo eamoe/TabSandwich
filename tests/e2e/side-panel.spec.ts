@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect, SIDE_PANEL_URL, TEST_SITE, waitUntilReady } from "./fixtures";
-import { answerPermissionPrompt, clickMenu, openSettings, openSiteTab, promptsShown, row, seedLibrary, storedTabs, tabList, worker } from "./helpers";
+import { answerPermissionPrompt, clickMenu, openFromMenu, openSettings, openSiteTab, promptsShown, row, seedLibrary, storedTabs, tabList, worker } from "./helpers";
 
 const LIBRARY = Array.from({ length: 14 }, (_, i) => ({ title: `Saved page ${i + 1}`, url: `https://page${i + 1}.example.com/` }));
 
@@ -30,7 +30,8 @@ test.describe("The side panel", () => {
         const heights = await popup.evaluate(() => ({ page: document.documentElement.scrollHeight, window: innerHeight, list: document.getElementById("main-view")!.getBoundingClientRect().bottom }));
         expect(heights.page).toBe(heights.window);
         expect(heights.list).toBeGreaterThan(800);
-        await expect(popup.getByRole("button", { name: "Open side panel" })).toHaveCount(0);
+        await expect(popup.getByRole("button", { name: "Open in" })).toHaveCount(0);
+        await expect(popup.getByRole("button", { name: "Open library" })).toBeVisible();
 
         await openSiteTab(context, popup, "Something to read");
         await clickMenu(context, popup, "Reading", { linkUrl: "https://link.example.com/", selectionText: "A saved link" });
@@ -103,7 +104,7 @@ test.describe("The side panel", () => {
         await expect.poll(opens).toEqual([expect.stringContaining("/popup/popup.html"), false]);
     });
 
-    test("TC-294: the popup's button opens the panel for its window, then the popup closes", async ({ popup }) => {
+    test("TC-294: the popup's Open in menu opens the panel for its window, then the popup closes", async ({ popup }) => {
         const windowId = await popup.evaluate(async () => {
             const asked: number[] = [];
             Object.assign(window, { asked });
@@ -113,16 +114,35 @@ test.describe("The side panel", () => {
         await popup.evaluate(() => {
             window.close = () => Object.assign(window, { closedPopup: true });
         });
-        await popup.getByRole("button", { name: "Open side panel" }).click();
+        await openFromMenu(popup, "Open side panel");
         await expect.poll(() => popup.evaluate(() => (window as unknown as { closedPopup?: boolean }).closedPopup)).toBe(true);
         expect(await popup.evaluate(() => (window as unknown as { asked: number[] }).asked)).toEqual([windowId]);
+    });
+
+    test("TC-294: the menu works from the keyboard, and goes when you click away", async ({ popup }) => {
+        const button = popup.getByRole("button", { name: "Open in" });
+        const items = popup.getByRole("menu", { name: "Open in" }).getByRole("menuitem");
+        await button.focus();
+        await popup.keyboard.press("Enter");
+        await expect(items).toHaveText(["Open side panel", "Open library"]);
+        await expect(items.first()).toBeFocused();
+        await popup.keyboard.press("ArrowDown");
+        await expect(items.nth(1)).toBeFocused();
+        await popup.keyboard.press("ArrowDown");
+        await expect(items.first()).toBeFocused();
+        await popup.keyboard.press("Escape");
+        await expect(items).toHaveCount(0);
+        await expect(button).toBeFocused();
+        await button.click();
+        await tabList(popup).click({ position: { x: 5, y: 5 } });
+        await expect(items).toHaveCount(0);
     });
 
     test("TC-294: if Chrome refuses, the popup stays and says so", async ({ popup }) => {
         await popup.evaluate(() => {
             Object.defineProperty(chrome.sidePanel, "open", { value: async () => Promise.reject(new Error("No")) });
         });
-        await popup.getByRole("button", { name: "Open side panel" }).click();
+        await openFromMenu(popup, "Open side panel");
         await expect(popup.getByRole("status").filter({ hasText: "couldn't open the side panel" })).toBeVisible();
         await expect(tabList(popup)).toBeVisible();
     });

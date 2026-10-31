@@ -6,6 +6,8 @@ import { isSupportedTabUrl } from "../util/url";
 import { flashBadge } from "./feedback";
 
 const PARENT_ID = "save";
+/** On the toolbar icon's own right-click menu. */
+export const LIBRARY_ID = "library";
 /** A category's item is this plus the category's name. */
 const CATEGORY_ID_PREFIX = "save:";
 const CONTEXTS: chrome.contextMenus.ContextType[] = ["link", "page"];
@@ -23,6 +25,7 @@ export function rebuildMenu(): Promise<void> {
 async function buildMenu(): Promise<void> {
     const categories = await getSelectableCategories();
     await chrome.contextMenus.removeAll();
+    chrome.contextMenus.create({ id: LIBRARY_ID, title: strings.menuOpenLibrary, contexts: ["action"] });
     chrome.contextMenus.create({ id: PARENT_ID, title: strings.menuSave, contexts: CONTEXTS });
     for (const category of categories) {
         chrome.contextMenus.create({ id: CATEGORY_ID_PREFIX + category, parentId: PARENT_ID, title: category, contexts: CONTEXTS });

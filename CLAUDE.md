@@ -18,7 +18,8 @@ Preact (a ~4 KB component library): every screen is a `.tsx` component in
 `src/ui/`, styled with CSS modules and the shared tokens.
 Each page has its own folder and entry: `popup/popup.html` points straight
 at `src/popup.ts`, `sidepanel/sidepanel.html` at `src/sidepanel.ts` (the same
-app, told which `surface` it's on), `welcome/welcome.html` at `src/welcome.ts`. Since v4.0 the
+app, told which `surface` it's on), `library/library.html` at `src/library.ts`,
+`welcome/welcome.html` at `src/welcome.ts`. Since v4.0 the
 background worker (`src/background.ts`, always `dist/background.js`, the name
 the manifest uses) runs beside them; it shares the domain and storage modules,
 so nothing it imports may touch the DOM. Several parts of the extension can now
@@ -69,7 +70,8 @@ src/
   worker/
     install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
                             builds the right-click menu, opens the welcome page (fresh installs only)
-    contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change; saves the link or page,
+    contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change, and "Open library" on the
+                            toolbar icon's own menu; saves the link or page,
                             titled with the link's own words (readLinkText, run in the page at that moment)
     toolbar.ts             what the toolbar icon opens, set again each time Chrome starts
     feedback.ts            the toolbar badge flashing ✓ or ! after a save, with no popup open to say so
@@ -77,6 +79,7 @@ src/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
+    openLibrary.ts         goes to the library's open tab, or opens it
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
     iconInk.ts             whether an icon is one dark/mid-gray or one light color on transparency (GitHub's cat,
@@ -109,7 +112,8 @@ src/
       useLibrary.ts         loads tabs + settings + storage use (+ open-counting and tip dates) for both screens;
                              only the newest load paints; reloads by itself when another part of the extension changes them
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
-      Header.tsx            logo (hops on each new save), search, + (add link manually), open the side panel (popup only), gear
+      Header.tsx            logo (hops on each new save), search, + (add link manually), Open in, gear
+      OpenMenu.tsx          the popup's Open in menu: side panel, library (in the panel, the header just opens the library)
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button; in the side panel,
                              which can't see the page without the "tabs" permission, the first Save asks for it;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
@@ -134,7 +138,7 @@ src/
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
                              in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
-    settings/               the Settings screen: four tabs (arrow keys move between them)
+    settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
       GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, keyboard shortcut and the list's keys, storage meter
@@ -144,16 +148,24 @@ src/
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
+    library/                the full-page library
+      Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn), bulk editing, cleanup tip;
+                             the popup's own selection bar; Settings as a section beside the sidebar, its add and edit forms in a panel over the
+                             table so nothing moves, closed by a click outside or Escape; each at an address of its own (#settings, #add, #edit/…)
+      libraryModel.ts       pure: its filters (saved windows too), column sorting, sidebar counts, which rows are in view — logic-tested
+      library.css           fills the tab; the table scrolls, not the page
     welcome/
       Welcome.tsx           the one page shown after a fresh install: pin it, save a page, the shortcut, the local-only promise
   vite-env.d.ts             types for non-code imports, e.g. *.module.css
   popup.ts                  entry point of the toolbar popup
   sidepanel.ts              entry point of the side panel
+  library.ts                entry point of the full-page library
   welcome.ts                entry point of the welcome page
   background.ts             entry point of the background worker: registers its listeners, the work is in worker/
 
 popup/popup.html               just the mount point for the Preact app
 sidepanel/sidepanel.html       the same, for the side panel
+library/library.html           the same, for the full-page library
 welcome/welcome.html           the same, for the welcome page
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting + sidePanel;
                                 "tabs" only as an optional permission, asked for when you first save a whole window or save from the side panel

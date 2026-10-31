@@ -13,6 +13,7 @@ describe("the right-click menu", () => {
         seed([], { categories: ["Work", "Reading"] });
         await rebuildMenu();
         expect(storage.menu).toEqual([
+            { id: "library", title: "Open library" },
             { id: "save", title: "Save to Tab Sandwich" },
             { id: "save:Work", parentId: "save", title: "Work" },
             { id: "save:Reading", parentId: "save", title: "Reading" },
@@ -26,7 +27,7 @@ describe("the right-click menu", () => {
         await addCategory("Travel");
         await removeCategory("Work");
         await rebuildMenu();
-        expect(storage.menu.map((item) => item.title)).toEqual(["Save to Tab Sandwich", "Travel", "Uncategorized"]);
+        expect(storage.menu.map((item) => item.title)).toEqual(["Open library", "Save to Tab Sandwich", "Travel", "Uncategorized"]);
     });
 });
 

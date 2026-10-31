@@ -2,6 +2,7 @@ import type { Ref } from "preact";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { Icon } from "../Icon";
 import { Logo } from "../Logo";
+import { OpenMenu } from "./OpenMenu";
 import { strings } from "../strings";
 import styles from "./Hero.module.css";
 
@@ -19,6 +20,7 @@ export function Header(props: {
     onToggleManual: () => void;
     /** Only where it makes sense: the popup. */
     onOpenPanel?: () => void;
+    onOpenLibrary: () => void;
     onOpenSettings: () => void;
     settingsButtonRef: Ref<HTMLButtonElement>;
     /** Counts new saves; each one makes the logo hop once (none before the first). */
@@ -91,9 +93,11 @@ export function Header(props: {
             >
                 <Icon name="plus" size={18} />
             </button>
-            {props.onOpenPanel && (
-                <button type="button" class={styles.heroBtn} aria-label={strings.openSidePanel} title={strings.openSidePanel} onClick={props.onOpenPanel}>
-                    <Icon name="panel" size={17} />
+            {props.onOpenPanel ? (
+                <OpenMenu onOpenPanel={props.onOpenPanel} onOpenLibrary={props.onOpenLibrary} />
+            ) : (
+                <button type="button" class={styles.heroBtn} aria-label={strings.openLibrary} title={strings.openLibrary} onClick={props.onOpenLibrary}>
+                    <Icon name="library" size={17} />
                 </button>
             )}
             <button

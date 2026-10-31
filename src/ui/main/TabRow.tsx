@@ -76,7 +76,7 @@ export function leaveDurationMs(): number {
 }
 
 /** Wraps the parts of a title (or name) that matched the search in <mark>, as real nodes: a page title is untrusted text, never markup. */
-function highlighted(title: string, ranges: MatchRange[]) {
+export function highlighted(title: string, ranges: MatchRange[]) {
     if (ranges.length === 0) return title;
     const parts = [];
     let cursor = 0;
@@ -288,7 +288,8 @@ export function TabRow(props: RowProps) {
     );
 }
 
-function EditForm(props: RowProps & { onDone: () => void }) {
+/** Also used on its own, in the library's dialog. */
+export function EditForm(props: Pick<RowProps, "tab" | "category" | "editOptions" | "colorOf" | "onEdit"> & { onDone: () => void }) {
     const { tab } = props;
     const [title, setTitle] = useState(tab.title);
     const [url, setUrl] = useState(tab.url);
@@ -384,7 +385,7 @@ function EditForm(props: RowProps & { onDone: () => void }) {
             <p class={controls.error} role="alert">
                 {error}
             </p>
-            <div class={styles.editActions}>
+            <div class={styles.editActions} data-form-actions>
                 <CategoryPicker
                     id={`${idPrefix}-category`}
                     label={strings.categoryLabel}

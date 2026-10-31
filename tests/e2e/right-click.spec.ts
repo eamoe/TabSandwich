@@ -27,6 +27,7 @@ test("TC-290: the menu follows the categories as they change in Settings", async
     await popup.getByPlaceholder("New category").fill("Travel");
     await popup.keyboard.press("Enter");
     await expect.poll(() => sw.evaluate(() => (globalThis as unknown as { created: string[] }).created)).toEqual([
+        "Open library",
         "Save to Tab Sandwich",
         "Travel",
         "Work",

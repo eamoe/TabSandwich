@@ -147,7 +147,7 @@ export function ManualForm(props: {
                         </button>
                     )}
                 </div>
-                <div class={styles.actionRow}>
+                <div class={styles.actionRow} data-form-actions>
                     <CategoryPicker
                         id="manual-category"
                         label={strings.categoryOptionalLabel}

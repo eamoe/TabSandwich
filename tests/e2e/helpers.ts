@@ -225,3 +225,9 @@ export async function clickMenu(context: BrowserContext, page: Page, category: s
         [{ menuItemId: `save:${category}`, pageUrl: tab.url, frameId: 0, editable: false, ...target }, tab] as const
     );
 }
+
+/** The popup's way to the side panel and the library: the header's Open in menu. */
+export async function openFromMenu(popup: Page, item: "Open side panel" | "Open library"): Promise<void> {
+    await popup.getByRole("button", { name: "Open in" }).click();
+    await popup.getByRole("menu", { name: "Open in" }).getByRole("menuitem", { name: item }).click();
+}

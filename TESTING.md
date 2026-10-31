@@ -28,9 +28,10 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
 8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. The side panel in real Chrome: the popup's button, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
-11. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-12. Anything new in this release that isn't marked **[auto]** yet.
+10. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
+11. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
+12. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+13. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -1052,6 +1053,30 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 ## 23. Beyond the Popup (v4.0)
 
+**TC-295 — The library's sidebar (P1)** **[auto]**
+- Steps: Open the library. Click All tabs, Waiting, Archived, a category, a saved window. Save a link by right-clicking it with the library open.
+- Expected: Each shows just those tabs, under a heading with the count, and the sidebar counts match. Archived tabs show only under Archived. Categories come in your order, Uncategorized last, even empty ones. The new link appears without a refresh. In a narrow window the sidebar becomes a row across the top.
+
+**TC-296 — Sorting and search in the library (P1)** **[auto]**
+- Steps: Click each column heading, twice. Press / and type part of a title, note, category or window name.
+- Expected: Title, Category, Site, Saved and Opened each sort both ways, the heading showing which way; text starts A to Z, dates newest first; Saved newest first is the default. Opened means opened from Tab Sandwich, as the heading's tooltip says (a row's date shows how many times); a tab never opened counts as the longest ago. A category name always shows whole. Search narrows the current filter, highlights what matched in the title, and says when nothing matches. Sorting here never changes your own order in the popup.
+
+**TC-297 — Working with tabs in the library (P1)** **[auto]**
+- Steps: Tick a row, Shift-click another, use the box in the heading. Move them to a category, then Archive, each followed by Undo. On a row: Edit, Pin (the row flashes, and the button stays lit where you pressed it, on show even when the pointer's gone; pressing it again unpins), Archive. Under Archived: Restore, Delete for good. Use **Archive them** and **Not now** on the cleanup tip.
+- Expected: The heading row becomes the selection bar at the same height, so nothing moves. Each action takes one step, with Undo. A title can never be squeezed by anything on its row (a saved window's name and a note sit under it). Nothing is deleted anywhere but Archived.
+
+**TC-298 — Getting to the library, and around it (P1)** **[auto]**
+- Steps: Use **Open library** in the popup's Open in menu, in the side panel's header, in Settings › General, and on the toolbar icon's right-click menu. Do it again with the library already open, also from another window. In the library, open a title, + and the gear.
+- Expected: It opens in a tab of its own; with one already open it goes there instead of opening a second. The way in is always in view, however long the list and wherever it's scrolled. A title opens the tab and counts it. The toolbar menu's real click: **by hand**.
+
+**TC-299 — A thousand tabs (P1)** **[auto]**
+- Steps: With 1,000 saved tabs, scroll the library to the end, sort, search.
+- Expected: Only the rows in view are drawn, scrolling stays smooth, and search answers within a quarter of a second. Scrolling feel on your own computer: **by hand**.
+
+**TC-300 — Settings, adding and editing in the library (P1)** **[auto]**
+- Steps: Filter the library and scroll it. Press the gear; change something; leave with **Back**, the gear, the sidebar, a search, and the browser's own Back and Forward; reload while there. Press + and a row's Edit, then another row's Edit; scroll the list beside the panel; leave with Cancel, Escape, a click outside it, + again, Save and Add. Open the address of a tab that's since been deleted.
+- Expected: Settings is a section of the page: the sidebar and top bar stay, with **Back** beside its heading, and **Open library** isn't offered. Adding and editing open in a panel from under the top bar to the window's edges, over the table's right end, the row being edited marked: nothing on the page moves, the list stays in view and stays where it's scrolled, and what's typed in a panel goes when it closes without saving, as with Cancel. Each has an address of its own (`#settings`, `#add`, `#edit/…`), so a reload stays there. Going back finds the filter, search and scroll position as you left them, with focus on the button you came from; a new link shows on All tabs. A tab that's gone just shows the list.
+
 **TC-291 — The side panel (P1)** **[auto]**
 - Steps: Open the side panel beside a page and browse. Drag it wider and narrower. Save a link by right-clicking it. Change something in a popup while the panel is open.
 - Expected: It's the whole app: save card, list, Settings. It's as tall as the window, only the list scrolls, nothing is cut off at any width, and a right-click save appears without a refresh. A popup and the panel stay in step, both ways.
@@ -1064,9 +1089,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: Settings › General › Toolbar icon: pick **Side panel**. Click the icon, press the shortcut, restart Chrome and click again. Pick **Popup** from the panel's Settings.
 - Expected: With Side panel, the icon and the shortcut open the panel instead of the popup, and it stays that way after a restart; the popup is the default, and comes back when picked. A backup carries the choice. The real click and restart: **by hand**.
 
-**TC-294 — The popup's button opens the panel (P2)** **[auto]**
-- Steps: In the popup, press the panel button next to +. Try it in a second window.
-- Expected: The panel opens in that window and the popup closes. If Chrome refuses, the popup stays open and says so. The panel itself has no such button.
+**TC-294 — The popup's Open in menu (P2)** **[auto]**
+- Steps: In the popup, press **Open in**, next to +: use it with the mouse and with the keys (arrows, Enter, Escape), click away from it. Pick **Open side panel**, also in a second window.
+- Expected: The menu floats over the card, moving nothing, and closes on Escape (focus back on its button) or a click away. The panel opens in that window and the popup closes. If Chrome refuses, the popup stays open and says so. In the side panel the button opens the library directly, there being nowhere else to go.
 
 **TC-283 — Titles stop at 300 characters (P2)** **[auto]**
 - Steps: Save a page whose title is longer than 300 characters. In the + form, paste a title of 400 characters; then edit a saved tab and paste one into its Title field. Import a backup whose tab has a 400-character title.

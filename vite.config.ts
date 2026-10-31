@@ -51,6 +51,7 @@ export default defineConfig({
             input: {
                 popup: resolve(ROOT, "popup/popup.html"),
                 sidepanel: resolve(ROOT, "sidepanel/sidepanel.html"),
+                library: resolve(ROOT, "library/library.html"),
                 welcome: resolve(ROOT, "welcome/welcome.html"),
                 background: resolve(ROOT, "src/background.ts"),
             },
