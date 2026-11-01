@@ -1130,7 +1130,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-291 — The side panel (P1)** **[auto]**
 - Steps: Open the side panel beside a page and browse. Drag it wider and narrower. Save a link by right-clicking it. Change something in a popup while the panel is open.
-- Expected: It's the whole app: save card, list, Settings. It's as tall as the window, only the list scrolls, nothing is cut off at any width, and a right-click save appears without a refresh. A popup and the panel stay in step, both ways.
+- Expected: It's the whole app: save card, list, Settings. It's as tall as the window, only the list scrolls, nothing is cut off at any width, and a right-click save appears without a refresh: the logo hops, and the new row scrolls into view and flashes, however many pinned tabs are above it (unless you're filling in a form, when only the logo hops). A popup and the panel stay in step, both ways.
 
 **TC-292 — The panel asks once, on the first Save (P1)** **[auto]**
 - Steps: On a profile without the "tabs" permission, open the panel on a web page. Press **Save** and say no. Press it again and say yes. Browse on.

@@ -19,11 +19,15 @@ export interface Library {
  * Loads everything the popup shows (both screens read from it). It reloads on demand after its
  * own changes, and by itself after another part of the extension's. Each load gets a number and
  * only the newest may update the screen: loads are several async reads, and a slow older one
- * must never paint over a newer one.
+ * must never paint over a newer one. `onArrived` hears of a tab saved by another part of the
+ * extension: the newest, if there are several.
  */
-export function useLibrary(): { library: Library | null; reload: () => Promise<void> } {
+export function useLibrary(onArrived?: (id: string) => void): { library: Library | null; reload: () => Promise<void> } {
     const [library, setLibrary] = useState<Library | null>(null);
     const latest = useRef(0);
+    const knownIds = useRef(new Set<string>());
+    const arrived = useRef(onArrived);
+    arrived.current = onArrived;
 
     const reload = useCallback(async () => {
         const ticket = ++latest.current;
@@ -37,12 +41,19 @@ export function useLibrary(): { library: Library | null; reload: () => Promise<v
         ]);
         if (ticket !== latest.current) return;
         const storagePct = usage.quotaBytes > 0 ? Math.min((usage.bytesInUse / usage.quotaBytes) * 100, 100) : 0;
+        knownIds.current = new Set(tabs.map((t) => t.id));
         setLibrary({ tabs, settings, groups, storagePct, openTrackingSince, cleanupTipHiddenUntil });
     }, []);
 
     useEffect(() => {
         void reload();
-        return onLibraryChanged(() => void reload());
+        return onLibraryChanged(() => {
+            const before = knownIds.current;
+            void reload().then(() => {
+                const added = [...knownIds.current].find((id) => !before.has(id));
+                if (added) arrived.current?.(added);
+            });
+        });
     }, [reload]);
 
     return { library, reload };

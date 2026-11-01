@@ -116,7 +116,8 @@ src/
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use (+ open-counting and tip dates) for both screens;
-                             only the newest load paints; reloads by itself when another part of the extension changes them
+                             only the newest load paints; reloads by itself when another part of the extension changes them,
+                             and says when that brought a new tab, so the panel can show it
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
       Header.tsx            logo (hops on each new save), search, + (add link manually), Open in, gear
       OpenMenu.tsx          the popup's Open in menu: side panel, library (in the panel, the header just opens the library)

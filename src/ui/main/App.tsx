@@ -56,7 +56,13 @@ const ENTRANCE_MS = 900;
 export type Surface = "popup" | "panel";
 
 export function App(props: { surface: Surface; whatsNew?: string | null }) {
-    const { library, reload } = useLibrary();
+    // A save from elsewhere (a right-click, above all, with the side panel open) says so like one
+    // made here, but never moves the list from under someone filling in a form. (Not the search
+    // box: it has the focus whenever the app has just opened.)
+    const { library, reload } = useLibrary((id) => {
+        setHops((n) => n + 1);
+        if (!document.activeElement?.closest("form")) flash(id);
+    });
     const inPanel = props.surface === "panel";
     const [view, setView] = useState<"main" | "settings">("main");
     const [settingsTab, setSettingsTab] = useState<SettingsTabKey>("general");

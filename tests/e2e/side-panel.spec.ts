@@ -41,6 +41,18 @@ test.describe("The side panel", () => {
         expect(await popup.getByRole("main", { name: "Settings" }).evaluate((main) => main.getBoundingClientRect().height)).toBe(900);
     });
 
+    test("TC-291: a right-click save shows itself, even below a long run of pinned tabs", async ({ context, popup }) => {
+        const pinned = Array.from({ length: 24 }, (_, i) => ({ title: `Pinned page ${i + 1}`, url: `https://pinned${i + 1}.example.com/`, pinned: true }));
+        await seedLibrary(popup, pinned);
+        await openPanel(popup);
+        await openSiteTab(context, popup, "Something to read");
+        // (Here the panel is a tab of its own, and a tab behind another doesn't scroll. A real panel is always on show.)
+        await popup.bringToFront();
+        await clickMenu(context, popup, "Reading", { linkUrl: "https://link.example.com/", selectionText: "Below the pins" });
+        await expect(row(popup, "Below the pins")).toBeInViewport();
+        await expect(popup.locator('[class*="hop"]')).toHaveCount(1);
+    });
+
     test("TC-292: saving asks Chrome once, on the first Save, and a no saves nothing", async ({ context, popup }) => {
         await seedLibrary(popup, []);
         await openPanel(popup);
