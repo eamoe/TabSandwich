@@ -35,6 +35,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you: a line shows where a tab will land, above or below the row you're over. Pinned tabs and the rest each keep to their side.
 - **Sorting** — newest, oldest, title, site, recently opened or most opened (counting opens from Tab Sandwich itself), remembered between opens. Sorting never rewrites your own order, so switching back restores it exactly.
 - **Reminders** — while editing a tab, choose **Remind me tomorrow** or **next week**. At 9:00 that day you get a notification (Chrome asks once, with your first reminder), and the tab shows under **Waiting** until you open it. Refuse notifications and it still shows there.
+- **Waiting count** — an optional badge on the toolbar icon (off to start, in Settings › General) shows how many tabs are waiting, reminders due included.
 - **Read later or keep** — tabs in the categories you choose (Reading and Uncategorized to start) get a small moon badge once they've waited a configurable number of days (7 by default), and their own "Waiting" filter; every other category is kept and never ages, so tools, docs and accounts don't nag.
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.

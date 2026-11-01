@@ -67,7 +67,7 @@ src/
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme, sort, what the toolbar icon opens, the waiting days and which categories age; clamps the day count to 1–365
+    SettingsRepository.ts  theme, sort, what the toolbar icon opens and whether it shows a count, the waiting days and which categories age; clamps the day count to 1–365
   worker/
     install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
                             builds the right-click menu, opens the welcome page (fresh installs only)
@@ -78,7 +78,8 @@ src/
     reminders.ts           one alarm for the earliest reminder, rebuilt from storage; sends each once, notifying only if allowed;
                             a notification's click opens the tab, or the library on Waiting when several came together
     toolbar.ts             what the toolbar icon opens, set again each time Chrome starts
-    feedback.ts            the toolbar badge flashing ✓ or ! after a save, with no popup open to say so
+    badge.ts               the toolbar badge: the waiting count, if turned on (recounted hourly, since tabs age with nothing else happening),
+                            and ✓ or ! flashing after a save, with no popup open to say so, the count coming back after it
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
@@ -146,7 +147,7 @@ src/
     settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, reminder notifications on or off, keyboard shortcut and the list's keys, storage meter
+      GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, the waiting count on the icon, reminder notifications on or off, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove (in use: asks in the row first; Undo from the toast),
                              drag; the days field and the moon's legend above the list; the ☾ on each row (its tabs age
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question

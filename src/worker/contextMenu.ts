@@ -3,7 +3,7 @@ import { addTab } from "../domain/TabRepository";
 import { upgradeStoredData } from "../storage/upgrade";
 import { strings } from "../ui/strings";
 import { isSupportedTabUrl } from "../util/url";
-import { flashBadge } from "./feedback";
+import { flashBadge } from "./badge";
 
 const PARENT_ID = "save";
 /** On the toolbar icon's own right-click menu. */

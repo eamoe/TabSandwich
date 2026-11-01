@@ -74,4 +74,6 @@ export interface Settings {
     sort: SortOrder;
     /** Added in v4.0, filled in on read like theme. */
     toolbarOpens: ToolbarChoice;
+    /** Added in v4.0, filled in on read like theme: show how many tabs are waiting on the toolbar icon. */
+    toolbarBadge: boolean;
 }

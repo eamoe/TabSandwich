@@ -72,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
     theme: "system",
     sort: "custom",
     toolbarOpens: "popup",
+    toolbarBadge: false,
 };
 
 export async function hasStoredTabs(): Promise<boolean> {

@@ -19,7 +19,9 @@ export interface StorageFake {
     /** The right-click menu as built: each item's id, parent and title. */
     menu: { id: string; parentId?: string; title: string }[];
     /** The toolbar icon's badge. */
-    badge: { text: string; color: string };
+    badge: { text: string; color: string; title?: string };
+    /** Alarms set, by name. */
+    alarms: Record<string, { periodInMinutes?: number }>;
     /** What the toolbar icon opens: its popup page ("" for none), and whether a click opens the side panel. */
     toolbarPopup: string | null;
     panelOnClick: boolean | null;
@@ -43,7 +45,7 @@ function selectKeys(data: Record<string, unknown>, keys?: string | string[] | Re
 }
 
 export function installChromeFake(): StorageFake {
-    const fake: StorageFake = { data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null, openedTabs: [], menu: [], badge: { text: "", color: "" }, pageReply: "", toolbarPopup: null, panelOnClick: null };
+    const fake: StorageFake = { alarms: {}, data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null, openedTabs: [], menu: [], badge: { text: "", color: "" }, pageReply: "", toolbarPopup: null, panelOnClick: null };
 
     const local = {
         QUOTA_BYTES,
@@ -84,10 +86,16 @@ export function installChromeFake(): StorageFake {
             },
         },
         alarms: {
-            async clear() {
+            async clear(name: string) {
+                delete fake.alarms[name];
                 return true;
             },
-            async create() {},
+            async create(name: string, options: { periodInMinutes?: number }) {
+                fake.alarms[name] = options;
+            },
+            async get(name: string) {
+                return fake.alarms[name];
+            },
         },
         contextMenus: {
             async removeAll() {
@@ -104,6 +112,9 @@ export function installChromeFake(): StorageFake {
             },
             async setBadgeBackgroundColor({ color }: { color: string }) {
                 fake.badge.color = color;
+            },
+            async setTitle({ title }: { title: string }) {
+                fake.badge.title = title;
             },
             async setPopup({ popup }: { popup: string }) {
                 fake.toolbarPopup = popup;

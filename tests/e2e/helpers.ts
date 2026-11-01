@@ -96,6 +96,7 @@ export interface StoredSettings {
     waitingCategories?: string[];
     theme?: string;
     sort?: string;
+    toolbarBadge?: boolean;
 }
 
 export async function storedSettings(popup: Page): Promise<StoredSettings> {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import type { ThemeChoice, ToolbarChoice } from "../../types";
-import { setTheme, setToolbarOpens } from "../../domain/SettingsRepository";
+import { setTheme, setToolbarBadge, setToolbarOpens } from "../../domain/SettingsRepository";
 import { NOTIFICATIONS_PERMISSION } from "../../util/notifications";
 import { LIBRARY_PAGE, openLibrary } from "../../util/openLibrary";
 import { writeErrorMessage } from "../errors";
@@ -106,6 +106,18 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                 <p class={styles.hint}>{strings.toolbarHint}</p>
             </section>
 
+            <section class={styles.group} aria-label={strings.badgeLabel}>
+                <div class={styles.row}>
+                    <div>
+                        <p class={styles.label}>{strings.badgeLabel}</p>
+                        <p class={styles.hint}>{strings.badgeHint}</p>
+                    </div>
+                    <button type="button" class={controls.btn} onClick={() => void attempt(() => setToolbarBadge(!settings.toolbarBadge), reload)}>
+                        {settings.toolbarBadge ? strings.turnOff : strings.turnOn}
+                    </button>
+                </div>
+            </section>
+
             <section class={styles.group} aria-label={strings.library} hidden={location.pathname === `/${LIBRARY_PAGE}`}>
                 <div class={styles.row}>
                     <div>
@@ -125,7 +137,7 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                         <p class={styles.hint}>{notifying ? strings.notificationsOnHint : strings.notificationsOffHint}</p>
                     </div>
                     <button type="button" class={controls.btn} onClick={toggleNotifications}>
-                        {notifying ? strings.notificationsTurnOff : strings.notificationsTurnOn}
+                        {notifying ? strings.turnOff : strings.turnOn}
                     </button>
                 </div>
             </section>

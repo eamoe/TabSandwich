@@ -27,6 +27,12 @@ export function setToolbarOpens(choice: ToolbarChoice): Promise<void> {
     });
 }
 
+export function setToolbarBadge(on: boolean): Promise<void> {
+    return update((s) => {
+        s.toolbarBadge = on;
+    });
+}
+
 export function setSort(sort: SortOrder): Promise<void> {
     return update((s) => {
         s.sort = sort;

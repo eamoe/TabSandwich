@@ -30,6 +30,11 @@ export function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
     return isReminderDue(tab, Date.now()) || isTabAged(tab, settings);
 }
 
+/** How many tabs are waiting: a tab counts once, aged, due or both. */
+export function waitingCount(tabs: SavedTab[], settings: Settings): number {
+    return tabs.filter((t) => isTabOutdated(t, settings)).length;
+}
+
 /**
  * Categories in use, in the order Settings lists them, so reordering categories there shows up
  * here too. A category somehow in use but missing from Settings (stale data) still gets a
@@ -57,7 +62,7 @@ export interface FilterOption {
  */
 export function filterOptions(all: SavedTab[], settings: Settings): FilterOption[] {
     const tabs = all.filter((t) => !isArchived(t));
-    const outdatedCount = tabs.filter((t) => isTabOutdated(t, settings)).length;
+    const outdatedCount = waitingCount(tabs, settings);
     const options: FilterOption[] = [{ key: ALL, count: tabs.length }];
     if (outdatedCount > 0) options.push({ key: OUTDATED, count: outdatedCount });
     for (const cat of categoriesInUse(tabs, settings.categories)) {

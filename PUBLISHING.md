@@ -104,7 +104,7 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
    - `sidePanel`: "Lets the user keep their saved tabs open in Chrome's side panel beside the page they're on, as an alternative to the popup."
    - `contextMenus`: "Adds 'Save to Tab Sandwich' to the right-click menu, with one item per category, so the user can save a link or page without opening the popup."
    - `scripting`: "Used only when the user picks 'Save to Tab Sandwich' on a link in the right-click menu: reads the words on that one link, in that one tab, so the saved tab has a recognizable title (Chrome gives extensions a link's address but not its text). Nothing runs on any page until the user makes that choice, and nothing is sent anywhere."
-   - `alarms`: "Wakes the extension at the time of a reminder the user set on a saved tab."
+   - `alarms`: "Wakes the extension at the time of a reminder the user set on a saved tab and, if the user turned on the toolbar badge, keeps its count up to date as tabs age."
    - `notifications` (optional permission): "Requested only when the user sets their first reminder, never at install. Shows that reminder, with the saved tab's title and site, at the time the user chose. Refused, the tab simply shows under Waiting in the extension."
    - `favicon`: "Used to show each saved tab's icon by reading it from Chrome's own local favicon cache, instead of fetching it from the page's own site. No favicon data is stored, and no request is ever made to the saved page's site for this."
 

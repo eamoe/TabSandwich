@@ -1,6 +1,7 @@
 import { setLastSeenVersion } from "../storage/chromeStorage";
 import { upgradeStoredData } from "../storage/upgrade";
 import { rebuildMenu } from "./contextMenu";
+import { refreshBadge } from "./badge";
 import { scheduleReminders } from "./reminders";
 import { applyToolbarChoice } from "./toolbar";
 
@@ -17,6 +18,6 @@ export async function handleInstalled(reason: string): Promise<void> {
     const fresh = reason === "install";
     if (fresh) await setLastSeenVersion(chrome.runtime.getManifest().version).catch(() => undefined);
     await upgradeStoredData();
-    await Promise.all([rebuildMenu(), applyToolbarChoice(), scheduleReminders()]);
+    await Promise.all([rebuildMenu(), applyToolbarChoice(), scheduleReminders(), refreshBadge()]);
     if (fresh) await chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PAGE) });
 }

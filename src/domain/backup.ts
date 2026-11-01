@@ -134,6 +134,7 @@ export function parseBackupFile(raw: string): ParsedImport | null {
         if (isThemeChoice(s.theme)) settingsFields.theme = s.theme;
         if (isSortOrder(s.sort)) settingsFields.sort = s.sort;
         if (s.toolbarOpens === "popup" || s.toolbarOpens === "panel") settingsFields.toolbarOpens = s.toolbarOpens;
+        if (typeof s.toolbarBadge === "boolean") settingsFields.toolbarBadge = s.toolbarBadge;
     }
 
     return { tabs, settingsFields, groups: readImportedGroups(data.groups) };

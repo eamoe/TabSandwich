@@ -28,12 +28,13 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
 8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. Reminders in real Chrome: set one for tomorrow, allow Chrome's prompt, and on another profile refuse it. So as not to wait a day, set `remindAt` a minute ahead from the worker's console (DevTools from `chrome://extensions`), then check the notification comes once and clicking it opens the tab (TC-304 – TC-306). On a Mac, allow Google Chrome in System Settings › Notifications first, with Focus off, or nothing will appear.
-11. The address bar in real Chrome: `ts`, a space and a word lists saved tabs, Enter opens them here, Alt+Enter (Mac: Option+Return) in a new tab (TC-301, TC-302).
-12. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
-13. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
-14. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-15. Anything new in this release that isn't marked **[auto]** yet.
+10. The toolbar badge on the real icon, in light and dark Chrome: readable on the purple tile, and the count coming back after a right-click save's ✓ (TC-310, TC-312).
+11. Reminders in real Chrome: set one for tomorrow, allow Chrome's prompt, and on another profile refuse it. So as not to wait a day, set `remindAt` a minute ahead from the worker's console (DevTools from `chrome://extensions`), then check the notification comes once and clicking it opens the tab (TC-304 – TC-306). On a Mac, allow Google Chrome in System Settings › Notifications first, with Focus off, or nothing will appear.
+12. The address bar in real Chrome: `ts`, a space and a word lists saved tabs, Enter opens them here, Alt+Enter (Mac: Option+Return) in a new tab (TC-301, TC-302).
+13. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
+14. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
+15. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+16. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -1090,6 +1091,18 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-309 — Reminders in the library (P2)** **[auto]**
 - Steps: Open the library with a reminder set and one due. Edit a tab there.
 - Expected: The reminder shows under the title, before the window and note. The edit panel sets one the same way as the popup.
+
+**TC-310 — The toolbar badge (P1)** **[auto]**
+- Steps: Open Settings › General. Press Turn on under Waiting count. Press Turn off.
+- Expected: Off on a fresh install. Turned on, the toolbar icon shows how many tabs are waiting, due reminders included, a tab counted once, and nothing at zero; past 99 it says 99+. Hovering the icon names the count. Turned off, it's gone. The robot test reads the badge from Chrome: **glance at the real icon by hand each release**.
+
+**TC-311 — The badge stays right (P1)** **[auto]**
+- Steps: With it on: archive a waiting tab, change the days or a category's moon, let a reminder come due, leave Chrome open for a tab to age, restart Chrome.
+- Expected: The count follows each one by itself, from any screen. A tab that ages with nothing else happening counts within the hour.
+
+**TC-312 — The badge and a save's flash (P2)** **[auto]**
+- Steps: With it on, save a link from the right-click menu.
+- Expected: The ✓ (or !) shows for a moment, then the count, up to date, comes back.
 
 **TC-295 — The library's sidebar (P1)** **[auto]**
 - Steps: Open the library. Click All tabs, Waiting, Archived, a category, a saved window. Save a link by right-clicking it with the library open.
