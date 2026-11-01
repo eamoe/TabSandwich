@@ -17,6 +17,8 @@ const LAST_SEEN_VERSION_KEY = "tabSandwich.lastSeenVersion";
  */
 const OPEN_TRACKING_SINCE_KEY = "tabSandwich.openTrackingSince";
 const CLEANUP_TIP_HIDDEN_UNTIL_KEY = "tabSandwich.cleanupTipHiddenUntil";
+/** Notifications are asked for once, with the first reminder (afterwards, from Settings). */
+const NOTIFICATIONS_ASKED_KEY = "tabSandwich.notificationsAsked";
 
 /** What the screens show: a change to any of these, from anywhere in the extension, means they're out of date. */
 const LIBRARY_KEYS = [TABS_KEY, SETTINGS_KEY, GROUPS_KEY, OPEN_TRACKING_SINCE_KEY, CLEANUP_TIP_HIDDEN_UNTIL_KEY];
@@ -42,6 +44,13 @@ export function onLibraryChanged(listener: () => void): () => void {
     };
     chrome.storage.onChanged.addListener(onChanged);
     return () => chrome.storage.onChanged.removeListener(onChanged);
+}
+
+/** Calls `listener` whenever the saved tabs change, whoever changed them. */
+export function onTabsChanged(listener: () => void): void {
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local" && TABS_KEY in changes) listener();
+    });
 }
 
 /** Calls `listener` whenever the part of the settings that `read` picks out changes, whoever changed it. */
@@ -185,6 +194,16 @@ export async function getOpenTrackingSince(): Promise<number> {
     // Best effort: if this write fails it's simply tried again next time, from a slightly later "now".
     await writeLibrary({ [OPEN_TRACKING_SINCE_KEY]: now }).catch(() => undefined);
     return now;
+}
+
+export async function getNotificationsAsked(): Promise<boolean> {
+    const result = await chrome.storage.local.get(NOTIFICATIONS_ASKED_KEY);
+    return result[NOTIFICATIONS_ASKED_KEY] === true;
+}
+
+export async function setNotificationsAsked(): Promise<void> {
+    // Best effort: if this write fails, the next reminder simply asks again.
+    await chrome.storage.local.set({ [NOTIFICATIONS_ASKED_KEY]: true }).catch(() => undefined);
 }
 
 export async function getCleanupTipHiddenUntil(): Promise<number> {

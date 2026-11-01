@@ -5,9 +5,9 @@ import type { SearchMatch } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
-import { dropTarget, groupItems, isTabOutdated, reorderTarget, stoppedAtPinLine, type DropSide, type ListItem, type Move } from "./listModel";
+import { dropTarget, groupItems, isTabAged, reorderTarget, stoppedAtPinLine, type DropSide, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
-import { TabRow, type EditOutcome } from "./TabRow";
+import { TabRow, type EditOutcome, type TabEdits } from "./TabRow";
 import styles from "./TabList.module.css";
 
 export interface Highlight {
@@ -61,7 +61,7 @@ export function TabList(props: {
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: (tab: SavedTab) => void;
-    onEdit: (tab: SavedTab, updates: { title: string; url: string; category: string; note: string }) => Promise<EditOutcome>;
+    onEdit: (tab: SavedTab, updates: TabEdits) => Promise<EditOutcome>;
     onDelete: (tab: SavedTab) => Promise<boolean>;
     onTogglePin: (tab: SavedTab) => void;
     /** Showing the archive: rows offer Restore and Delete for good; nothing moves or pins. */
@@ -257,7 +257,7 @@ export function TabList(props: {
                 category={category}
                 color={props.colorOf(category)}
                 tinted={category !== UNCATEGORIZED}
-                outdated={isTabOutdated(tab, props.settings)}
+                outdated={isTabAged(tab, props.settings)}
                 match={props.matches?.get(tab.id) ?? null}
                 windowName={props.searchActive ? (props.windowOf.get(tab.id) ?? null) : null}
                 showCategory={props.showCategory}

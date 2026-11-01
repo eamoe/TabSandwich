@@ -23,6 +23,13 @@ export interface SavedTab {
      */
     lastOpenedAt?: number;
     openCount?: number;
+    /**
+     * When to remind you about it (v4.0). From then on it shows as Waiting, until it's opened or
+     * the reminder is changed. Opening it sooner leaves the reminder alone. Absent: no reminder.
+     */
+    remindAt?: number;
+    /** The reminder has gone out (or was due to, without permission to notify): it's sent once. */
+    reminded?: boolean;
 }
 
 /** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */

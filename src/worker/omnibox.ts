@@ -66,7 +66,7 @@ export async function openFromAddressBar(text: string, disposition: chrome.omnib
     await upgradeStoredData();
     const [tabs, groups] = await Promise.all([getTabs(), getGroups()]);
     const tab = tabs.find((t) => t.url === text) ?? find(tabs, groups, text)[0]?.tab;
-    if (!tab) return openLibrary(text.trim());
+    if (!tab) return openLibrary({ q: text.trim() });
     await recordOpen([tab.id]).catch(() => undefined);
     await openAddress(tab.url, disposition);
 }

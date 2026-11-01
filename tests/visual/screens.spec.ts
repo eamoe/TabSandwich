@@ -95,6 +95,12 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`edit-${colorScheme}.png`);
         });
 
+        test("reminders on rows", async ({ popup }) => {
+            await seedLibrary(popup, [{ ...LIBRARY[0], remindInDays: 1 }, { ...LIBRARY[1], remindInDays: -1 }, { ...LIBRARY[2], remindInDays: 12, pinned: true }], SETTINGS);
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`reminders-${colorScheme}.png`);
+        });
+
         test("adding a link by hand", async ({ popup }) => {
             await popup.getByRole("button", { name: "Add link manually" }).click();
             await expect(popup).toHaveScreenshot(`manual-${colorScheme}.png`);

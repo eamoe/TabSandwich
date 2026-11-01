@@ -49,13 +49,14 @@ src/
                             so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
+    reminders.ts           when a reminder comes (9:00 by the calendar), which are due, which are still to send, the next one — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     suggest.ts             category suggestions: where pages sharing most of a new page's address went
                             (the two newest agreeing, else the most common) — pure, from your library alone
@@ -74,13 +75,16 @@ src/
                             toolbar icon's own menu; saves the link or page,
                             titled with the link's own words (readLinkText, run in the page at that moment)
     omnibox.ts             the address bar's "ts": suggestions from the app's own search, opening the pick, the library when nothing's found
+    reminders.ts           one alarm for the earliest reminder, rebuilt from storage; sends each once, notifying only if allowed;
+                            a notification's click opens the tab, or the library on Waiting when several came together
     toolbar.ts             what the toolbar icon opens, set again each time Chrome starts
     feedback.ts            the toolbar badge flashing ✓ or ! after a save, with no popup open to say so
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
-    openLibrary.ts         goes to the library's open tab, or opens it, optionally on a search (?q=)
+    notifications.ts       the optional "notifications" permission, as Chrome's calls want it
+    openLibrary.ts         goes to the library's open tab, or opens it, optionally on a search (?q=) or on Waiting (?show=waiting)
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
     iconInk.ts             whether an icon is one dark/mid-gray or one light color on transparency (GitHub's cat,
@@ -142,7 +146,7 @@ src/
     settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, keyboard shortcut and the list's keys, storage meter
+      GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, reminder notifications on or off, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove (in use: asks in the row first; Undo from the toast),
                              drag; the days field and the moon's legend above the list; the ☾ on each row (its tabs age
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
@@ -168,8 +172,9 @@ popup/popup.html               just the mount point for the Preact app
 sidepanel/sidepanel.html       the same, for the side panel
 library/library.html           the same, for the full-page library
 welcome/welcome.html           the same, for the welcome page
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting + sidePanel;
-                                "tabs" only as an optional permission, asked for when you first save a whole window or save from the side panel
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting + sidePanel + alarms;
+                                "tabs" only as an optional permission, asked for when you first save a whole window or save from the side panel;
+                                "notifications" the same, asked for with the first reminder
 release-notes/                 vX.Y.Z.md per release, added in its pull request; the release workflow publishes it
                                 as the GitHub release's notes (and refuses a tag without one)
 branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
@@ -251,9 +256,9 @@ animation smoothness, and the manual release pass at the top of
   `MIGRATIONS`, with tests (see `tests/unit/upgrade.test.ts`). Never
   reshape stored data anywhere else.
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
-  `favicon`, `contextMenus`, `scripting`, `sidePanel`, plus the optional `tabs`,
+  `favicon`, `contextMenus`, `scripting`, `sidePanel`, `alarms`, plus the optional `tabs`,
   requested at the moment you first save a whole window, or first save from the
-  side panel, which gets no `activeTab`). There are no content scripts: the
+  side panel, which gets no `activeTab`, and the optional `notifications`, with the first reminder). There are no content scripts: the
   only code that runs in a page is `readLinkText`, once, when you pick a category
   in the right-click menu (that click is what grants `activeTab`). Never put a
   permission that shows a warning in the required list: an update adding one

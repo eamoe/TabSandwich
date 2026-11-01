@@ -1,8 +1,11 @@
-import { useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
 import type { MatchRange, SearchMatch } from "../../domain/search";
 import { normalizeUrl } from "../../util/url";
 import { MAX_NOTE_LENGTH, MAX_TITLE_LENGTH } from "../../domain/TabRepository";
+import { remindNextWeek, remindTomorrow } from "../../domain/reminders";
+import { getNotificationsAsked, setNotificationsAsked } from "../../storage/chromeStorage";
+import { NOTIFICATIONS_PERMISSION } from "../../util/notifications";
 import { daysSince } from "../../util/time";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
@@ -14,6 +17,13 @@ import styles from "./TabList.module.css";
 
 /** How an edit's save went: the edit row needs this before it can decide whether to close. */
 export type EditOutcome = { status: "saved" } | { status: "failed" } | { status: "duplicate"; existingTitle: string };
+export interface TabEdits {
+    title: string;
+    url: string;
+    category: string;
+    note: string;
+    remindAt: number | undefined;
+}
 
 export interface RowProps {
     tab: SavedTab;
@@ -50,7 +60,7 @@ export interface RowProps {
     editOptions: PickerOption[];
     colorOf: (category: string) => string;
     onOpen: () => void;
-    onEdit: (updates: { title: string; url: string; category: string; note: string }) => Promise<EditOutcome>;
+    onEdit: (updates: TabEdits) => Promise<EditOutcome>;
     onTogglePin: () => void;
     /**
      * In the list: Archive. In the archive (`inArchive`): Delete for good. Resolves false when it
@@ -87,6 +97,18 @@ export function highlighted(title: string, ranges: MatchRange[]) {
     }
     if (cursor < title.length) parts.push(title.slice(cursor));
     return parts;
+}
+
+/** A tab's reminder, on its row: when it's due, and "Due" once it is. Sits on the quiet line, so the title keeps its width. */
+export function ReminderMark({ at, class: className, dueClass }: { at: number; class: string; dueClass: string }) {
+    const now = Date.now();
+    return (
+        <span class={at <= now ? `${className} ${dueClass}` : className} title={strings.reminderWhen(at)}>
+            <Icon name="bell" size={11} />
+            <span class="visually-hidden">{`${strings.reminderLabel}: `}</span>
+            {strings.reminderShort(at, now)}
+        </span>
+    );
 }
 
 export function TabRow(props: RowProps) {
@@ -197,6 +219,7 @@ export function TabRow(props: RowProps) {
                         </>
                     )}
                     <span class={styles.site}>{siteName(tab.url)}</span>
+                    {tab.remindAt !== undefined && !props.inArchive && <ReminderMark at={tab.remindAt} class={styles.reminder} dueClass={styles.reminderDue} />}
                     {tab.pinned && <span class="visually-hidden">{strings.pinnedForScreenReaders}</span>}
                 </span>
                 {tab.note && (
@@ -295,6 +318,9 @@ export function EditForm(props: Pick<RowProps, "tab" | "category" | "editOptions
     const [url, setUrl] = useState(tab.url);
     const [category, setCategory] = useState(props.category);
     const [note, setNote] = useState(tab.note ?? "");
+    const [reminder, setReminder] = useState("kept");
+    const [opened] = useState(Date.now());
+    const asked = useRef(true);
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
     const titleInput = useRef<HTMLInputElement>(null);
@@ -307,6 +333,12 @@ export function EditForm(props: Pick<RowProps, "tab" | "category" | "editOptions
         titleInput.current?.select();
     }, []);
 
+    useEffect(() => {
+        void getNotificationsAsked().then((answer) => (asked.current = answer));
+    }, []);
+
+    const remindAt = (choice: string) => (choice === "kept" ? tab.remindAt : choice === "none" ? undefined : Number(choice));
+
     const save = async (e: Event) => {
         e.preventDefault();
         const normalized = normalizeUrl(url);
@@ -318,7 +350,13 @@ export function EditForm(props: Pick<RowProps, "tab" | "category" | "editOptions
         // Waits for the write before closing: the save can be refused (the new URL is already
         // saved as another tab), and closing first would throw away what was typed.
         setBusy(true);
-        const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category, note });
+        // Asked right in the click, as Chrome requires, and not waited for: the prompt can close
+        // the popup, and the reminder is set whatever the answer.
+        if (remindAt(reminder) !== undefined && !asked.current) {
+            void chrome.permissions.request(NOTIFICATIONS_PERMISSION).catch(() => undefined);
+            void setNotificationsAsked();
+        }
+        const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category, note, remindAt: remindAt(reminder) });
         setBusy(false);
         if (outcome.status === "duplicate") {
             setError(strings.alreadySavedAs(outcome.existingTitle));
@@ -382,6 +420,22 @@ export function EditForm(props: Pick<RowProps, "tab" | "category" | "editOptions
                 value={note}
                 onInput={(e) => setNote(e.currentTarget.value)}
             />
+            <div class={styles.reminderField}>
+                <CategoryPicker
+                    id={`${idPrefix}-reminder`}
+                    label={strings.reminderLabel}
+                    value={reminder}
+                    icon="bell"
+                    options={[
+                        { value: "kept", label: tab.remindAt === undefined ? strings.reminderNone : strings.reminderKept(tab.remindAt) },
+                        { value: String(remindTomorrow(opened)), label: strings.reminderTomorrow },
+                        { value: String(remindNextWeek(opened)), label: strings.reminderNextWeek(remindNextWeek(opened)) },
+                        ...(tab.remindAt === undefined ? [] : [{ value: "none", label: strings.reminderNone }]),
+                    ]}
+                    onChange={setReminder}
+                    onSurface
+                />
+            </div>
             <p class={controls.error} role="alert">
                 {error}
             </p>

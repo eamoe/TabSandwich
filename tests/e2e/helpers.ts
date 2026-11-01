@@ -12,6 +12,9 @@ export interface SeedTab {
     pinned?: boolean;
     /** Archived this many days ago. */
     archivedDaysAgo?: number;
+    /** Days until its reminder; negative: it's already due. */
+    remindInDays?: number;
+    reminded?: boolean;
     note?: string;
     /** Last opened from Tab Sandwich this many days ago, `openCount` times (default 1). */
     openedDaysAgo?: number;
@@ -60,6 +63,8 @@ export async function seedLibrary(
                     ...(t.note ? { note: t.note } : {}),
                     ...(t.openedDaysAgo !== undefined ? { lastOpenedAt: now - t.openedDaysAgo * day, openCount: t.openCount ?? 1 } : {}),
                     ...(t.archivedDaysAgo !== undefined ? { archivedAt: now - t.archivedDaysAgo * day } : {}),
+                    ...(t.remindInDays !== undefined ? { remindAt: now + t.remindInDays * day } : {}),
+                    ...(t.reminded ? { reminded: true } : {}),
                 })),
                 // Opens counted since long ago (the cleanup tip needs months of history), or from now.
                 ...(trackingSinceDaysAgo !== undefined ? { "tabSandwich.openTrackingSince": now - trackingSinceDaysAgo * day } : {}),

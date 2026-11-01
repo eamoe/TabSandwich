@@ -39,7 +39,7 @@ import { SelectButton, SelectionBar } from "./SelectionBar";
 import { AllArchived, EmptyLibrary, NoMatches, WhatsNew } from "./EmptyStates";
 import { TabList, type Highlight } from "./TabList";
 import type { GroupAction } from "./GroupRow";
-import { leaveDurationMs, type EditOutcome } from "./TabRow";
+import { leaveDurationMs, type EditOutcome, type TabEdits } from "./TabRow";
 import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, applyFilter, isArchived, staleKeptTabs, effectiveFilter, filterOptions, groupItems, pinnedFirst, sortTabs, windowNames, type Move } from "./listModel";
 import { openLibrary } from "../../util/openLibrary";
 import { useLibrary } from "./useLibrary";
@@ -310,7 +310,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
         });
     };
 
-    const onEdit = async (tab: SavedTab, updates: { title: string; url: string; category: string; note: string }): Promise<EditOutcome> => {
+    const onEdit = async (tab: SavedTab, updates: TabEdits): Promise<EditOutcome> => {
         let outcome: EditOutcome;
         try {
             const { duplicateOf } = await editTab(tab.id, updates);
@@ -537,6 +537,8 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
     const openTab = async (tab: SavedTab) => {
         await recordOpen([tab.id]).catch(() => undefined);
         void chrome.tabs.create({ url: tab.url });
+        // (The side panel stays open, and a due reminder has just ended.)
+        await reload();
     };
 
     // Only tabs still saved count as picked (one may have been deleted meanwhile).

@@ -1,3 +1,4 @@
+import { isReminderDue, remindersToSend } from "./reminders";
 import { SavedTab, TabGroup } from "../types";
 import { getGroups, getTabs, setTabs, setTabsAndGroups } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
@@ -122,7 +123,7 @@ export interface EditTabResult {
  */
 export async function editTab(
     id: string,
-    updates: Partial<Pick<SavedTab, "title" | "url" | "category" | "note">>
+    updates: Partial<Pick<SavedTab, "title" | "url" | "category" | "note" | "remindAt">>
 ): Promise<EditTabResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
@@ -134,13 +135,16 @@ export async function editTab(
         const updated = tabs.map((t): SavedTab => {
             if (t.id !== id) return t;
             const title = updates.title !== undefined ? tidyTitle(updates.title) : t.title;
-            const { note: _old, category: _was, ...rest } = { ...t, ...updates, title };
+            const { note: _old, category: _was, remindAt: _set, reminded: _sent, ...rest } = { ...t, ...updates, title };
             // A note emptied in the edit form is gone, not stored as "".
             const note = "note" in updates ? tidyNote(updates.note) : t.note;
             // Picking Uncategorized in the edit form means no category, stored the way every other
             // save stores it (as the word, it counted as a real category, e.g. for suggestions).
             const category = "category" in updates ? updates.category : t.category;
-            return { ...rest, ...(category && category !== UNCATEGORIZED ? { category } : {}), ...(note ? { note } : {}) };
+            // A new reminder hasn't been sent yet; one left as it was keeps its place.
+            const remindAt = "remindAt" in updates ? updates.remindAt : t.remindAt;
+            const reminded = remindAt === t.remindAt && t.reminded;
+            return { ...rest, ...(category && category !== UNCATEGORIZED ? { category } : {}), ...(note ? { note } : {}), ...(remindAt !== undefined ? { remindAt } : {}), ...(reminded ? { reminded } : {}) };
         });
         await setTabs(updated);
         return { duplicateOf: null };
@@ -423,6 +427,25 @@ export async function recordOpen(ids: string[]): Promise<void> {
         const tabs = await getTabs();
         if (!tabs.some((t) => wanted.has(t.id))) return;
         const now = Date.now();
-        await setTabs(tabs.map((t) => (wanted.has(t.id) ? { ...t, lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 } : t)));
+        await setTabs(
+            tabs.map((t) => {
+                if (!wanted.has(t.id)) return t;
+                // Opening a tab whose reminder is due is what the reminder asked for.
+                const { remindAt: _due, reminded: _sent, ...done } = t;
+                return { ...(isReminderDue(t, now) ? done : t), lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 };
+            })
+        );
+    });
+}
+
+/** Marks the reminders that have come due as sent, and hands them back: each goes out once. */
+export async function markReminded(now: number): Promise<SavedTab[]> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const due = remindersToSend(tabs, now);
+        if (due.length === 0) return [];
+        const ids = new Set(due.map((t) => t.id));
+        await setTabs(tabs.map((t) => (ids.has(t.id) ? { ...t, reminded: true } : t)));
+        return due;
     });
 }

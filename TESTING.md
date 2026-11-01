@@ -28,11 +28,12 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
 8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. The address bar in real Chrome: `ts`, a space and a word lists saved tabs, Enter opens them here, Alt+Enter (Mac: Option+Return) in a new tab (TC-301, TC-302).
-11. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
-12. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
-13. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-14. Anything new in this release that isn't marked **[auto]** yet.
+10. Reminders in real Chrome: set one for tomorrow, allow Chrome's prompt, and on another profile refuse it. So as not to wait a day, set `remindAt` a minute ahead from the worker's console (DevTools from `chrome://extensions`), then check the notification comes once and clicking it opens the tab (TC-304 – TC-306). On a Mac, allow Google Chrome in System Settings › Notifications first, with Focus off, or nothing will appear.
+11. The address bar in real Chrome: `ts`, a space and a word lists saved tabs, Enter opens them here, Alt+Enter (Mac: Option+Return) in a new tab (TC-301, TC-302).
+12. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
+13. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
+14. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+15. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -1065,6 +1066,30 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-303 — When the address bar finds nothing (P2)** **[auto]**
 - Steps: Type words that match nothing and press Enter, with and without a library tab open (also on Settings).
 - Expected: The library opens on that search, saying nothing matches; one that's already open is used, not a second.
+
+**TC-304 — Setting a reminder (P1)** **[auto]**
+- Steps: Edit a tab, choose Remind me tomorrow or Remind me next week under Reminder, Save. Later edit it again and choose No reminder.
+- Expected: The first reminder ever set asks Chrome for notifications, once; whatever the answer, the reminder is set. The row's quiet line shows a bell and when ("Tomorrow", or the date); the title keeps its width. Next week means seven days from today, and the choice names the date. It's 9:00 local time, and a clock change doesn't move it. Cancel leaves the reminder as it was. No reminder takes it away.
+
+**TC-305 — A due reminder (P1)** **[auto]**
+- Steps: Let a reminder come due, with notifications refused. Try a pinned tab and one in a kept category. Open the tab. Also open a tab whose reminder hasn't come yet.
+- Expected: It shows under Waiting, marked Due, pinned or not, without a moon unless it has aged too. Opening it ends the reminder and it leaves Waiting (at once in the side panel, which stays open). Opening it before the day leaves the reminder alone. An archived tab's reminder doesn't count until it's restored.
+
+**TC-306 — A reminder's notification (P1)** **[auto]**
+- Steps: With notifications allowed, let a reminder come due, with Chrome open, and again with Chrome closed at that time. Click the notification.
+- Expected: One notification with the tab's title and site, the moment it's due or the next time Chrome starts; it comes once however often the worker wakes. Clicking it opens that tab, counted as an open, which ends the reminder. The robot test keeps the notification instead of showing it: **check a real one by hand each release**.
+
+**TC-307 — Several reminders at once (P2)** **[auto]**
+- Steps: Let two or more come due together. Click the notification.
+- Expected: One notification saying how many; clicking it opens the library on Waiting.
+
+**TC-308 — Notifications in Settings (P2)** **[auto]**
+- Steps: Open Settings › General with notifications off, then on.
+- Expected: The Reminder notifications row says which, and offers Turn on or Turn off. Turn on is Chrome's own prompt (the way back after refusing it). The robot test checks what the row says; **the prompt needs a person**.
+
+**TC-309 — Reminders in the library (P2)** **[auto]**
+- Steps: Open the library with a reminder set and one due. Edit a tab there.
+- Expected: The reminder shows under the title, before the window and note. The edit panel sets one the same way as the popup.
 
 **TC-295 — The library's sidebar (P1)** **[auto]**
 - Steps: Open the library. Click All tabs, Waiting, Archived, a category, a saved window. Save a link by right-clicking it with the library open.

@@ -1,9 +1,10 @@
-import { onSettingChanged } from "./storage/chromeStorage";
+import { onSettingChanged, onTabsChanged } from "./storage/chromeStorage";
 import { strings } from "./ui/strings";
 import { openLibrary } from "./util/openLibrary";
 import { LIBRARY_ID, rebuildMenu, saveFromMenu } from "./worker/contextMenu";
 import { handleInstalled } from "./worker/install";
 import { openFromAddressBar, suggestSaved } from "./worker/omnibox";
+import { REMINDER_ALARM, listenForReminderClicks, scheduleReminders, sendReminders } from "./worker/reminders";
 import { applyToolbarChoice } from "./worker/toolbar";
 
 // Registered right here, at the top of the file: Chrome only wakes the worker for listeners
@@ -12,10 +13,15 @@ chrome.runtime.onInstalled.addListener((details) => void handleInstalled(details
 chrome.runtime.onStartup.addListener(() => {
     void rebuildMenu();
     void applyToolbarChoice();
+    void scheduleReminders();
 });
 chrome.contextMenus.onClicked.addListener((info, tab) => void (info.menuItemId === LIBRARY_ID ? openLibrary() : saveFromMenu(info, tab)));
 chrome.omnibox.setDefaultSuggestion({ description: strings.omniboxHint });
 chrome.omnibox.onInputChanged.addListener((text, suggest) => void suggestSaved(text, suggest));
 chrome.omnibox.onInputEntered.addListener((text, disposition) => void openFromAddressBar(text, disposition));
+chrome.alarms.onAlarm.addListener((alarm) => void (alarm.name === REMINDER_ALARM && sendReminders()));
+chrome.permissions.onAdded.addListener(listenForReminderClicks);
+listenForReminderClicks();
+onTabsChanged(() => void scheduleReminders());
 onSettingChanged((settings) => settings.categories, () => void rebuildMenu());
 onSettingChanged((settings) => settings.toolbarOpens, () => void applyToolbarChoice());

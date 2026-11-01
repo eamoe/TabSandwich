@@ -1,5 +1,8 @@
 import type { SortOrder } from "../types";
 
+const reminderDate = (at: number) => new Date(at).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+const dayOf = (at: number) => new Date(at).toDateString();
+
 /**
  * Every piece of text the v3.0 screens show or announce, in one place — ready for translation
  * (v4.1) without hunting through components. Accessible names the robot tests find controls
@@ -274,6 +277,27 @@ export const strings = {
 
     titleLabel: "Title",
     noteLabel: "Note",
+    reminderLabel: "Reminder",
+    reminderNone: "No reminder",
+    reminderTomorrow: "Remind me tomorrow",
+    reminderNextWeek: (at: number) => `Remind me next week, ${reminderDate(at)}`,
+    reminderKept: (at: number) => `Reminder: ${reminderDate(at)}`,
+    /** On a row. (Reminders arrive in the morning, so "today" before then.) */
+    reminderShort: (at: number, now: number) => {
+        if (at <= now) return "Due";
+        if (dayOf(at) === dayOf(now)) return "Today";
+        return dayOf(at) === dayOf(new Date(now).setDate(new Date(now).getDate() + 1)) ? "Tomorrow" : reminderDate(at);
+    },
+    reminderWhen: (at: number) => `Reminder: ${reminderDate(at)}, 9:00`,
+    /** A notification: the tab's own title is its heading. */
+    reminderMessage: (site: string) => `Your reminder from Tab Sandwich · ${site}`,
+    remindersTitle: (count: number) => `${count} saved tabs to come back to`,
+    remindersMessage: "Click to see them in your library.",
+    notifications: "Reminder notifications",
+    notificationsOnHint: "A notification at 9:00 when a reminder is due.",
+    notificationsOffHint: "Off: a due reminder just shows under Waiting.",
+    notificationsTurnOn: "Turn on",
+    notificationsTurnOff: "Turn off",
     notePlaceholder: "Why you saved it (optional)",
     addNote: "Add a note",
     suggestedLabel: (label: string) => `${label} (suggested from where you saved pages like it)`,

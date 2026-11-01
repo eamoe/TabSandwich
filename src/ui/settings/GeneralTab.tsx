@@ -1,5 +1,7 @@
+import { useEffect, useState } from "preact/hooks";
 import type { ThemeChoice, ToolbarChoice } from "../../types";
 import { setTheme, setToolbarOpens } from "../../domain/SettingsRepository";
+import { NOTIFICATIONS_PERMISSION } from "../../util/notifications";
 import { LIBRARY_PAGE, openLibrary } from "../../util/openLibrary";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
@@ -51,6 +53,15 @@ async function attempt(write: () => Promise<void>, reload: () => Promise<void>):
 
 export function GeneralTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
     const { settings } = library;
+    const [notifying, setNotifying] = useState(false);
+    useEffect(() => {
+        void chrome.permissions.contains(NOTIFICATIONS_PERMISSION).then(setNotifying);
+    }, []);
+    // Asked right in the click, as Chrome requires.
+    const toggleNotifications = () => {
+        const change = notifying ? chrome.permissions.remove(NOTIFICATIONS_PERMISSION).then((removed) => !removed) : chrome.permissions.request(NOTIFICATIONS_PERMISSION);
+        void change.then(setNotifying).catch(() => undefined);
+    };
     const shortcut = useShortcut();
 
     const chooseTheme = (theme: ThemeChoice) => {
@@ -103,6 +114,18 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                     </div>
                     <button type="button" class={controls.btn} onClick={() => void openLibrary()}>
                         {strings.openLibrary}
+                    </button>
+                </div>
+            </section>
+
+            <section class={styles.group} aria-label={strings.notifications}>
+                <div class={styles.row}>
+                    <div>
+                        <p class={styles.label}>{strings.notifications}</p>
+                        <p class={styles.hint}>{notifying ? strings.notificationsOnHint : strings.notificationsOffHint}</p>
+                    </div>
+                    <button type="button" class={controls.btn} onClick={toggleNotifications}>
+                        {notifying ? strings.notificationsTurnOff : strings.notificationsTurnOn}
                     </button>
                 </div>
             </section>

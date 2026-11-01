@@ -35,13 +35,16 @@ export const TEST_SITE = "https://example.test";
 type Fixtures = {
     /** Every test starts as a fresh install, which opens the welcome page; it's closed unless a test is about it. */
     keepWelcomePage: boolean;
+    /** A test can't answer Chrome's prompt, so these tests start with the optional "notifications" permission already given. */
+    notificationsAllowed: boolean;
     context: BrowserContext;
     popup: Page;
 };
 
 export const test = base.extend<Fixtures>({
     keepWelcomePage: [false, { option: true }],
-    context: async ({ keepWelcomePage }, use) => {
+    notificationsAllowed: [false, { option: true }],
+    context: async ({ keepWelcomePage, notificationsAllowed }, use) => {
         if (!readFileSyncSafe(join(DIST, "manifest.json"))) {
             throw new Error("dist/ is missing — run `pnpm build` before the robot tests.");
         }
@@ -57,7 +60,7 @@ export const test = base.extend<Fixtures>({
         // Rendering the Store screenshots (tests/store) shows a real web page in the save card, so
         // that run alone stands in for activeTab on any site.
         const hosts = process.env.TS_STORE_SCREENSHOTS ? ["<all_urls>"] : [`${TEST_SITE}/*`];
-        writeFileSync(join(extDir, "manifest.json"), JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: hosts }, null, 2));
+        writeFileSync(join(extDir, "manifest.json"), JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: hosts, permissions: [...manifest.permissions, ...(notificationsAllowed ? ["notifications"] : [])] }, null, 2));
 
         const userDataDir = mkdtempSync(join(tmpdir(), "tab-sandwich-profile-"));
         const context = await chromium.launchPersistentContext(userDataDir, {

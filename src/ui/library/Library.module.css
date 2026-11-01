@@ -96,6 +96,8 @@
 .title mark { background: var(--mark-bg); color: var(--mark-ink); border-radius: 2px; }
 /* Under the title, so nothing on a row ever squeezes it. */
 .under { display: block; font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
+.reminder { display: inline-flex; align-items: center; gap: 3px; vertical-align: bottom; color: var(--ink-2); }
+.reminderDue { color: var(--warn-ink); font-weight: 700; }
 .note { font-style: italic; }
 .category { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .cut { min-width: 0; overflow: hidden; text-overflow: ellipsis; display: block; }

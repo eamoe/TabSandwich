@@ -21,8 +21,8 @@ import { Icon } from "../Icon";
 import { Logo } from "../Logo";
 import { ManualForm } from "../main/ManualForm";
 import { SelectionBar } from "../main/SelectionBar";
-import { EditForm, highlighted, type EditOutcome } from "../main/TabRow";
-import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, isArchived, isTabOutdated, siteName, staleKeptTabs, windowNames } from "../main/listModel";
+import { EditForm, ReminderMark, highlighted, type EditOutcome, type TabEdits } from "../main/TabRow";
+import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, isArchived, isTabAged, siteName, staleKeptTabs, windowNames } from "../main/listModel";
 import { useLibrary } from "../main/useLibrary";
 import { SettingsScreen } from "../settings/SettingsScreen";
 import { SiteIcon } from "../SiteIcon";
@@ -60,9 +60,10 @@ function pageAt(address: string): Page {
 /** Your whole library on a page of its own: everything in a sidebar, a wide sortable table, bulk editing and cleanup; Settings is a section of it; adding and editing open in a panel beside the list. */
 export function Library() {
     const { library, reload } = useLibrary();
-    const [filter, setFilter] = useState(ALL);
-    // (The address bar sends a search it found nothing for here, as ?q=.)
-    const [query, setQuery] = useState(new URLSearchParams(location.search).get("q") ?? "");
+    // (The address bar sends a search it found nothing for here, as ?q=; a notification about several reminders, ?show=waiting.)
+    const address = new URLSearchParams(location.search);
+    const [filter, setFilter] = useState(address.get("show") === "waiting" ? OUTDATED : ALL);
+    const [query, setQuery] = useState(address.get("q") ?? "");
     const [sort, setSort] = useState<LibrarySort>(DEFAULT_LIBRARY_SORT);
     const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
     const [page, setPage] = useState(pageAt(location.hash));
@@ -220,7 +221,7 @@ export function Library() {
         void chrome.tabs.create({ url: tab.url });
         await reload();
     };
-    const saveEdit = async (tab: SavedTab, updates: { title: string; url: string; category: string; note: string }): Promise<EditOutcome> => {
+    const saveEdit = async (tab: SavedTab, updates: TabEdits): Promise<EditOutcome> => {
         try {
             const { duplicateOf } = await editTab(tab.id, updates);
             if (duplicateOf) return { status: "duplicate", existingTitle: duplicateOf.title };
@@ -487,8 +488,14 @@ export function Library() {
                                                         <button type="button" class={styles.title} title={tab.title} onClick={() => void openTab(tab)}>
                                                             {highlighted(tab.title, match?.titleRanges ?? [])}
                                                         </button>
-                                                        {(windowName || tab.note) && (
+                                                        {(windowName || tab.note || (tab.remindAt !== undefined && !isArchived(tab))) && (
                                                             <span class={styles.under} title={tab.note}>
+                                                                {tab.remindAt !== undefined && !isArchived(tab) && (
+                                                                    <>
+                                                                        <ReminderMark at={tab.remindAt} class={styles.reminder} dueClass={styles.reminderDue} />
+                                                                        {(windowName || tab.note) && " · "}
+                                                                    </>
+                                                                )}
                                                                 {windowName && <span class={styles.window}>{windowName}</span>}
                                                                 {windowName && tab.note && " · "}
                                                                 {tab.note && <span class={styles.note}>{tab.note}</span>}
@@ -507,7 +514,7 @@ export function Library() {
                                                 <span class={styles.cut}>{siteName(tab.url)}</span>
                                             </td>
                                             <td class={styles.quiet}>
-                                                {isTabOutdated(tab, settings) ? <span class={styles.waiting}>{whenText(tab.savedAt)}</span> : whenText(tab.savedAt)}
+                                                {isTabAged(tab, settings) ? <span class={styles.waiting}>{whenText(tab.savedAt)}</span> : whenText(tab.savedAt)}
                                             </td>
                                             <td class={styles.quiet} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
                                                 {whenText(tab.lastOpenedAt)}

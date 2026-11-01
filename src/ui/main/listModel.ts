@@ -1,3 +1,4 @@
+import { isReminderDue } from "../../domain/reminders";
 import type { SavedTab, Settings, SortOrder, TabGroup } from "../../types";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isOutdated } from "../../util/time";
@@ -18,10 +19,15 @@ export function isArchived(tab: SavedTab): boolean {
     return tab.archivedAt !== undefined;
 }
 
-/** Waiting: not pinned, in a category whose tabs age (Settings.waitingCategories), saved at least the set number of days ago. */
-export function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
+/** Aged: not pinned, in a category whose tabs age (Settings.waitingCategories), saved at least the set number of days ago. */
+export function isTabAged(tab: SavedTab, settings: Settings): boolean {
     if (tab.pinned || isArchived(tab)) return false;
     return isOutdated(tab.savedAt, settings.waitingCategories.includes(getTabCategory(tab)), settings.outdatedDays);
+}
+
+/** Waiting: aged, or its reminder is due (asked for by name, so that goes for a pinned tab or a kept category too). */
+export function isTabOutdated(tab: SavedTab, settings: Settings): boolean {
+    return isReminderDue(tab, Date.now()) || isTabAged(tab, settings);
 }
 
 /**

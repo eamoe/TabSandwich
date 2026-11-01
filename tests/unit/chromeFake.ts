@@ -83,6 +83,12 @@ export function installChromeFake(): StorageFake {
                 fake.openedTabs.push(url);
             },
         },
+        alarms: {
+            async clear() {
+                return true;
+            },
+            async create() {},
+        },
         contextMenus: {
             async removeAll() {
                 fake.menu = [];

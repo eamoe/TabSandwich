@@ -34,6 +34,12 @@ Alongside it, Tab Sandwich keeps a data-format version number, the version numbe
 
 After you type `ts` and a space in Chrome's address bar, Chrome passes what you type next to Tab Sandwich, and only that. It's searched against your saved tabs on your device, and nothing is stored or sent anywhere.
 
+## Reminders (optional)
+
+A reminder is stored with its saved tab, on your device, as the time it's for and whether it has gone out. The `alarms` permission lets Tab Sandwich wake at that time; nothing is sent anywhere.
+
+Showing a notification needs Chrome's optional **`notifications`** permission, requested with your first reminder, never at install. You can refuse it, or turn it off in Settings › General, and a due reminder then simply shows under Waiting. A notification shows the tab's title and site on your own computer, through your system's notifications, and Tab Sandwich sends it nowhere else.
+
 ## Saving a whole window, or from the side panel (optional)
 
 "Save all tabs in this window" saves every web page open in the current window in one go. To read those tabs' titles and addresses, Tab Sandwich needs Chrome's optional **`tabs`** permission. The side panel needs it too, to show and save the page you're on, because it stays open while you browse. It is not requested at install: Chrome asks you the first time you save a whole window or save from the side panel, and Tab Sandwich works without it if you say no (the side panel then shows your list, but can't save the page you're on). You can take it back at any time in Chrome's extension settings.

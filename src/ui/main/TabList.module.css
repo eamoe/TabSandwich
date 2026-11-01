@@ -93,6 +93,8 @@
 .category > span:first-child { width: 7px; height: 7px; }
 .separator { opacity: 0.7; }
 .site { overflow: hidden; text-overflow: ellipsis; }
+.reminder { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; color: var(--ink-2); }
+.reminderDue { color: var(--warn-ink); font-weight: 700; }
 /* A search result's saved window: shares the line with the site, each giving way when space is short. */
 .window { display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex-shrink: 1; color: var(--ink-2); }
 .window > svg { flex-shrink: 0; }
@@ -142,6 +144,7 @@
 .editing:hover { transform: none; }
 .editForm { display: flex; flex-direction: column; gap: 6px; }
 .editActions { display: flex; align-items: center; gap: 6px; }
+.reminderField { display: flex; flex-shrink: 0; }
 
 /* A saved window: a row drawn as a small stack of cards, which opens to show its tabs. */
 .group { display: flex; flex-direction: column; gap: var(--row-gap); flex-shrink: 0; }

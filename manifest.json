@@ -32,10 +32,12 @@
         "favicon",
         "contextMenus",
         "scripting",
-        "sidePanel"
+        "sidePanel",
+        "alarms"
     ],
     "optional_permissions": [
-        "tabs"
+        "tabs",
+        "notifications"
     ],
     "web_accessible_resources": [
         {

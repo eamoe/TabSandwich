@@ -10,6 +10,7 @@
 }
 .onSurface { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
 .dot { position: absolute; left: 11px; pointer-events: none; }
+.icon { position: absolute; left: 9px; display: inline-flex; color: var(--ink-3); pointer-events: none; }
 .select {
     appearance: none;
     width: 100%;
