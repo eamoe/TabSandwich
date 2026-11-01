@@ -62,7 +62,9 @@ export function Welcome() {
                                         </button>
                                     </p>
                                 )}
-                                <p class={styles.stepText}>{strings.welcomeSearchText}</p>
+                                <p class={styles.stepText}>
+                                    {strings.welcomeSearchBefore} <kbd class={styles.kbd}>ts</kbd> {strings.welcomeSearchAfter}
+                                </p>
                             </div>
                         </li>
                     </ul>

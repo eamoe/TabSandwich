@@ -63,16 +63,33 @@ test.describe("Saving from the right-click menu", () => {
 
         await clickMenu(context, popup, "Work", { linkUrl: "https://nowhere.example.com/page" });
         await expect(row(popup, "nowhere.example.com")).toBeVisible();
+
+        // What's selected on the page, for when Chrome doesn't pass it along (a right-click outside the selection).
+        const page = context.pages().find((p) => p.url().endsWith(PAGE_TITLE))!;
+        await page.evaluate(() => {
+            const words = document.createElement("p");
+            words.textContent = "Words selected nearby";
+            document.body.append(words);
+            getSelection()?.selectAllChildren(words);
+        });
+        await clickMenu(context, popup, "Work", { linkUrl: `${TEST_SITE}/not-on-this-page` });
+        await expect(row(popup, "Words selected nearby")).toBeVisible();
     });
 
-    test("TC-289: away from any link it saves the page, a saved link stays one copy, and a link that isn't a page is refused", async ({ context, popup }) => {
+    test("TC-289: away from any link it saves the page, a saved link goes where you pick, and a link that isn't a page is refused", async ({ context, popup }) => {
         await clickMenu(context, popup, "Work", {});
         await expect(row(popup, PAGE_TITLE)).toBeVisible();
         expect((await storedTabs(popup))[0]).toMatchObject({ url: `${TEST_SITE}/${PAGE_TITLE}`, category: "Work" });
 
         await clickMenu(context, popup, "Reading", { linkUrl: "https://alpha.example.com/" });
         await expect.poll(() => badge(popup)).toBe("✓");
-        expect((await storedTabs(popup)).map((t) => t.title)).toEqual([PAGE_TITLE, "Alpha"]);
+        expect((await storedTabs(popup)).map((t) => [t.title, t.category])).toEqual([[PAGE_TITLE, "Work"], ["Alpha", "Reading"]]);
+
+        await expect.poll(() => badge(popup), { timeout: 6000 }).toBe("");
+        await clickMenu(context, popup, "Reading", { linkUrl: "https://alpha.example.com/" });
+        await expect.poll(() => badge(popup)).toBe("✓✓");
+        await expect.poll(() => popup.evaluate(() => chrome.action.getTitle({}))).toBe("Already saved in Reading");
+        await expect.poll(() => popup.evaluate(() => chrome.action.getTitle({})), { timeout: 6000 }).toBe("Tab Sandwich");
 
         await clickMenu(context, popup, "Work", { linkUrl: "mailto:someone@example.test" });
         await expect.poll(() => badge(popup)).toBe("!");

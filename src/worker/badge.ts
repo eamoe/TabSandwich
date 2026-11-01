@@ -9,13 +9,12 @@ const RECOUNT_MINUTES = 60;
 const MOST_SHOWN = 99;
 const COUNT_COLOR = "#8A5A00";
 
-/**
- * What a save from the right-click menu says: there's no popup open to show it in, so the
- * toolbar icon's badge flashes. An already-saved page counts as saved: it's in your library.
- */
+/** What a save from the right-click menu says: there's no popup open to show it in, so the toolbar icon's badge flashes. */
 const FLASH_MS = 2500;
 const FLASHES = {
     saved: { text: "✓", color: "#1E7F4F" },
+    /** It was there already, just where you asked: nothing changed. */
+    alreadySaved: { text: "✓✓", color: "#5A50C2" },
     failed: { text: "!", color: "#B42339" },
 };
 
@@ -40,7 +39,8 @@ export async function refreshBadge(): Promise<void> {
     ]);
 }
 
-export async function flashBadge(outcome: keyof typeof FLASHES): Promise<void> {
+/** `title`: what the icon's name says for as long as the flash shows. */
+export async function flashBadge(outcome: keyof typeof FLASHES, title?: string): Promise<void> {
     clearTimeout(flashing);
     flashing = setTimeout(() => {
         flashing = undefined;
@@ -49,4 +49,5 @@ export async function flashBadge(outcome: keyof typeof FLASHES): Promise<void> {
     const { text, color } = FLASHES[outcome];
     await chrome.action.setBadgeBackgroundColor({ color });
     await chrome.action.setBadgeText({ text });
+    if (title) await chrome.action.setTitle({ title });
 }

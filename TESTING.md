@@ -1165,12 +1165,12 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: The link is saved into that category, titled with the link's own words (spaces tidied); the toolbar icon flashes ✓ for a couple of seconds, and it appears in whatever's open without a refresh. The robot test delivers the click Chrome would send: **check the real menu by hand each release**.
 
 **TC-288 — A link with no words of its own (P2)** **[auto]**
-- Steps: Right-click a picture that's a link; a link with neither (with some text selected, then with none); a link on a page Chrome won't let extensions read, such as the Chrome Web Store.
-- Expected: The title is the first of: the link's words, its spoken name or tooltip, its picture's description, the selected text, the site's name. The save always goes through. Pick Uncategorized and the tab has no category.
+- Steps: Right-click a picture that's a link; a link with neither (with some text selected on the page, then with none); a link on a page Chrome won't let extensions read, such as the Chrome Web Store.
+- Expected: The title is the first of: the link's words, its spoken name or tooltip, its picture's description, the selected text, the site's name. The selected text counts whether or not the right-click was on it. The save always goes through. Pick Uncategorized and the tab has no category.
 
 **TC-289 — The other things you can right-click (P2)** **[auto]**
-- Steps: Right-click the page away from any link, and save. Right-click a link that's already saved, in another category. Right-click a `mailto:` link, and save.
-- Expected: The page itself is saved, with its title. The saved link stays one copy, as it was, and the icon still flashes ✓: it's in your library. The `mailto:` link saves nothing, and the icon flashes ! (as it does when a save fails).
+- Steps: Right-click the page away from any link, and save. Right-click a link that's already saved, in another category; do it again, picking the same category; do it with an archived link. Right-click a `mailto:` link, and save.
+- Expected: The page itself is saved, with its title. A saved link stays one copy and moves to the category picked, keeping its title, note, pin and reminder, and the icon flashes ✓; an archived one comes back to the list there. Picking the category it's already in changes nothing: the icon flashes a purple ✓✓, and hovering it says "Already saved in" that category. The `mailto:` link saves nothing, and the icon flashes ! (as it does when a save fails).
 
 **TC-290 — The menu follows your categories (P1)** **[auto]**
 - Steps: Add, rename, remove or reorder a category in Settings, or import a backup; right-click a link.

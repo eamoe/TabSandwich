@@ -1,6 +1,7 @@
 // Writes review-data/: backups to import and small pages to right-click, for the manual review.
 // Dates count back from today, so run it again (`node scripts/review-data.mjs`) to freshen them.
 import { mkdirSync, writeFileSync } from "node:fs";
+import { URL } from "node:url";
 
 const OUT = new URL("../review-data/", import.meta.url);
 const DAY = 24 * 60 * 60 * 1000;

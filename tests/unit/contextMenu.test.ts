@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { addCategory, removeCategory } from "../../src/domain/CategoryRepository";
+import { UNCATEGORIZED, addCategory, removeCategory } from "../../src/domain/CategoryRepository";
 import { readLinkText, rebuildMenu, saveFromMenu } from "../../src/worker/contextMenu";
 import { storage } from "./setup";
-import { seed, storedTabs } from "./helpers";
+import { makeTab, seed, storedTabs } from "./helpers";
 
 const click = (category: string, target: Partial<chrome.contextMenus.OnClickData>, tab?: Partial<chrome.tabs.Tab>) =>
     saveFromMenu({ menuItemId: `save:${category}`, pageUrl: "https://page.example.com/", editable: false, ...target } as chrome.contextMenus.OnClickData, { id: 1, ...tab } as chrome.tabs.Tab);
@@ -39,6 +39,33 @@ describe("saving from the menu", () => {
         await click("Work", { linkUrl: "https://b.example.com/y" });
         expect(storedTabs().map((t) => t.title)).toEqual(["b.example.com", "Selected"]);
         expect(storage.badge.text).toBe("✓");
+    });
+
+    it("moves a link already saved to the category picked, keeping everything else about it", async () => {
+        const url = "https://a.example.com/x";
+        seed([makeTab({ url, title: "Mine", category: "Reading", note: "Why", pinned: true })]);
+        await click("Work", { linkUrl: url });
+        expect(storedTabs()).toHaveLength(1);
+        expect(storedTabs()[0]).toMatchObject({ title: "Mine", category: "Work", note: "Why", pinned: true });
+        expect(storage.badge.text).toBe("✓");
+    });
+
+    it("brings a link back from the archive, and takes Uncategorized as a place too", async () => {
+        const url = "https://a.example.com/x";
+        seed([makeTab({ url, category: "Work", archivedAt: 1 })]);
+        await click("Work", { linkUrl: url });
+        expect(storedTabs()[0]).not.toHaveProperty("archivedAt");
+        await click(UNCATEGORIZED, { linkUrl: url });
+        expect(storedTabs()[0]).not.toHaveProperty("category");
+    });
+
+    it("says so when a link is already where you picked, and writes nothing", async () => {
+        const url = "https://a.example.com/x";
+        const tab = makeTab({ url, category: "Work" });
+        seed([tab]);
+        await click("Work", { linkUrl: url });
+        expect(storage.badge).toMatchObject({ text: "✓✓", title: "Already saved in Work" });
+        expect(storedTabs()).toEqual([tab]);
     });
 
     it("upgrades stored data first, when the worker is the first to write after an update", async () => {

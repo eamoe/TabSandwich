@@ -150,7 +150,8 @@ export const strings = {
     welcomeSaveText: "On any page, click the icon, pick a category and press Save. Or right-click any link.",
     welcomeShortcutTitle: "Open it from anywhere",
     welcomeShortcutText: "Press",
-    welcomeSearchText: "Or type ts and a word in the address bar to jump to a saved tab.",
+    welcomeSearchBefore: "Or type",
+    welcomeSearchAfter: "and a word in the address bar to jump to a saved tab.",
     welcomePromise: "Everything stays in this browser. No account, no tracking.",
     welcomeDone: "Got it",
     editCategories: "Edit categories",
@@ -296,6 +297,8 @@ export const strings = {
     notifications: "Reminder notifications",
     notificationsOnHint: "A notification at 9:00 when a reminder is due.",
     notificationsOffHint: "Off: a due reminder just shows under Waiting.",
+    /** The toolbar icon's name while the badge says a link was already there. */
+    alreadySavedIn: (category: string) => `Already saved in ${category}`,
     turnOn: "Turn on",
     turnOff: "Turn off",
     badgeLabel: "Waiting count",

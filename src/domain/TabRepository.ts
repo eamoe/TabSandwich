@@ -3,7 +3,7 @@ import { SavedTab, TabGroup } from "../types";
 import { getGroups, getTabs, setTabs, setTabsAndGroups } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 import { urlsMatch } from "../util/url";
-import { UNCATEGORIZED } from "./CategoryRepository";
+import { UNCATEGORIZED, getTabCategory } from "./CategoryRepository";
 
 export interface AddTabInput {
     title: string;
@@ -435,6 +435,21 @@ export async function recordOpen(ids: string[]): Promise<void> {
                 return { ...(isReminderDue(t, now) ? done : t), lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 };
             })
         );
+    });
+}
+
+/**
+ * Puts a saved tab in `category` (undefined: Uncategorized), back from the archive if it's there;
+ * everything else about it stays. False: it was already there, and nothing was written.
+ */
+export async function placeInCategory(id: string, category: string | undefined): Promise<boolean> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const tab = tabs.find((t) => t.id === id);
+        if (!tab || (tab.archivedAt === undefined && getTabCategory(tab) === (category ?? UNCATEGORIZED))) return false;
+        const { archivedAt: _back, category: _was, ...rest } = tab;
+        await setTabs(tabs.map((t) => (t.id === id ? { ...rest, ...(category ? { category } : {}) } : t)));
+        return true;
     });
 }
 

@@ -1,6 +1,7 @@
 import { UNCATEGORIZED, getSelectableCategories } from "../domain/CategoryRepository";
-import { addTab } from "../domain/TabRepository";
+import { addTab, placeInCategory } from "../domain/TabRepository";
 import { upgradeStoredData } from "../storage/upgrade";
+import { siteName } from "../ui/main/listModel";
 import { strings } from "../ui/strings";
 import { isSupportedTabUrl } from "../util/url";
 import { flashBadge } from "./badge";
@@ -43,7 +44,7 @@ export function readLinkText(url: string): string {
         const text = (link.innerText || link.getAttribute("aria-label") || link.title || link.querySelector("img")?.alt || "").replace(/\s+/g, " ").trim();
         if (text) return text;
     }
-    return "";
+    return window.getSelection()?.toString().trim() ?? "";
 }
 
 async function linkTextOnPage(url: string, tabId: number | undefined, frameId: number | undefined): Promise<string> {
@@ -59,9 +60,8 @@ async function linkTextOnPage(url: string, tabId: number | undefined, frameId: n
 }
 
 async function titleFor(info: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined, url: string): Promise<string> {
-    const siteName = new URL(url).hostname;
-    if (!info.linkUrl) return tab?.title?.trim() || siteName;
-    return (await linkTextOnPage(url, tab?.id, info.frameId)) || info.selectionText?.trim() || siteName;
+    if (!info.linkUrl) return tab?.title?.trim() || siteName(url);
+    return (await linkTextOnPage(url, tab?.id, info.frameId)) || info.selectionText?.trim() || siteName(url);
 }
 
 /** A category picked in the menu: saves the link right-clicked, or else the page. */
@@ -74,8 +74,11 @@ export async function saveFromMenu(info: chrome.contextMenus.OnClickData, tab: c
     try {
         // The worker can be the first to write after an update, before any screen has opened.
         await upgradeStoredData();
-        await addTab({ title: await titleFor(info, tab, url), url, category: category === UNCATEGORIZED ? undefined : category });
-        await flashBadge("saved");
+        const wanted = category === UNCATEGORIZED ? undefined : category;
+        const { tab: saved, duplicate } = await addTab({ title: await titleFor(info, tab, url), url, category: wanted });
+        // Picking a category is the point of this menu: a link already saved goes there, out of the archive too.
+        if (duplicate && !(await placeInCategory(saved.id, wanted))) await flashBadge("alreadySaved", strings.alreadySavedIn(category));
+        else await flashBadge("saved");
     } catch {
         await flashBadge("failed");
     }

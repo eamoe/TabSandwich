@@ -49,7 +49,7 @@ src/
                             so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
@@ -73,13 +73,13 @@ src/
                             builds the right-click menu, opens the welcome page (fresh installs only)
     contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change, and "Open library" on the
                             toolbar icon's own menu; saves the link or page,
-                            titled with the link's own words (readLinkText, run in the page at that moment)
+                            titled with the link's own words (readLinkText, run in the page at that moment); a link already saved moves to the category picked
     omnibox.ts             the address bar's "ts": suggestions from the app's own search, opening the pick, the library when nothing's found
     reminders.ts           one alarm for the earliest reminder, rebuilt from storage; sends each once, notifying only if allowed;
                             a notification's click opens the tab, or the library on Waiting when several came together
     toolbar.ts             what the toolbar icon opens, set again each time Chrome starts
     badge.ts               the toolbar badge: the waiting count, if turned on (recounted hourly, since tabs age with nothing else happening),
-                            and ✓ or ! flashing after a save, with no popup open to say so, the count coming back after it
+                            and ✓, ✓✓ (already there) or ! flashing after a save, with no popup open to say so, the count coming back after it
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
