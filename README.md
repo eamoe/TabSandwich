@@ -10,6 +10,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 - **A welcome page** — after a fresh install, one page shows how to pin the icon, save a page and open Tab Sandwich from the keyboard.
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
+- **Address-bar search** — type `ts`, a space and a word in Chrome's address bar to jump straight to a saved tab.
 - **Full-page library** — all your tabs on a page of their own: a sidebar of categories and saved windows, a wide table that sorts by any column, bulk editing and cleanup, quick even with thousands of tabs. Open it from the **Open in** menu in the popup's header, in Settings › General, or from the toolbar icon's right-click menu.
 - **Side panel** — keep your list open beside the page while you browse: the **Open in** menu in the popup's header opens it, and Settings › General can make it what the toolbar icon opens. The first Save from the panel asks Chrome once to let it see the page you're on.
 - **Right-click to save** — right-click any link or page, then **Save to Tab Sandwich** and a category. The link's own words become its title, and the toolbar icon flashes ✓.

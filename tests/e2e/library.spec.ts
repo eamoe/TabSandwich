@@ -295,6 +295,19 @@ test.describe("Getting to the library", () => {
         expect(popup.url()).toBe(POPUP_URL);
     });
 
+    test("TC-298: a library that's on Settings or has a panel open is still the one to go to", async ({ context, popup }) => {
+        await seedLibrary(popup, LIBRARY, {}, { groups: GROUPS });
+        const opened = context.waitForEvent("page");
+        await openFromMenu(popup, "Open library");
+        const library = await opened;
+        await waitUntilReady(library);
+        await library.getByRole("button", { name: "Open settings" }).click();
+        await expect(library).toHaveURL(/#settings$/);
+        await openFromMenu(popup, "Open library");
+        await popup.waitForTimeout(300);
+        expect(context.pages().filter((p) => p.url().startsWith(LIBRARY_URL))).toHaveLength(1);
+    });
+
     test("TC-298: the toolbar icon's own menu does too", async ({ context }) => {
         const sw = await worker(context);
         const opened = context.waitForEvent("page");

@@ -73,13 +73,14 @@ src/
     contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change, and "Open library" on the
                             toolbar icon's own menu; saves the link or page,
                             titled with the link's own words (readLinkText, run in the page at that moment)
+    omnibox.ts             the address bar's "ts": suggestions from the app's own search, opening the pick, the library when nothing's found
     toolbar.ts             what the toolbar icon opens, set again each time Chrome starts
     feedback.ts            the toolbar badge flashing ✓ or ! after a save, with no popup open to say so
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
-    openLibrary.ts         goes to the library's open tab, or opens it
+    openLibrary.ts         goes to the library's open tab, or opens it, optionally on a search (?q=)
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
     iconInk.ts             whether an icon is one dark/mid-gray or one light color on transparency (GitHub's cat,

@@ -47,6 +47,9 @@
             ]
         }
     ],
+    "omnibox": {
+        "keyword": "ts"
+    },
     "commands": {
         "_execute_action": {
             "suggested_key": {

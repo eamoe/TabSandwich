@@ -28,10 +28,11 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
 8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
-11. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
-12. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-13. Anything new in this release that isn't marked **[auto]** yet.
+10. The address bar in real Chrome: `ts`, a space and a word lists saved tabs, Enter opens them here, Alt+Enter (Mac: Option+Return) in a new tab (TC-301, TC-302).
+11. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
+12. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
+13. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+14. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -1052,6 +1053,18 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: The tab shows as Uncategorized (stored with no category, like any other uncategorized tab), and it doesn't make Uncategorized a suggestion: the picker shows no sparkle on Uncategorized. Tabs edited this way before 3.3.1 don't count as suggestions either (logic-tested).
 
 ## 23. Beyond the Popup (v4.0)
+
+**TC-301 — Search from the address bar (P1)** **[auto]**
+- Steps: In the address bar, type `ts`, a space, and part of a saved tab's title, note, category or window name. Try a word in a title with `&` or `<` in it.
+- Expected: Up to six saved tabs are listed, best first, with what matched marked and the site beside each; archived tabs aren't. Odd characters show as they are. The robot test delivers what Chrome would send: **check the real address bar by hand each release**.
+
+**TC-302 — Going to a saved tab from there (P1)** **[auto]**
+- Steps: Pick a suggestion with Enter; with Alt+Enter (Mac: Option+Return); type words and press Enter without picking one.
+- Expected: The tab opens where the address bar says (this tab, or a new one), and counts as opened (the library's Opened column). Words alone go to the best match.
+
+**TC-303 — When the address bar finds nothing (P2)** **[auto]**
+- Steps: Type words that match nothing and press Enter, with and without a library tab open (also on Settings).
+- Expected: The library opens on that search, saying nothing matches; one that's already open is used, not a second.
 
 **TC-295 — The library's sidebar (P1)** **[auto]**
 - Steps: Open the library. Click All tabs, Waiting, Archived, a category, a saved window. Save a link by right-clicking it with the library open.

@@ -16,6 +16,7 @@ const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 /** The list's keys, named the way this computer's keyboard labels them. */
 const LIST_KEYS: Array<{ keys: string[]; what: string }> = [
     { keys: ["/"], what: strings.keyHelp.search },
+    { keys: ["ts"], what: strings.keyHelp.addressBar },
     { keys: ["↑", "↓"], what: strings.keyHelp.move },
     { keys: ["Enter"], what: strings.keyHelp.open },
     { keys: ["→", "←"], what: strings.keyHelp.window },

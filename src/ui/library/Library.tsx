@@ -61,7 +61,8 @@ function pageAt(address: string): Page {
 export function Library() {
     const { library, reload } = useLibrary();
     const [filter, setFilter] = useState(ALL);
-    const [query, setQuery] = useState("");
+    // (The address bar sends a search it found nothing for here, as ?q=.)
+    const [query, setQuery] = useState(new URLSearchParams(location.search).get("q") ?? "");
     const [sort, setSort] = useState<LibrarySort>(DEFAULT_LIBRARY_SORT);
     const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
     const [page, setPage] = useState(pageAt(location.hash));

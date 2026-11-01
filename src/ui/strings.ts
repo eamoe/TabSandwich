@@ -110,6 +110,7 @@ export const strings = {
     tipCategories: "Make the categories yours.",
 
     menuSave: "Save to Tab Sandwich",
+    omniboxHint: "Search your saved tabs for <match>%s</match>",
     menuOpenLibrary: "Open library",
     openLibrary: "Open library",
     library: "Library",
@@ -146,6 +147,7 @@ export const strings = {
     welcomeSaveText: "On any page, click the icon, pick a category and press Save. Or right-click any link.",
     welcomeShortcutTitle: "Open it from anywhere",
     welcomeShortcutText: "Press",
+    welcomeSearchText: "Or type ts and a word in the address bar to jump to a saved tab.",
     welcomePromise: "Everything stays in this browser. No account, no tracking.",
     welcomeDone: "Got it",
     editCategories: "Edit categories",
@@ -305,6 +307,7 @@ export const strings = {
         select: "Select or unselect, while selecting",
         edit: "Edit it",
         pin: "Pin it to the top, or unpin it",
+        addressBar: "In the address bar: search your saved tabs",
         delete: "Delete it",
         undo: "Undo, while Undo is showing",
         reorder: "Move it up or down (in your own order)",
