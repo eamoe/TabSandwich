@@ -252,6 +252,20 @@ for (const colorScheme of ["light", "dark"] as const) {
         await expect(popup).toHaveScreenshot(`library-picked-${colorScheme}.png`);
     });
 
+    test(`the library's Undo toast (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("row").filter({ hasText: "Q3 Roadmap" }).hover();
+        await popup.getByRole("button", { name: "Archive Q3 Roadmap" }).click();
+        await expect(popup.getByRole("button", { name: "Undo" })).toBeVisible();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-toast-${colorScheme}.png`);
+    });
+
     test(`the library's Settings (${colorScheme})`, async ({ popup }) => {
         await popup.clock.setFixedTime(TODAY);
         await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });

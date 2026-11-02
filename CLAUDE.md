@@ -109,7 +109,8 @@ src/
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
                              a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
     CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
-    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call; ToastSpace makes
+    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error; across the popup and panel, sized to its message on the
+                             library's wide page); a tiny store any screen can call; ToastSpace makes
                              room for it at the end of each screen while it shows, so it never covers the last row
     main/                   the main screen
       App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight

@@ -1114,7 +1114,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-297 — Working with tabs in the library (P1)** **[auto]**
 - Steps: Tick a row, Shift-click another, use the box in the heading. Move them to a category, then Archive, each followed by Undo. On a row: Edit, Pin (the row flashes, and the button stays lit where you pressed it, on show even when the pointer's gone; pressing it again unpins), Archive. Under Archived: Restore, Delete for good. Use **Archive them** and **Not now** on the cleanup tip.
-- Expected: The heading row becomes the selection bar at the same height, so nothing moves. Each action takes one step, with Undo. A title can never be squeezed by anything on its row (a saved window's name and a note sit under it). Nothing is deleted anywhere but Archived.
+- Expected: The heading row becomes the selection bar at the same height, so nothing moves. Each action takes one step, with Undo, in a toast only as wide as its message, centered at the bottom (in the popup and side panel it spans the width). A title can never be squeezed by anything on its row (a saved window's name and a note sit under it). Nothing is deleted anywhere but Archived.
 
 **TC-298 — Getting to the library, and around it (P1)** **[auto]**
 - Steps: Use **Open library** in the popup's Open in menu, in the side panel's header, in Settings › General, and on the toolbar icon's right-click menu. Do it again with the library already open, also from another window. In the library, open a title, + and the gear.

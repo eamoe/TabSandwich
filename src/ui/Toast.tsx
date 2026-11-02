@@ -6,8 +6,10 @@ import styles from "./Toast.module.css";
 /**
  * Always in the page, so its live region is already known to screen readers when a message
  * arrives; hidden by sliding off-screen and made `inert` so a hidden Undo can't be tabbed to.
+ * Across a narrow popup or panel it takes the width; on a wide page (`compact`), only what its
+ * message needs, in the middle.
  */
-export function Toast() {
+export function Toast(props: { compact?: boolean }) {
     const [state, setState] = useState<ToastState | null>(null);
     const [lastMessage, setLastMessage] = useState<ToastState | null>(null);
     useEffect(() => subscribeToast(setState), []);
@@ -18,7 +20,7 @@ export function Toast() {
 
     const shown = state ?? lastMessage;
     return (
-        <div class={state ? `${styles.toast} ${styles.visible}` : styles.toast} role="status" aria-live="polite" inert={!state}>
+        <div class={[styles.toast, props.compact ? styles.compact : "", state ? styles.visible : ""].join(" ")} role="status" aria-live="polite" inert={!state}>
             <span class={styles.message}>{shown?.message ?? ""}</span>
             {shown?.kind === "undo" && (
                 <button type="button" class={styles.undo} onClick={undoFromToast}>

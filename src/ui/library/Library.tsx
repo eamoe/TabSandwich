@@ -157,7 +157,7 @@ export function Library() {
         };
     }, [library, filter, query, sort, windowOf]);
 
-    if (!library) return <Toast />;
+    if (!library) return <Toast compact />;
 
     const { rows, matches } = shown;
     const { settings } = library;
@@ -609,7 +609,7 @@ export function Library() {
                 )}
             </div>
 
-            <Toast />
+            <Toast compact />
         </div>
     );
 }
