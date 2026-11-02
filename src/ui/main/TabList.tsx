@@ -5,6 +5,7 @@ import type { SearchMatch } from "../../domain/search";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
+import { showNoteToast } from "../toastStore";
 import { dropTarget, groupItems, isTabAged, reorderTarget, stoppedAtPinLine, type DropSide, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
 import { TabRow, type EditOutcome, type TabEdits } from "./TabRow";
@@ -86,6 +87,8 @@ export function TabList(props: {
     const [dragId, setDragId] = useState<string | null>(null);
     // The row a dragged tab is over, and which half: where the insertion line shows.
     const [dropAt, setDropAt] = useState<{ key: string; side: DropSide } | null>(null);
+    // Over a place the pinned line keeps the dragged tab from: let go there, and the note says why it went back.
+    const overPinLine = useRef(false);
     // The row the keyboard is on (the first one until focus lands somewhere), and a row to move
     // focus to once the list has re-rendered: the neighbor of a deleted row, or a moved row
     // (moving a focused element in the page drops its focus).
@@ -139,7 +142,7 @@ export function TabList(props: {
             if (!row.tab) return;
             const move = reorderTarget(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up");
             if (!props.canReorder) announce(props.inArchive ? strings.cantMoveArchived : props.searchActive ? strings.cantMoveSearching : strings.cantMoveSorted);
-            else if (!move && stoppedAtPinLine(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up")) announce(strings.pinLine(!!row.tab.pinned));
+            else if (!move && stoppedAtPinLine(items, row.tab.id, e.key === "ArrowDown" ? "down" : "up")) showNoteToast(strings.pinLine(!!row.tab.pinned));
             else if (move) {
                 const id = row.tab.id;
                 pendingFocus.current = id;
@@ -214,7 +217,9 @@ export function TabList(props: {
     const endDrag = () => {
         setDragId(null);
         setDropAt(null);
+        overPinLine.current = false;
     };
+    const pinnedTab = (id: string) => items.some((i) => (i.kind === "tab" ? [i.tab] : i.tabs).some((t) => t.id === id && t.pinned));
     /** The half of the row under the pointer: the tab lands above the row, or below it. */
     const sideOf = (e: DragEvent): DropSide => {
         const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -227,14 +232,20 @@ export function TabList(props: {
             setDragId(dragOwnId);
             if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
         },
-        onDragEnd: endDrag,
+        onDragEnd: () => {
+            if (dragId && overPinLine.current) showNoteToast(strings.pinLineDrag(pinnedTab(dragId)));
+            endDrag();
+        },
         onDragOver: (e: DragEvent) => {
             const side = sideOf(e);
+            // (No place to go over its own row, or for anything that isn't a tab being dragged.)
+            overPinLine.current = !!dragId && key !== dragId && !targetFor(dragId, side);
             if (!dragId || !targetFor(dragId, side)) return;
             e.preventDefault();
             if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
             setDropAt((at) => (at?.key === key && at.side === side ? at : { key, side }));
         },
+        // (Not forgetting a blocked place here: letting go there reports leaving it just before the drag ends.)
         onDragLeave: () => setDropAt((at) => (at?.key === key ? null : at)),
         onDrop: (e: DragEvent) => {
             e.preventDefault();

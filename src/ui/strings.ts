@@ -329,6 +329,9 @@ export const strings = {
     cantMoveSearching: "Clear the search to move tabs.",
     pinLine: (pinned: boolean) =>
         pinned ? "Pinned tabs stay above the others. Press P to unpin it." : "Pinned tabs stay above the others. Press P to pin this one.",
+    /** The same, after a drag that couldn't land there. */
+    pinLineDrag: (pinned: boolean) =>
+        pinned ? "Pinned tabs stay above the others. Unpin it to move it lower." : "Pinned tabs stay above the others. Pin it to move it up there.",
     keyboardKeys: "Keys in the list",
     keyHelp: {
         search: "Jump to search",

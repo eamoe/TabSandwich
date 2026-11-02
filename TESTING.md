@@ -971,7 +971,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-263 — Moving stops at the pinned line (P2)** **[auto]**
 - Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
-- Expected: Alt+↑ doesn't move it, and screen readers hear "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
+- Expected: Alt+↑ doesn't move it, and a message at the bottom says "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; let go anywhere else and the tab goes back, with a message saying why ("Unpin it to move it lower", or "Pin it to move it up there"); a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
 
 **TC-264 — Archived tabs are out of the list (P1)** **[auto]**
 - Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
