@@ -158,7 +158,7 @@ src/
       AboutTab.tsx          version, local-only promise, privacy policy and source links
     library/                the full-page library
       Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn), bulk editing, cleanup tip;
-                             the popup's own selection bar; Settings as a section beside the sidebar, its add and edit forms in a panel over the
+                             the popup's own selection bar; Settings as a centered column beside the sidebar, its add and edit forms in a panel over the
                              table so nothing moves, closed by a click outside or Escape; each at an address of its own (#settings, #add, #edit/…)
       libraryModel.ts       pure: its filters (saved windows too), column sorting, sidebar counts, which rows are in view — logic-tested
       library.css           fills the tab; the table scrolls, not the page

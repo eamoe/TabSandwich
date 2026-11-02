@@ -16,7 +16,6 @@
 .search {
     flex: 1 1 auto;
     min-width: 0;
-    max-width: 560px;
     height: 38px;
     display: flex;
     align-items: center;
@@ -61,7 +60,7 @@
 .count { margin-left: auto; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
 .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
-.main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+.main { --settings-width: 720px; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
 .bar { flex-shrink: 0; height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
 .bar > nav { flex: 1; min-width: 0; }
 .headingRow { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
@@ -113,9 +112,10 @@
 @keyframes flash { from { background: color-mix(in srgb, var(--accent) 28%, var(--surface)); } }
 .empty { margin: 0; padding: 48px 16px; text-align: center; color: var(--ink-2); }
 
-/* Settings fills the main area, beside the sidebar. */
-/* (4px: Settings' own 12px margin, brought in line with the heading's 16px.) */
-.settingsArea { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 4px; --settings-width: 720px; }
+/* Settings is a column centered in the main area, beside the sidebar; it scrolls from anywhere across it. */
+/* (4px: Settings' own margin, brought in line with the heading's 16px.) */
+.settingsArea { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 4px; --settings-gutter: max(12px, calc((100% - var(--settings-width)) / 2)); }
+.settingsBar { padding-inline: max(16px, calc((100% - var(--settings-width) + 8px) / 2)); }
 .settingsArea > div { flex: 1 1 auto; min-height: 0; max-height: 100%; }
 .listArea { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 

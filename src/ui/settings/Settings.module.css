@@ -30,7 +30,8 @@
 
 /* Settings' main menu: a tab bar across the whole content, so it can't be taken for one of the
    choices (.segmented, below) inside a tab. */
-.nav { flex-shrink: 0; max-width: var(--settings-width, none); display: flex; margin: 2px 12px 4px; border-bottom: 1px solid var(--line); }
+/* --settings-gutter: wider where Settings is a centered column (the library's). */
+.nav { flex-shrink: 0; max-width: var(--settings-width, none); display: flex; margin: 2px var(--settings-gutter, 12px) 4px; border-bottom: 1px solid var(--line); }
 .navTab {
     flex: 1;
     height: 40px;
@@ -63,7 +64,7 @@
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"], .tab[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 
-.body { overflow-y: auto; min-height: 0; padding: 0 12px 16px; }
+.body { overflow-y: auto; min-height: 0; padding: 0 var(--settings-gutter, 12px) 16px; }
 .body > * { max-width: var(--settings-width, none); }
 .group { padding: 14px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
 .group:last-child { border-bottom: 0; }

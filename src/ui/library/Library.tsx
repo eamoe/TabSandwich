@@ -369,7 +369,7 @@ export function Library() {
                 <main class={styles.main} aria-label={inSettings ? strings.settingsTitle : undefined}>
                     {inSettings && (
                         <>
-                            <div class={styles.bar}>
+                            <div class={`${styles.bar} ${styles.settingsBar}`}>
                                 <button type="button" class={`${controls.btn} ${styles.back}`} onClick={backToList}>
                                     <Icon name="chevronLeft" size={16} />
                                     {strings.back}
