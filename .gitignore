@@ -1,6 +1,5 @@
 node_modules/
 dist/
-review-data/
 # Left behind by builds before v2.3 (tsc output) — no longer produced.
 popup/js/
 test-results/

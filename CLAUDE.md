@@ -196,7 +196,6 @@ tests/visual/                  approved screenshots: every screen in light and d
 tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
                                 (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
-scripts/review-data.mjs        writes review-data/ (gitignored): backups to import and pages to right-click for a manual review, dated from today
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
                                 release.yml (version tags: checks, then zip the tested dist/ and publish it
