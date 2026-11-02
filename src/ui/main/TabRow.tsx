@@ -11,6 +11,7 @@ import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
 import { SiteIcon } from "../SiteIcon";
 import { strings } from "../strings";
+import { showNoteToast } from "../toastStore";
 import { siteName } from "./listModel";
 import controls from "../controls.module.css";
 import styles from "./TabList.module.css";
@@ -351,9 +352,13 @@ export function EditForm(props: Pick<RowProps, "tab" | "category" | "editOptions
         // saved as another tab), and closing first would throw away what was typed.
         setBusy(true);
         // Asked right in the click, as Chrome requires, and not waited for: the prompt can close
-        // the popup, and the reminder is set whatever the answer.
+        // the popup, and the reminder is set whatever the answer. A no gets said, so the reminder
+        // doesn't seem lost.
         if (remindAt(reminder) !== undefined && !asked.current) {
-            void chrome.permissions.request(NOTIFICATIONS_PERMISSION).catch(() => undefined);
+            void chrome.permissions
+                .request(NOTIFICATIONS_PERMISSION)
+                .then((allowed) => !allowed && showNoteToast(strings.reminderWithoutNotifications))
+                .catch(() => undefined);
             void setNotificationsAsked();
         }
         const outcome = await props.onEdit({ title: title.trim() || normalized, url: normalized, category, note, remindAt: remindAt(reminder) });

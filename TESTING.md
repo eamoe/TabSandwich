@@ -1070,7 +1070,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-304 — Setting a reminder (P1)** **[auto]**
 - Steps: Edit a tab, choose Remind me tomorrow or Remind me next week under Reminder, Save. Later edit it again and choose No reminder.
-- Expected: The first reminder ever set asks Chrome for notifications, once; whatever the answer, the reminder is set. The row's quiet line shows a bell and when ("Tomorrow", or the date); the title keeps its width. Next week means seven days from today, and the choice names the date. It's 9:00 local time, and a clock change doesn't move it. Cancel leaves the reminder as it was. No reminder takes it away.
+- Expected: The first reminder ever set asks Chrome for notifications, once; whatever the answer, the reminder is set, and after a no a message says it will show under Waiting. The row's quiet line shows a bell and when ("Tomorrow", or the date); the title keeps its width. Next week means seven days from today, and the choice names the date. It's 9:00 local time, and a clock change doesn't move it. Cancel leaves the reminder as it was. No reminder takes it away.
 
 **TC-305 — A due reminder (P1)** **[auto]**
 - Steps: Let a reminder come due, with notifications refused. Try a pinned tab and one in a kept category. Open the tab. Also open a tab whose reminder hasn't come yet.

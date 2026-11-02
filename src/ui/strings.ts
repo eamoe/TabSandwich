@@ -279,6 +279,7 @@ export const strings = {
     titleLabel: "Title",
     noteLabel: "Note",
     reminderLabel: "Reminder",
+    reminderWithoutNotifications: "Reminder set. Without notifications, it will show under Waiting.",
     reminderNone: "No reminder",
     reminderTomorrow: "Remind me tomorrow",
     reminderNextWeek: (at: number) => `Remind me next week, ${reminderDate(at)}`,

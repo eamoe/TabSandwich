@@ -33,6 +33,8 @@ test.describe("Setting a reminder", () => {
         await popup.getByRole("button", { name: "Save" }).last().click();
 
         await expect(row(popup, "Later")).toContainText("Tomorrow");
+        // Refused: said so, since the reminder is set all the same.
+        await expect(popup.getByRole("status").filter({ hasText: "Reminder set. Without notifications, it will show under Waiting." })).toBeVisible();
         const at = new Date((await stored(popup, "Later"))!.remindAt!);
         expect([at.getHours(), at.getMinutes()]).toEqual([9, 0]);
         await expect.poll(asked).toBe(true);
