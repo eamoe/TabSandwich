@@ -2,6 +2,7 @@ import { isReminderDue } from "../../domain/reminders";
 import type { SavedTab, Settings, SortOrder, TabGroup } from "../../types";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isOutdated } from "../../util/time";
+import type { Picker } from "../i18n";
 import { locale, strings } from "../strings";
 
 /**
@@ -167,14 +168,13 @@ export function windowNames(tabs: SavedTab[], groups: TabGroup[]): Map<string, s
  * there for the logic tests.
  */
 export function newGroupName(taken: string[], random: () => number = Math.random): string {
-    const { adjectives, nouns } = strings.groupNameWords;
-    const pick = (words: readonly string[]) => words[Math.floor(random() * words.length)];
+    const pick: Picker = (items) => items[Math.floor(random() * items.length)]!;
     const used = new Set(taken);
     for (let attempt = 0; attempt < 50; attempt++) {
-        const name = `${pick(adjectives)} ${pick(nouns)}`;
+        const name = strings.groupName(pick);
         if (!used.has(name)) return name;
     }
-    const base = `${pick(adjectives)} ${pick(nouns)}`;
+    const base = strings.groupName(pick);
     let n = 2;
     while (used.has(`${base} ${n}`)) n++;
     return `${base} ${n}`;

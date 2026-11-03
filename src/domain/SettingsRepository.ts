@@ -1,10 +1,21 @@
 import type { SortOrder, ThemeChoice, ToolbarChoice } from "../types";
-import { getSettings, setSettings } from "../storage/chromeStorage";
+import { getSettings, hasStoredSettings, setSettings, starterSettings, type StarterCategories } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 
 export const MIN_OUTDATED_DAYS = 1;
 export const MAX_OUTDATED_DAYS = 365;
 const FALLBACK_OUTDATED_DAYS = 7;
+
+/**
+ * A fresh install's settings, written once, so its categories keep the install's language for
+ * good (until settings are first written, a read hands out the English defaults). Does nothing
+ * if any settings are stored already.
+ */
+export function seedStarterSettings(names: StarterCategories): Promise<void> {
+    return withStorageLock(async () => {
+        if (!(await hasStoredSettings())) await setSettings(starterSettings(names));
+    });
+}
 
 /** The one-field settings changes (Settings › General, and the main list's sort); each is a full read-modify-write under the storage lock. */
 async function update(change: (settings: Awaited<ReturnType<typeof getSettings>>) => void): Promise<void> {

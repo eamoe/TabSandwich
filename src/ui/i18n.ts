@@ -42,6 +42,9 @@ export function pluralizer(locale: string): (count: number, forms: PluralForms) 
     return (count, forms) => forms[rules.select(count)] ?? forms.other;
 }
 
+/** Chooses one of a list at random (a saved window's name is made of such choices). */
+export type Picker = <T>(items: readonly T[]) => T;
+
 /**
  * A sentence with something other than words in it, such as a key cap or a field: "{}" marks
  * the spot, so each language puts it where its own word order wants. Splits into before and after.

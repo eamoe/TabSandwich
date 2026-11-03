@@ -1,4 +1,5 @@
 import { SavedTab, Settings, TabGroup } from "../types";
+import { UNCATEGORIZED } from "../domain/uncategorized";
 
 const TABS_KEY = "tabSandwich.tabs";
 const SETTINGS_KEY = "tabSandwich.settings";
@@ -62,22 +63,44 @@ export function onSettingChanged(read: (settings: Partial<Settings>) => unknown,
     });
 }
 
-export const DEFAULT_SETTINGS: Settings = {
-    outdatedDays: 7,
-    // A fresh install: a reading list and quick, unsorted saves are what reminders are for;
-    // everything else is kept. ("Uncategorized" spelled out: CategoryRepository imports this module.)
-    waitingCategories: ["Reading", "Uncategorized"],
-    categories: ["Work", "Personal", "Reading", "Entertainment"],
-    categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
-    theme: "system",
-    sort: "custom",
-    toolbarOpens: "popup",
-    toolbarBadge: false,
-};
+/** A fresh install's four categories, by what they're for; the words come in the install's language. */
+export interface StarterCategories {
+    work: string;
+    personal: string;
+    reading: string;
+    entertainment: string;
+}
+
+/** Settings as a fresh install starts them, with its categories named in its language. */
+export function starterSettings(names: StarterCategories): Settings {
+    return {
+        outdatedDays: 7,
+        // A reading list and quick, unsorted saves are what reminders are for; everything else is kept.
+        waitingCategories: [names.reading, UNCATEGORIZED],
+        categories: [names.work, names.personal, names.reading, names.entertainment],
+        categoryColors: { [names.work]: "purple", [names.personal]: "coral", [names.reading]: "teal", [names.entertainment]: "pink" },
+        theme: "system",
+        sort: "custom",
+        toolbarOpens: "popup",
+        toolbarBadge: false,
+    };
+}
+
+/**
+ * What a read fills in for anything not stored. In English for good: a library whose settings
+ * were never written has these names in its tabs already, whatever Chrome's language is now.
+ * A fresh install writes its own straight away instead (seedStarterSettings).
+ */
+export const DEFAULT_SETTINGS: Settings = starterSettings({ work: "Work", personal: "Personal", reading: "Reading", entertainment: "Entertainment" });
 
 export async function hasStoredTabs(): Promise<boolean> {
     const result = await chrome.storage.local.get(TABS_KEY);
     return Object.prototype.hasOwnProperty.call(result, TABS_KEY);
+}
+
+export async function hasStoredSettings(): Promise<boolean> {
+    const result = await chrome.storage.local.get(SETTINGS_KEY);
+    return Object.prototype.hasOwnProperty.call(result, SETTINGS_KEY);
 }
 
 export async function getTabs(): Promise<SavedTab[]> {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampOutdatedDays, setCategoryWaiting, setOutdatedDays, setSort, setTheme } from "../../src/domain/SettingsRepository";
+import { clampOutdatedDays, seedStarterSettings, setCategoryWaiting, setOutdatedDays, setSort, setTheme } from "../../src/domain/SettingsRepository";
 import { getSettings } from "../../src/storage/chromeStorage";
 
 describe("SettingsRepository", () => {
@@ -40,5 +40,25 @@ describe("SettingsRepository", () => {
     it("never stores a day count outside 1–365", async () => {
         await setOutdatedDays(1000);
         expect((await getSettings()).outdatedDays).toBe(365);
+    });
+});
+
+describe("seedStarterSettings", () => {
+    const german = { work: "Arbeit", personal: "Privat", reading: "Lesen", entertainment: "Unterhaltung" };
+
+    it("writes a fresh install's categories in its language, with their colors, and Reading's tabs waiting", async () => {
+        await seedStarterSettings(german);
+        expect(await getSettings()).toMatchObject({
+            categories: ["Arbeit", "Privat", "Lesen", "Unterhaltung"],
+            categoryColors: { Arbeit: "purple", Privat: "coral", Lesen: "teal", Unterhaltung: "pink" },
+            waitingCategories: ["Lesen", "Uncategorized"],
+            outdatedDays: 7,
+        });
+    });
+
+    it("leaves stored settings alone", async () => {
+        await setTheme("dark");
+        await seedStarterSettings(german);
+        expect((await getSettings()).categories).toEqual(["Work", "Personal", "Reading", "Entertainment"]);
     });
 });

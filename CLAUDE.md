@@ -67,10 +67,10 @@ src/
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme, sort, what the toolbar icon opens and whether it shows a count, the waiting days and which categories age; clamps the day count to 1–365
+    SettingsRepository.ts  a fresh install's settings, written once with its starter categories in its language (seedStarterSettings); theme, sort, what the toolbar icon opens and whether it shows a count, the waiting days and which categories age; clamps the day count to 1–365
   worker/
     install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
-                            builds the right-click menu, opens the welcome page (fresh installs only)
+                            writes a fresh install's starter categories in Chrome's language, builds the right-click menu, opens the welcome page (fresh installs only)
     contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change, and "Open library" on the
                             toolbar icon's own menu; saves the link or page,
                             titled with the link's own words (readLinkText, run in the page at that moment); a link already saved moves to the category picked

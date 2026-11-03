@@ -1,9 +1,14 @@
 import type { SortOrder } from "../../types";
 import { reminderDay } from "../../util/time";
-import { localeFor, pluralizer } from "../i18n";
+import { localeFor, pluralizer, type Picker } from "../i18n";
 
 const n = pluralizer("en");
 const tag = localeFor("en");
+const ADJECTIVES = ["Toasted", "Crispy", "Golden", "Buttery", "Warm", "Crusty", "Fluffy", "Grilled", "Melty", "Savory", "Zesty", "Tangy",
+    "Smoky", "Honeyed", "Peppery", "Herby", "Sunny", "Rustic", "Hearty", "Flaky", "Spicy", "Fresh", "Cozy", "Seeded"];
+const NOUNS = ["Rye", "Bagel", "Panini", "Baguette", "Ciabatta", "Brioche", "Croissant", "Focaccia", "Pretzel", "Sourdough", "Muffin", "Pita",
+    "Wrap", "Club", "Reuben", "Toastie", "Melt", "Hoagie", "Bun", "Crumpet", "Biscuit", "Flatbread", "Roll", "Loaf", "Pickle",
+    "Cheddar", "Pesto", "Avocado", "Tomato", "Mustard"];
 const reminderDate = (at: number) => new Date(at).toLocaleDateString(tag, { weekday: "short", day: "numeric", month: "short" });
 
 /**
@@ -21,6 +26,11 @@ export const en = {
     libraryPageTitle: "Tab Sandwich Library",
     /** Shown for tabs with no category of their own. The stored name is always the English one. */
     uncategorized: "Uncategorized",
+    /**
+     * A fresh install's categories, written once in the install's language (at most 15 characters
+     * each, the limit for any category's name). From then on they're the user's own names.
+     */
+    starterCategories: { work: "Work", personal: "Personal", reading: "Reading", entertainment: "Entertainment" },
     searchLabel: "Search saved tabs",
     searchPlaceholder: (count: number) => n(count, { one: `Search ${count} saved tab`, other: `Search ${count} saved tabs` }),
     searchArchivePlaceholder: (count: number) => n(count, { one: `Search ${count} archived tab`, other: `Search ${count} archived tabs` }),
@@ -254,16 +264,12 @@ export const en = {
 
     // Saved windows (groups) in the list.
     /**
-     * A saved window is named at random from these, sandwich-style ("Toasted Rye"): a name that
-     * belongs to no one tab in it. Its count and date are shown beside it, worked out live.
+     * A saved window's random, sandwich-style name ("Toasted Rye"): a name that belongs to no one
+     * tab in it. `pick` chooses one of a list at random, and each language puts its own words
+     * together, so its adjectives can agree with its nouns. Kept as made, whatever the language
+     * later; its count and date are shown beside it, worked out live.
      */
-    groupNameWords: {
-        adjectives: ["Toasted", "Crispy", "Golden", "Buttery", "Warm", "Crusty", "Fluffy", "Grilled", "Melty", "Savory", "Zesty", "Tangy",
-            "Smoky", "Honeyed", "Peppery", "Herby", "Sunny", "Rustic", "Hearty", "Flaky", "Spicy", "Fresh", "Cozy", "Seeded"],
-        nouns: ["Rye", "Bagel", "Panini", "Baguette", "Ciabatta", "Brioche", "Croissant", "Focaccia", "Pretzel", "Sourdough", "Muffin", "Pita",
-            "Wrap", "Club", "Reuben", "Toastie", "Melt", "Hoagie", "Bun", "Crumpet", "Biscuit", "Flatbread", "Roll", "Loaf", "Pickle",
-            "Cheddar", "Pesto", "Avocado", "Tomato", "Mustard"],
-    },
+    groupName: (pick: Picker) => `${pick(ADJECTIVES)} ${pick(NOUNS)}`,
     groupTabCount: (count: number) => n(count, { one: `${count} tab`, other: `${count} tabs` }),
     /** When a window was saved: "6 Oct", with the year once it isn't this year's. */
     groupSavedOn: (date: Date) =>

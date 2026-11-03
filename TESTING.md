@@ -1184,7 +1184,11 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-314 — Your names are never translated (P1)**
 - Steps: In a language other than English, look at your categories, saved windows' names, titles and notes. Filter by Uncategorized, search for its name in that language, sort the library by Category, and right-click a link.
-- Expected: Everything you named stays exactly as you wrote it. Only "Uncategorized" shows in that language (in the pills, pickers, rows, the library's sidebar and table, Settings › Categories and the right-click menu), and searching for that word finds those tabs. Switching Chrome back to English shows "Uncategorized" again, and nothing stored has changed: a backup made in either language reads the same.
+- Expected: Everything you named stays exactly as you wrote it. Only "Uncategorized" shows in that language (in the pills, pickers, rows, the library's sidebar and table, Settings › Categories and the right-click menu), and searching for that word finds those tabs. Switching Chrome back to English shows "Uncategorized" again, and nothing stored has changed: a backup made in either language reads the same. A new category, or a rename, named like "Uncategorized" in either language (in any case) is refused with "That name is already used by another category." (logic-tested), as is adding a name a category already has.
+
+**TC-316 — A fresh install starts in its own language (P1)** **[auto]**
+- Steps: Install Tab Sandwich on a new profile whose Chrome is in German (or any of its languages). Save a whole window. Then switch Chrome to English and relaunch.
+- Expected: The four starter categories are in German (and Reading's tabs show as Waiting after 7 days, as in English), as is the new saved window's random name. After switching to English they keep their German names: they're yours now, like any you made, and their tabs stay in them. Updating Tab Sandwich never renames anything, even for a library whose settings were never changed. Logic-tested; check one language by hand.
 
 **TC-315 — Counts read naturally (P2)**
 - Steps: In English and in Russian, look at texts with a count of 1, 2, 5 and 21: the search box's hint, "Saved 1 tab", the selection bar, the days field in Settings › Categories.

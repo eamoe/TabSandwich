@@ -49,9 +49,29 @@ describe.each(Object.entries(dictionaries))("the %s dictionary", (language, dict
         for (const days of [0, 1, 2, 5, 21]) expect(dictionary.waitingAfterDays(days).split("{}"), `${days} days`).toHaveLength(2);
     });
 
-    it("has words to name saved windows with", () => {
-        expect(dictionary.groupNameWords.adjectives.length).toBeGreaterThan(10);
-        expect(dictionary.groupNameWords.nouns.length).toBeGreaterThan(10);
+    it("names saved windows in hundreds of ways, each short enough for a row", () => {
+        let seed = 7;
+        const random = () => ((seed = (seed * 48271) % 2147483647) / 2147483647);
+        const pick = <T,>(items: readonly T[]) => items[Math.floor(random() * items.length)]!;
+        const names = new Set(Array.from({ length: 3000 }, () => dictionary.groupName(pick)));
+        expect(names.size).toBeGreaterThan(300);
+        for (const name of names) {
+            expect(name.trim(), name).toBe(name);
+            expect(name.length, name).toBeLessThanOrEqual(30);
+            expect(name).not.toMatch(/undefined|\s\s/);
+        }
+    });
+
+    it("starts a fresh install with four distinct categories, each a name any category could have", () => {
+        const names = Object.values(dictionary.starterCategories);
+        expect(new Set(names.map((n) => n.toLocaleLowerCase())).size).toBe(4);
+        for (const name of names) {
+            expect(name.trim(), name).toBe(name);
+            expect(name.length, name).toBeGreaterThan(0);
+            expect(name.length, name).toBeLessThanOrEqual(15);
+            expect(name.toLocaleLowerCase()).not.toBe(dictionary.uncategorized.toLocaleLowerCase());
+            expect(name.toLocaleLowerCase()).not.toBe("uncategorized");
+        }
     });
 
     it("never translates the app's name", () => {

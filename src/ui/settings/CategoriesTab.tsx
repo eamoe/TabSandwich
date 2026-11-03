@@ -77,8 +77,9 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
         e.preventDefault();
         if (!newName.trim()) return;
         try {
-            await addCategory(newName);
-            setNewName(""); // kept on failure: nothing was saved, so there's nothing to clear
+            // Kept on failure: nothing was saved, so there's nothing to clear.
+            if (await addCategory(newName, [strings.uncategorized])) setNewName("");
+            else showErrorToast(strings.renameRefusal.taken);
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
         }
@@ -312,7 +313,7 @@ function CategoryRow(props: WaitingProps & {
             return;
         }
         try {
-            const result = await renameCategory(name, draft);
+            const result = await renameCategory(name, draft, [strings.uncategorized]);
             if (!result.renamed) {
                 flash(result.reason ? renameRefusalMessage(result.reason) : strings.couldntSave);
                 return;
