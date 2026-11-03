@@ -17,6 +17,50 @@ const LAST_SEEN_VERSION_KEY = "tabSandwich.lastSeenVersion";
  */
 const OPEN_TRACKING_SINCE_KEY = "tabSandwich.openTrackingSince";
 const CLEANUP_TIP_HIDDEN_UNTIL_KEY = "tabSandwich.cleanupTipHiddenUntil";
+/** Notifications are asked for once, with the first reminder (afterwards, from Settings). */
+const NOTIFICATIONS_ASKED_KEY = "tabSandwich.notificationsAsked";
+
+/** What the screens show: a change to any of these, from anywhere in the extension, means they're out of date. */
+const LIBRARY_KEYS = [TABS_KEY, SETTINGS_KEY, GROUPS_KEY, OPEN_TRACKING_SINCE_KEY, CLEANUP_TIP_HIDDEN_UNTIL_KEY];
+/**
+ * Who wrote the library last, written along with it. Chrome announces every change to every part
+ * of the extension without saying whose it was, and a screen must not react to its own: it
+ * refreshes after a save in its own time (once a deleted row has slid away, say).
+ */
+const LAST_WRITE_KEY = "tabSandwich.lastWrite";
+const WRITER = crypto.randomUUID();
+let writeCount = 0;
+
+/** A write to the library: the one way into LIBRARY_KEYS, all given keys landing together or none. */
+function writeLibrary(items: Record<string, unknown>): Promise<void> {
+    return chrome.storage.local.set({ ...items, [LAST_WRITE_KEY]: `${WRITER}:${++writeCount}` });
+}
+
+/** Calls `listener` whenever another part of the extension changes the stored library. Returns how to stop. */
+export function onLibraryChanged(listener: () => void): () => void {
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+        const mine = String(changes[LAST_WRITE_KEY]?.newValue ?? "").startsWith(WRITER);
+        if (area === "local" && !mine && LIBRARY_KEYS.some((key) => key in changes)) listener();
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => chrome.storage.onChanged.removeListener(onChanged);
+}
+
+/** Calls `listener` whenever the saved tabs change, whoever changed them. */
+export function onTabsChanged(listener: () => void): void {
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local" && TABS_KEY in changes) listener();
+    });
+}
+
+/** Calls `listener` whenever the part of the settings that `read` picks out changes, whoever changed it. */
+export function onSettingChanged(read: (settings: Partial<Settings>) => unknown, listener: () => void): void {
+    chrome.storage.onChanged.addListener((changes, area) => {
+        const change = changes[SETTINGS_KEY];
+        const value = (settings: unknown) => JSON.stringify(read((settings ?? {}) as Partial<Settings>));
+        if (area === "local" && change && value(change.oldValue) !== value(change.newValue)) listener();
+    });
+}
 
 export const DEFAULT_SETTINGS: Settings = {
     outdatedDays: 7,
@@ -27,6 +71,8 @@ export const DEFAULT_SETTINGS: Settings = {
     categoryColors: { Work: "purple", Personal: "coral", Reading: "teal", Entertainment: "pink" },
     theme: "system",
     sort: "custom",
+    toolbarOpens: "popup",
+    toolbarBadge: false,
 };
 
 export async function hasStoredTabs(): Promise<boolean> {
@@ -58,7 +104,7 @@ function writeFailure(err: unknown): StorageWriteError {
 
 export async function setTabs(tabs: SavedTab[]): Promise<void> {
     try {
-        await chrome.storage.local.set({ [TABS_KEY]: tabs });
+        await writeLibrary({ [TABS_KEY]: tabs });
     } catch (err) {
         throw writeFailure(err);
     }
@@ -71,7 +117,7 @@ export async function getGroups(): Promise<TabGroup[]> {
 
 export async function setGroups(groups: TabGroup[]): Promise<void> {
     try {
-        await chrome.storage.local.set({ [GROUPS_KEY]: groups });
+        await writeLibrary({ [GROUPS_KEY]: groups });
     } catch (err) {
         throw writeFailure(err);
     }
@@ -83,7 +129,7 @@ export async function setGroups(groups: TabGroup[]): Promise<void> {
  */
 export async function setTabsAndGroups(tabs: SavedTab[], groups: TabGroup[]): Promise<void> {
     try {
-        await chrome.storage.local.set({ [TABS_KEY]: tabs, [GROUPS_KEY]: groups });
+        await writeLibrary({ [TABS_KEY]: tabs, [GROUPS_KEY]: groups });
     } catch (err) {
         throw writeFailure(err);
     }
@@ -96,7 +142,7 @@ export async function getSettings(): Promise<Settings> {
 
 export async function setSettings(settings: Settings): Promise<void> {
     try {
-        await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+        await writeLibrary({ [SETTINGS_KEY]: settings });
     } catch (err) {
         throw writeFailure(err);
     }
@@ -109,7 +155,7 @@ export async function setSettings(settings: Settings): Promise<void> {
  */
 export async function setTabsAndSettings(tabs: SavedTab[], settings: Settings): Promise<void> {
     try {
-        await chrome.storage.local.set({ [TABS_KEY]: tabs, [SETTINGS_KEY]: settings });
+        await writeLibrary({ [TABS_KEY]: tabs, [SETTINGS_KEY]: settings });
     } catch (err) {
         throw writeFailure(err);
     }
@@ -147,8 +193,18 @@ export async function getOpenTrackingSince(): Promise<number> {
     if (typeof value === "number") return value;
     const now = Date.now();
     // Best effort: if this write fails it's simply tried again next time, from a slightly later "now".
-    await chrome.storage.local.set({ [OPEN_TRACKING_SINCE_KEY]: now }).catch(() => undefined);
+    await writeLibrary({ [OPEN_TRACKING_SINCE_KEY]: now }).catch(() => undefined);
     return now;
+}
+
+export async function getNotificationsAsked(): Promise<boolean> {
+    const result = await chrome.storage.local.get(NOTIFICATIONS_ASKED_KEY);
+    return result[NOTIFICATIONS_ASKED_KEY] === true;
+}
+
+export async function setNotificationsAsked(): Promise<void> {
+    // Best effort: if this write fails, the next reminder simply asks again.
+    await chrome.storage.local.set({ [NOTIFICATIONS_ASKED_KEY]: true }).catch(() => undefined);
 }
 
 export async function getCleanupTipHiddenUntil(): Promise<number> {
@@ -159,7 +215,7 @@ export async function getCleanupTipHiddenUntil(): Promise<number> {
 
 export async function setCleanupTipHiddenUntil(until: number): Promise<void> {
     try {
-        await chrome.storage.local.set({ [CLEANUP_TIP_HIDDEN_UNTIL_KEY]: until });
+        await writeLibrary({ [CLEANUP_TIP_HIDDEN_UNTIL_KEY]: until });
     } catch (err) {
         throw writeFailure(err);
     }

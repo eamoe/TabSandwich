@@ -23,6 +23,13 @@ export interface SavedTab {
      */
     lastOpenedAt?: number;
     openCount?: number;
+    /**
+     * When to remind you about it (v4.0). From then on it shows as Waiting, until it's opened or
+     * the reminder is changed. Opening it sooner leaves the reminder alone. Absent: no reminder.
+     */
+    remindAt?: number;
+    /** The reminder has gone out (or was due to, without permission to notify): it's sent once. */
+    reminded?: boolean;
 }
 
 /** A saved window: its tabs stay together in the list under one collapsible row (v3.2). */
@@ -40,6 +47,9 @@ export type SortOrder = "custom" | "newest" | "oldest" | "title" | "site" | "ope
 
 /** "system" follows the OS light/dark setting; the other two pin the popup to one theme. */
 export type ThemeChoice = "system" | "light" | "dark";
+
+/** What clicking the toolbar icon (or pressing the shortcut) opens. */
+export type ToolbarChoice = "popup" | "panel";
 
 export interface Settings {
     /** How many days a tab in a waiting category waits before it shows as "Waiting" (1–365). */
@@ -62,4 +72,8 @@ export interface Settings {
     theme: ThemeChoice;
     /** Added in v3.1, filled in on read like theme. Remembered between opens. */
     sort: SortOrder;
+    /** Added in v4.0, filled in on read like theme. */
+    toolbarOpens: ToolbarChoice;
+    /** Added in v4.0, filled in on read like theme: show how many tabs are waiting on the toolbar icon. */
+    toolbarBadge: boolean;
 }

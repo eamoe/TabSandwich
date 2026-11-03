@@ -1,5 +1,8 @@
 import type { SortOrder } from "../types";
 
+const reminderDate = (at: number) => new Date(at).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+const dayOf = (at: number) => new Date(at).toDateString();
+
 /**
  * Every piece of text the v3.0 screens show or announce, in one place — ready for translation
  * (v4.1) without hunting through components. Accessible names the robot tests find controls
@@ -13,6 +16,15 @@ export const strings = {
     clearSearch: "Clear search",
     matches: (count: number) => (count === 0 ? "No matching tabs" : `${count} matching tab${count === 1 ? "" : "s"}`),
     addLinkManually: "Add link manually",
+    openIn: "Open in",
+    openInTooltip: "Open in the side panel or the library",
+    openSidePanel: "Open side panel",
+    sidePanelFailed: "Chrome couldn't open the side panel.",
+    // The save card in the side panel, which can't see the page until Chrome has been asked.
+    panelPageTitle: "The page you're on",
+    panelPageHint: "Chrome asks once before the first save.",
+    panelDenied: "Tab Sandwich needs that to see the page, so nothing was saved.",
+
     openSettings: "Open settings",
     settingsTooltip: "Settings",
 
@@ -99,6 +111,49 @@ export const strings = {
     tipShortcutUnset: "Open Tab Sandwich from anywhere with a keyboard shortcut.",
     setShortcut: "Set one",
     tipCategories: "Make the categories yours.",
+
+    menuSave: "Save to Tab Sandwich",
+    omniboxHint: "Search your saved tabs for <match>%s</match>",
+    menuOpenLibrary: "Open library",
+    openLibrary: "Open library",
+    library: "Library",
+    libraryHint: "All your saved tabs on a full page, with room to sort and clean up.",
+    libraryAll: "All tabs",
+    libraryFilters: "Filter your library",
+    libraryWindows: "Saved windows",
+    libraryEmpty: "Nothing here.",
+    columnTitle: "Title",
+    columnCategory: "Category",
+    columnSite: "Site",
+    columnSaved: "Saved",
+    columnOpened: "Opened",
+    columnActions: "Actions",
+    notOpenedFromHere: "Not opened from Tab Sandwich yet",
+    columnOpenedHint: "When you last opened it from Tab Sandwich. Visits outside it aren't counted.",
+    openedTimes: (count: number) => `Opened ${count} time${count === 1 ? "" : "s"} from Tab Sandwich`,
+    editPageTitle: "Edit tab",
+    notOpenedYet: "Not yet",
+    daysAgo: (days: number) => (days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`),
+    selectAllShown: "Select all shown",
+    selectTab: (title: string) => `Select ${title}`,
+    toolbarIcon: "Toolbar icon",
+    toolbarGroup: "What the toolbar icon opens",
+    toolbarPopup: "Popup",
+    toolbarPanel: "Side panel",
+    toolbarHint: "What clicking the icon or pressing the shortcut opens.",
+
+    welcomeTitle: "Welcome to Tab Sandwich",
+    welcomeLead: "Save the tabs you want to keep, close them, and find them again in seconds.",
+    welcomePinTitle: "Pin it to your toolbar",
+    welcomePinText: "Click the puzzle piece next to the address bar, then the pin beside Tab Sandwich.",
+    welcomeSaveTitle: "Save a page",
+    welcomeSaveText: "On any page, click the icon, pick a category and press Save. Or right-click any link.",
+    welcomeShortcutTitle: "Open it from anywhere",
+    welcomeShortcutText: "Press",
+    welcomeSearchBefore: "Or type",
+    welcomeSearchAfter: "and a word in the address bar to jump to a saved tab.",
+    welcomePromise: "Everything stays in this browser. No account, no tracking.",
+    welcomeDone: "Got it",
     editCategories: "Edit categories",
     noMatchesTitle: (query: string) => `No saved tabs match “${query}”`,
     noMatchesHint: "Search looks at titles, sites, categories and saved windows. Try fewer letters, or part of a name.",
@@ -109,6 +164,11 @@ export const strings = {
     whatsNewTitle: (release: string) => `New in ${release}`,
     dismissWhatsNew: "Dismiss what's new",
     whatsNewNotes: {
+        "4.0": [
+            "Right-click any link to save it, right into a category.",
+            "Keep your list open in a side panel, or browse it all on a full page.",
+            "Search from the address bar with ts, and set reminders on any tab.",
+        ],
         "3.3": [
             "Categories no longer age. Light the ☾ for the ones you read later, in Settings › Categories.",
             "Archive instead of delete, pin tabs to the top, and add a note on why you saved something.",
@@ -218,6 +278,33 @@ export const strings = {
 
     titleLabel: "Title",
     noteLabel: "Note",
+    reminderLabel: "Reminder",
+    reminderWithoutNotifications: "Reminder set. Without notifications, it will show under Waiting.",
+    reminderNone: "No reminder",
+    reminderTomorrow: "Remind me tomorrow",
+    reminderNextWeek: (at: number) => `Remind me next week, ${reminderDate(at)}`,
+    reminderKept: (at: number) => `Reminder: ${reminderDate(at)}`,
+    /** On a row. (Reminders arrive in the morning, so "today" before then.) */
+    reminderShort: (at: number, now: number) => {
+        if (at <= now) return "Due";
+        if (dayOf(at) === dayOf(now)) return "Today";
+        return dayOf(at) === dayOf(new Date(now).setDate(new Date(now).getDate() + 1)) ? "Tomorrow" : reminderDate(at);
+    },
+    reminderWhen: (at: number) => `Reminder: ${reminderDate(at)}, 9:00`,
+    /** A notification: the tab's own title is its heading. */
+    reminderMessage: (site: string) => `Your reminder from Tab Sandwich · ${site}`,
+    remindersTitle: (count: number) => `${count} saved tabs to come back to`,
+    remindersMessage: "Click to see them in your library.",
+    notifications: "Reminder notifications",
+    notificationsOnHint: "A notification at 9:00 when a reminder is due.",
+    notificationsOffHint: "Off: a due reminder just shows under Waiting.",
+    /** The toolbar icon's name while the badge says a link was already there. */
+    alreadySavedIn: (category: string) => `Already saved in ${category}`,
+    turnOn: "Turn on",
+    turnOff: "Turn off",
+    badgeLabel: "Waiting count",
+    badgeHint: "Shows on the toolbar icon how many tabs are waiting, reminders due included.",
+    badgeTitle: (count: number) => `Tab Sandwich: ${count} waiting`,
     notePlaceholder: "Why you saved it (optional)",
     addNote: "Add a note",
     suggestedLabel: (label: string) => `${label} (suggested from where you saved pages like it)`,
@@ -242,6 +329,9 @@ export const strings = {
     cantMoveSearching: "Clear the search to move tabs.",
     pinLine: (pinned: boolean) =>
         pinned ? "Pinned tabs stay above the others. Press P to unpin it." : "Pinned tabs stay above the others. Press P to pin this one.",
+    /** The same, after a drag that couldn't land there. */
+    pinLineDrag: (pinned: boolean) =>
+        pinned ? "Pinned tabs stay above the others. Unpin it to move it lower." : "Pinned tabs stay above the others. Pin it to move it up there.",
     keyboardKeys: "Keys in the list",
     keyHelp: {
         search: "Jump to search",
@@ -251,6 +341,7 @@ export const strings = {
         select: "Select or unselect, while selecting",
         edit: "Edit it",
         pin: "Pin it to the top, or unpin it",
+        addressBar: "In the address bar: search your saved tabs",
         delete: "Delete it",
         undo: "Undo, while Undo is showing",
         reorder: "Move it up or down (in your own order)",
@@ -274,7 +365,7 @@ export const strings = {
     themeLight: "Light",
     themeDark: "Dark",
     themeSystem: "System",
-    themeHint: "System follows your computer's light or dark setting, even while the popup is open.",
+    themeHint: "System follows your computer's light or dark setting, even while Tab Sandwich is open.",
     keyboardShortcut: "Keyboard shortcut",
     shortcutNotSet: "Not set",
     customize: "Customize",

@@ -206,14 +206,14 @@ test.describe("Saved windows", () => {
         // A tab in the window moves within it...
         await titleOf(popup, "Gamma").focus();
         await popup.keyboard.press("Alt+ArrowDown");
-        await expect.poll(order).toEqual(["Alpha", "Delta", "Gamma", "Epsilon", "Omega"]);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Delta", "Gamma", "Epsilon", "Omega"]);
         await expect(popup.getByRole("status").filter({ hasText: "Moved “Gamma” to position 2 of 3" })).toBeAttached();
         await popup.keyboard.press("Alt+ArrowDown");
-        await expect.poll(order).toEqual(["Alpha", "Delta", "Epsilon", "Gamma", "Omega"]);
-        // ...and past its last tab, out of it, staying where it is.
-        await popup.keyboard.press("Alt+ArrowDown");
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Delta", "Epsilon", "Gamma", "Omega"]);
-        expect((await groupOf("Gamma")).groupId).toBeUndefined();
+        // ...and past its last tab, out of it, staying where it is (the rows read the same).
+        await popup.keyboard.press("Alt+ArrowDown");
+        await expect.poll(async () => (await groupOf("Gamma")).groupId).toBeUndefined();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Delta", "Epsilon", "Gamma", "Omega"]);
         await expect(popup.getByRole("status").filter({ hasText: "Moved “Gamma” out of Research" })).toBeAttached();
         await expect(titleOf(popup, "Gamma")).toBeFocused();
         // Undo puts it back in the window.

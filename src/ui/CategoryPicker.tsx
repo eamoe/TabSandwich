@@ -1,4 +1,4 @@
-import { Icon } from "./Icon";
+import { Icon, type IconName } from "./Icon";
 import { strings } from "./strings";
 import controls from "./controls.module.css";
 import styles from "./CategoryPicker.module.css";
@@ -8,13 +8,14 @@ export interface PickerOption {
     label: string;
 }
 
-/** A native select (so keyboard and screen readers get the real thing) dressed with the chosen category's color dot. */
+/** A native select (so keyboard and screen readers get the real thing) dressed with the chosen category's color dot, or an icon where there's no category. */
 export function CategoryPicker(props: {
     id: string;
     label: string;
     value: string;
     options: PickerOption[];
-    color: string;
+    color?: string;
+    icon?: IconName;
     onChange: (value: string) => void;
     onSurface?: boolean;
     /** The value is a suggestion (src/domain/suggest.ts), not a choice yet: a small sparkle says so. */
@@ -22,7 +23,13 @@ export function CategoryPicker(props: {
 }) {
     return (
         <div class={`${styles.picker} ${props.onSurface ? styles.onSurface : ""} ${props.suggested ? styles.isSuggested : ""}`}>
-            <span class={`${controls.dot} ${styles.dot}`} style={{ background: props.color }} />
+            {props.icon ? (
+                <span class={styles.icon}>
+                    <Icon name={props.icon} size={13} />
+                </span>
+            ) : (
+                <span class={`${controls.dot} ${styles.dot}`} style={{ background: props.color }} />
+            )}
             <label for={props.id} class="visually-hidden">
                 {props.suggested ? strings.suggestedLabel(props.label) : props.label}
             </label>

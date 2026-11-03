@@ -160,3 +160,39 @@ test.describe("Saving tabs", () => {
         });
     });
 });
+
+test("TC-283: titles stop at 300 characters, typed or taken from the page", async ({ context, popup }) => {
+    const long = "Every keyword a page could think of ".repeat(12).trim(); // 431 characters
+    await openSiteTab(context, popup, long);
+    await popup.getByRole("button", { name: "Save Tab" }).click();
+    await expect(row(popup, long.slice(0, 40))).toBeVisible();
+    const [saved] = await storedTabs(popup);
+    expect(saved.title).toHaveLength(300);
+    expect(saved.title.endsWith("…")).toBe(true);
+
+    await popup.getByRole("button", { name: "Add link manually" }).click();
+    await popup.getByLabel("URL").fill("https://typed.example.com/");
+    await popup.getByRole("textbox", { name: /^Title/ }).fill(long);
+    await expect(popup.getByRole("textbox", { name: /^Title/ })).toHaveValue(long.slice(0, 300));
+    await popup.getByRole("button", { name: "Add", exact: true }).click();
+    await expect.poll(async () => (await storedTabs(popup))[0].title).toBe(long.slice(0, 300).trim());
+
+    await popup.getByRole("button", { name: `Edit ${long.slice(0, 300).trim()}` }).click();
+    await tabList(popup).getByLabel("Title", { exact: true }).fill(`${long} and more`);
+    await expect(tabList(popup).getByLabel("Title", { exact: true })).toHaveValue(long.slice(0, 300));
+});
+
+test("TC-283: a title saved before the limit is shortened when its tab is edited", async ({ popup }) => {
+    const long = "Saved before the limit ".repeat(20).trim(); // 459 characters
+    await seedLibrary(popup, [{ title: long, url: "https://old.example.com/" }]);
+    await popup.getByRole("button", { name: `Edit ${long}` }).click();
+    const title = tabList(popup).getByLabel("Title", { exact: true });
+    await title.press("End");
+    await title.press("Backspace");
+    await tabList(popup).getByRole("button", { name: "Save", exact: true }).click();
+    await expect(title).toHaveCount(0);
+    const [saved] = await storedTabs(popup);
+    expect(saved.title.length).toBeLessThanOrEqual(300); // the cut drops a space before the "…"
+    expect(long.startsWith(saved.title.slice(0, -1))).toBe(true);
+    expect(saved.title.endsWith("…")).toBe(true);
+});

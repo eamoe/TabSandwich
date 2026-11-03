@@ -1,5 +1,8 @@
-import type { ThemeChoice } from "../../types";
-import { setTheme } from "../../domain/SettingsRepository";
+import { useEffect, useState } from "preact/hooks";
+import type { ThemeChoice, ToolbarChoice } from "../../types";
+import { setTheme, setToolbarBadge, setToolbarOpens } from "../../domain/SettingsRepository";
+import { NOTIFICATIONS_PERMISSION } from "../../util/notifications";
+import { LIBRARY_PAGE, openLibrary } from "../../util/openLibrary";
 import { writeErrorMessage } from "../errors";
 import { applyTheme } from "../theme";
 import { showErrorToast } from "../toastStore";
@@ -15,6 +18,7 @@ const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 /** The list's keys, named the way this computer's keyboard labels them. */
 const LIST_KEYS: Array<{ keys: string[]; what: string }> = [
     { keys: ["/"], what: strings.keyHelp.search },
+    { keys: ["ts"], what: strings.keyHelp.addressBar },
     { keys: ["↑", "↓"], what: strings.keyHelp.move },
     { keys: ["Enter"], what: strings.keyHelp.open },
     { keys: ["→", "←"], what: strings.keyHelp.window },
@@ -32,6 +36,11 @@ const THEMES: Array<{ value: ThemeChoice; label: string }> = [
     { value: "system", label: strings.themeSystem },
 ];
 
+const TOOLBAR_CHOICES: Array<{ value: ToolbarChoice; label: string }> = [
+    { value: "popup", label: strings.toolbarPopup },
+    { value: "panel", label: strings.toolbarPanel },
+];
+
 /** Runs a settings write; on failure says why and reloads, which puts every control back to what's actually stored. */
 async function attempt(write: () => Promise<void>, reload: () => Promise<void>): Promise<void> {
     try {
@@ -44,6 +53,15 @@ async function attempt(write: () => Promise<void>, reload: () => Promise<void>):
 
 export function GeneralTab({ library, reload }: { library: Library; reload: () => Promise<void> }) {
     const { settings } = library;
+    const [notifying, setNotifying] = useState(false);
+    useEffect(() => {
+        void chrome.permissions.contains(NOTIFICATIONS_PERMISSION).then(setNotifying);
+    }, []);
+    // Asked right in the click, as Chrome requires.
+    const toggleNotifications = () => {
+        const change = notifying ? chrome.permissions.remove(NOTIFICATIONS_PERMISSION).then((removed) => !removed) : chrome.permissions.request(NOTIFICATIONS_PERMISSION);
+        void change.then(setNotifying).catch(() => undefined);
+    };
     const shortcut = useShortcut();
 
     const chooseTheme = (theme: ThemeChoice) => {
@@ -66,6 +84,62 @@ export function GeneralTab({ library, reload }: { library: Library; reload: () =
                     ))}
                 </div>
                 <p class={styles.hint}>{strings.themeHint}</p>
+            </section>
+
+            <section class={styles.group} aria-labelledby="toolbar-title">
+                <h2 id="toolbar-title" class={styles.groupTitle}>
+                    {strings.toolbarIcon}
+                </h2>
+                <div class={styles.segmented} role="group" aria-label={strings.toolbarGroup}>
+                    {TOOLBAR_CHOICES.map((c) => (
+                        <button
+                            key={c.value}
+                            type="button"
+                            class={styles.tab}
+                            aria-pressed={settings.toolbarOpens === c.value}
+                            onClick={() => void attempt(() => setToolbarOpens(c.value), reload)}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
+                <p class={styles.hint}>{strings.toolbarHint}</p>
+            </section>
+
+            <section class={styles.group} aria-label={strings.badgeLabel}>
+                <div class={styles.row}>
+                    <div>
+                        <p class={styles.label}>{strings.badgeLabel}</p>
+                        <p class={styles.hint}>{strings.badgeHint}</p>
+                    </div>
+                    <button type="button" class={controls.btn} onClick={() => void attempt(() => setToolbarBadge(!settings.toolbarBadge), reload)}>
+                        {settings.toolbarBadge ? strings.turnOff : strings.turnOn}
+                    </button>
+                </div>
+            </section>
+
+            <section class={styles.group} aria-label={strings.library} hidden={location.pathname === `/${LIBRARY_PAGE}`}>
+                <div class={styles.row}>
+                    <div>
+                        <p class={styles.label}>{strings.library}</p>
+                        <p class={styles.hint}>{strings.libraryHint}</p>
+                    </div>
+                    <button type="button" class={controls.btn} onClick={() => void openLibrary()}>
+                        {strings.openLibrary}
+                    </button>
+                </div>
+            </section>
+
+            <section class={styles.group} aria-label={strings.notifications}>
+                <div class={styles.row}>
+                    <div>
+                        <p class={styles.label}>{strings.notifications}</p>
+                        <p class={styles.hint}>{notifying ? strings.notificationsOnHint : strings.notificationsOffHint}</p>
+                    </div>
+                    <button type="button" class={controls.btn} onClick={toggleNotifications}>
+                        {notifying ? strings.turnOff : strings.turnOn}
+                    </button>
+                </div>
             </section>
 
             <section class={styles.group} aria-label={strings.keyboardShortcut}>

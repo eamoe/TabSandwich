@@ -14,6 +14,7 @@ import { strings } from "../strings";
 import { siteName } from "./listModel";
 import { SaveWindow } from "./SaveWindow";
 import { useActiveTab } from "./useActiveTab";
+import { ALL_TABS_PERMISSION } from "./useWindowTabs";
 import controls from "../controls.module.css";
 import styles from "./Hero.module.css";
 
@@ -30,6 +31,10 @@ const STATUS_MS = 2500;
  * date with the page) instead of a Save that could only answer "Already saved".
  *
  * Its last line saves every tab in the window at once (SaveWindow).
+ *
+ * In the side panel Chrome hides the page until the optional "tabs" permission is granted (the
+ * panel stays open as you browse, so the popup's one-page activeTab grant can't cover it). The
+ * card still offers Save, and that first click is what asks.
  */
 export function SaveCard(props: {
     tabs: SavedTab[];
@@ -41,6 +46,8 @@ export function SaveCard(props: {
     onRestore: (id: string) => void;
     onUpdated: (previous: SavedTab) => void;
     onWindowSaved: (added: SavedTab[], group: TabGroup | null) => void;
+    /** In the side panel, which needs permission to see the page. */
+    inPanel: boolean;
 }) {
     const tab = useActiveTab();
     // What you picked, and for which saved copy (none: a page not saved yet).
@@ -57,6 +64,7 @@ export function SaveCard(props: {
     useEffect(() => () => clearTimeout(timer.current), []);
 
     const supported = isSupportedTabUrl(tab?.url);
+    const unseen = props.inPanel && tab != null && tab.url === undefined;
     const savedCopy = supported ? props.tabs.find((t) => urlsMatch(t.url, tab!.url!)) : undefined;
     const categories = props.categoryOptions.map((o) => o.value);
     // A new page starts where pages like it went (if anywhere); a pick is about this one page.
@@ -92,8 +100,12 @@ export function SaveCard(props: {
     };
 
     const save = async () => {
+        // Chrome only shows its permission prompt for a click, so it's asked for here, before
+        // anything else is awaited.
+        const allowed = unseen ? chrome.permissions.request(ALL_TABS_PERMISSION) : Promise.resolve(true);
         setBusy(true);
         try {
+            if (!(await allowed)) return showErrorToast(strings.panelDenied);
             const page = await activePage();
             if (!page) return;
             const result = await addTab({ ...page, category: chosen === UNCATEGORIZED ? undefined : chosen, note: note ?? undefined });
@@ -132,7 +144,7 @@ export function SaveCard(props: {
             type="button"
             class={`${styles.save} ${status === "saved" ? styles.saved : ""} ${status === "duplicate" ? styles.duplicate : ""}`}
             aria-label={status === "idle" ? strings.saveTab : undefined}
-            disabled={!supported || busy}
+            disabled={!(supported || unseen) || busy}
             onClick={save}
         >
             {status === "saved" && <Icon name="check" size={14} />}
@@ -145,7 +157,7 @@ export function SaveCard(props: {
             <div class={styles.pageRow}>
                 {tab?.url && <SiteIcon url={tab.url} large />}
                 <div class={styles.pageText}>
-                    <p class={styles.pageTitle}>{tab ? tab.title || tab.url : ""}</p>
+                    <p class={styles.pageTitle}>{unseen ? strings.panelPageTitle : tab ? tab.title || tab.url : ""}</p>
                     {showSaved ? (
                         <p class={styles.pageSite}>
                             <span class={styles.savedNote}>
@@ -157,7 +169,7 @@ export function SaveCard(props: {
                         </p>
                     ) : (
                         <p class={styles.pageSite}>
-                            {tab === undefined ? "" : supported ? siteName(tab!.url!) : strings.onlyWebPages}
+                            {tab === undefined ? "" : unseen ? strings.panelPageHint : supported ? siteName(tab!.url!) : strings.onlyWebPages}
                             {supported && note === null && (
                                 <>
                                     {" · "}
@@ -169,7 +181,7 @@ export function SaveCard(props: {
                         </p>
                     )}
                 </div>
-                {tab !== undefined && !supported && saveButton}
+                {tab !== undefined && !supported && !unseen && saveButton}
             </div>
             {supported && !showSaved && note !== null && (
                 <div class={styles.noteRow}>
@@ -199,7 +211,7 @@ export function SaveCard(props: {
                     />
                 </div>
             )}
-            {(tab === undefined || supported) && (
+            {(tab === undefined || supported || unseen) && (
                 <div class={styles.actionRow}>
                     <CategoryPicker
                         id="save-category"

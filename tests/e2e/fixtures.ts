@@ -1,4 +1,4 @@
-import { test as base, chromium, type BrowserContext, type Page } from "@playwright/test";
+import { test as base, chromium, expect, type BrowserContext, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,9 +10,8 @@ const DIST = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../dist")
 /**
  * A public key used ONLY by the test copy of the extension, never the shipped manifest (the
  * Chrome Web Store assigns the real one). Chrome derives an unpacked extension's id from its
- * manifest key, so pinning one gives the tests a known id to open the popup at — this
- * extension has no background service worker, which is where Playwright would otherwise read
- * the id from. The matching private key was discarded; Chrome doesn't need it to load the
+ * manifest key, so pinning one gives the tests a known id before anything has loaded. The
+ * matching private key was discarded; Chrome doesn't need it to load the
  * extension unpacked.
  */
 const TEST_KEY =
@@ -26,18 +25,26 @@ function extensionIdFromKey(base64Key: string): string {
 
 export const EXTENSION_ID = extensionIdFromKey(TEST_KEY);
 export const POPUP_URL = `chrome-extension://${EXTENSION_ID}/popup/popup.html`;
+export const LIBRARY_URL = `chrome-extension://${EXTENSION_ID}/library/library.html`;
+export const SIDE_PANEL_URL = `chrome-extension://${EXTENSION_ID}/sidepanel/sidepanel.html`;
+export const WELCOME_URL = `chrome-extension://${EXTENSION_ID}/welcome/welcome.html`;
 
 /** A fake website the tests can "visit" with no network: every request to it is answered here. */
 export const TEST_SITE = "https://example.test";
 
 type Fixtures = {
+    /** Every test starts as a fresh install, which opens the welcome page; it's closed unless a test is about it. */
+    keepWelcomePage: boolean;
+    /** A test can't answer Chrome's prompt, so these tests start with the optional "notifications" permission already given. */
+    notificationsAllowed: boolean;
     context: BrowserContext;
     popup: Page;
 };
 
 export const test = base.extend<Fixtures>({
-    // eslint-disable-next-line no-empty-pattern -- Playwright requires the destructuring form
-    context: async ({}, use) => {
+    keepWelcomePage: [false, { option: true }],
+    notificationsAllowed: [false, { option: true }],
+    context: async ({ keepWelcomePage, notificationsAllowed }, use) => {
         if (!readFileSyncSafe(join(DIST, "manifest.json"))) {
             throw new Error("dist/ is missing — run `pnpm build` before the robot tests.");
         }
@@ -53,7 +60,7 @@ export const test = base.extend<Fixtures>({
         // Rendering the Store screenshots (tests/store) shows a real web page in the save card, so
         // that run alone stands in for activeTab on any site.
         const hosts = process.env.TS_STORE_SCREENSHOTS ? ["<all_urls>"] : [`${TEST_SITE}/*`];
-        writeFileSync(join(extDir, "manifest.json"), JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: hosts }, null, 2));
+        writeFileSync(join(extDir, "manifest.json"), JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: hosts, permissions: [...manifest.permissions, ...(notificationsAllowed ? ["notifications"] : [])] }, null, 2));
 
         const userDataDir = mkdtempSync(join(tmpdir(), "tab-sandwich-profile-"));
         const context = await chromium.launchPersistentContext(userDataDir, {
@@ -70,6 +77,11 @@ export const test = base.extend<Fixtures>({
                 body: `<!doctype html><title>${title}</title><h1>${title}</h1>`,
             });
         });
+
+        // The worker opens it as soon as Chrome reports the install, which also tells the tests it's running.
+        const welcomePage = () => context.pages().find((p) => p.url() === WELCOME_URL);
+        await expect.poll(() => Boolean(welcomePage())).toBe(true);
+        if (!keepWelcomePage) await welcomePage()!.close();
 
         await use(context);
 

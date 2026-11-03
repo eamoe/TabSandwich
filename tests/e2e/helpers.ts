@@ -1,4 +1,4 @@
-import type { BrowserContext, Locator, Page } from "@playwright/test";
+import type { BrowserContext, Locator, Page, Worker } from "@playwright/test";
 import { expect, TEST_SITE, waitUntilReady } from "./fixtures";
 
 export interface SeedTab {
@@ -12,6 +12,9 @@ export interface SeedTab {
     pinned?: boolean;
     /** Archived this many days ago. */
     archivedDaysAgo?: number;
+    /** Days until its reminder; negative: it's already due. */
+    remindInDays?: number;
+    reminded?: boolean;
     note?: string;
     /** Last opened from Tab Sandwich this many days ago, `openCount` times (default 1). */
     openedDaysAgo?: number;
@@ -60,6 +63,8 @@ export async function seedLibrary(
                     ...(t.note ? { note: t.note } : {}),
                     ...(t.openedDaysAgo !== undefined ? { lastOpenedAt: now - t.openedDaysAgo * day, openCount: t.openCount ?? 1 } : {}),
                     ...(t.archivedDaysAgo !== undefined ? { archivedAt: now - t.archivedDaysAgo * day } : {}),
+                    ...(t.remindInDays !== undefined ? { remindAt: now + t.remindInDays * day } : {}),
+                    ...(t.reminded ? { reminded: true } : {}),
                 })),
                 // Opens counted since long ago (the cleanup tip needs months of history), or from now.
                 ...(trackingSinceDaysAgo !== undefined ? { "tabSandwich.openTrackingSince": now - trackingSinceDaysAgo * day } : {}),
@@ -91,6 +96,7 @@ export interface StoredSettings {
     waitingCategories?: string[];
     theme?: string;
     sort?: string;
+    toolbarBadge?: boolean;
 }
 
 export async function storedSettings(popup: Page): Promise<StoredSettings> {
@@ -212,4 +218,22 @@ export async function expectMenuFullyVisible(popup: Page): Promise<void> {
         });
         expect(covered).toBe(false);
     }
+}
+
+export const worker = async (context: BrowserContext): Promise<Worker> => context.serviceWorkers()[0] ?? context.waitForEvent("serviceworker");
+
+/** Chrome's own menu can't be opened from a test, so this delivers the click it would send, on the active tab. */
+export async function clickMenu(context: BrowserContext, page: Page, category: string, target: { linkUrl?: string; selectionText?: string }): Promise<void> {
+    const tab = await page.evaluate(async () => (await chrome.tabs.query({ active: true, currentWindow: true }))[0]);
+    const sw = await worker(context);
+    await sw.evaluate(
+        ([info, tab]) => (chrome.contextMenus.onClicked as unknown as { dispatch: (...args: unknown[]) => void }).dispatch(info, tab),
+        [{ menuItemId: `save:${category}`, pageUrl: tab.url, frameId: 0, editable: false, ...target }, tab] as const
+    );
+}
+
+/** The popup's way to the side panel and the library: the header's Open in menu. */
+export async function openFromMenu(popup: Page, item: "Open side panel" | "Open library"): Promise<void> {
+    await popup.getByRole("button", { name: "Open in" }).click();
+    await popup.getByRole("menu", { name: "Open in" }).getByRole("menuitem", { name: item }).click();
 }

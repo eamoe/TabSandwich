@@ -1,4 +1,4 @@
-import type { SortOrder, ThemeChoice } from "../types";
+import type { SortOrder, ThemeChoice, ToolbarChoice } from "../types";
 import { getSettings, setSettings } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 
@@ -18,6 +18,18 @@ async function update(change: (settings: Awaited<ReturnType<typeof getSettings>>
 export function setTheme(theme: ThemeChoice): Promise<void> {
     return update((s) => {
         s.theme = theme;
+    });
+}
+
+export function setToolbarOpens(choice: ToolbarChoice): Promise<void> {
+    return update((s) => {
+        s.toolbarOpens = choice;
+    });
+}
+
+export function setToolbarBadge(on: boolean): Promise<void> {
+    return update((s) => {
+        s.toolbarBadge = on;
     });
 }
 

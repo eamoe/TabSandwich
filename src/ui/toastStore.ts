@@ -1,5 +1,5 @@
 /**
- * The one toast at the bottom of the popup: "Deleted" with Undo, or an error with no action.
+ * The one toast at the bottom of the popup: "Deleted" with Undo, or an error or a note with no action.
  * A tiny store rather than component state so both the Preact screens and the Settings screen
  * (still vanilla until it is rebuilt) can show it. Only one toast is ever shown: a new one
  * replaces the old. That's safe because whatever the old one offered to undo was already saved.
@@ -7,7 +7,7 @@
 
 export interface ToastState {
     message: string;
-    kind: "undo" | "error";
+    kind: "undo" | "error" | "note";
     /** Bumped on every show, so the toast re-announces and restarts its timer even for the same message. */
     seq: number;
 }
@@ -40,6 +40,12 @@ export function showUndoToast(message: string, onUndo: () => void | Promise<void
 export function showErrorToast(message: string): void {
     pendingUndo = undefined;
     show(message, "error", ERROR_DURATION_MS);
+}
+
+/** Something worth knowing about what just happened, that needs nothing done. */
+export function showNoteToast(message: string): void {
+    pendingUndo = undefined;
+    show(message, "note", ERROR_DURATION_MS);
 }
 
 export function hideToast(): void {

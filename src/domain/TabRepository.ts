@@ -1,8 +1,9 @@
+import { isReminderDue, remindersToSend } from "./reminders";
 import { SavedTab, TabGroup } from "../types";
 import { getGroups, getTabs, setTabs, setTabsAndGroups } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
 import { urlsMatch } from "../util/url";
-import { UNCATEGORIZED } from "./CategoryRepository";
+import { UNCATEGORIZED, getTabCategory } from "./CategoryRepository";
 
 export interface AddTabInput {
     title: string;
@@ -12,6 +13,20 @@ export interface AddTabInput {
 }
 
 export const MAX_NOTE_LENGTH = 120;
+/** Far longer than any real page title; typed titles stop here, and longer ones from pages or backups are shortened. */
+export const MAX_TITLE_LENGTH = 300;
+
+/**
+ * A title as stored: trimmed, at most MAX_TITLE_LENGTH characters. A longer one is cut and ends in
+ * "…", so it's clear something was left out; counted in characters as a person sees them, so an
+ * emoji is never split in half.
+ */
+export function tidyTitle(raw: string): string {
+    const title = raw.trim();
+    const chars = Array.from(title);
+    if (chars.length <= MAX_TITLE_LENGTH) return title;
+    return chars.slice(0, MAX_TITLE_LENGTH - 1).join("").trimEnd() + "…";
+}
 
 /** A note as stored: one line, trimmed, at most MAX_NOTE_LENGTH characters; undefined when nothing's left. */
 export function tidyNote(raw: string | undefined): string | undefined {
@@ -40,7 +55,7 @@ export async function addTab(input: AddTabInput): Promise<AddTabResult> {
         const note = tidyNote(input.note);
         const newTab: SavedTab = {
             id: crypto.randomUUID(),
-            title: input.title,
+            title: tidyTitle(input.title),
             url: input.url,
             category: input.category,
             savedAt: Date.now(),
@@ -78,7 +93,7 @@ export async function addTabs(inputs: { title: string; url: string; category?: s
         const savedAt = Date.now();
         for (const input of inputs) {
             if (tabs.some((t) => urlsMatch(t.url, input.url)) || added.some((t) => urlsMatch(t.url, input.url))) continue;
-            added.push({ id: crypto.randomUUID(), title: input.title, url: input.url, category: category ?? input.category, savedAt });
+            added.push({ id: crypto.randomUUID(), title: tidyTitle(input.title), url: input.url, category: category ?? input.category, savedAt });
         }
         let group: TabGroup | null = null;
         if (nameGroup && added.length >= 2) {
@@ -108,7 +123,7 @@ export interface EditTabResult {
  */
 export async function editTab(
     id: string,
-    updates: Partial<Pick<SavedTab, "title" | "url" | "category" | "note">>
+    updates: Partial<Pick<SavedTab, "title" | "url" | "category" | "note" | "remindAt">>
 ): Promise<EditTabResult> {
     return withStorageLock(async () => {
         const tabs = await getTabs();
@@ -119,13 +134,17 @@ export async function editTab(
         }
         const updated = tabs.map((t): SavedTab => {
             if (t.id !== id) return t;
-            const { note: _old, category: _was, ...rest } = { ...t, ...updates };
+            const title = updates.title !== undefined ? tidyTitle(updates.title) : t.title;
+            const { note: _old, category: _was, remindAt: _set, reminded: _sent, ...rest } = { ...t, ...updates, title };
             // A note emptied in the edit form is gone, not stored as "".
             const note = "note" in updates ? tidyNote(updates.note) : t.note;
             // Picking Uncategorized in the edit form means no category, stored the way every other
             // save stores it (as the word, it counted as a real category, e.g. for suggestions).
             const category = "category" in updates ? updates.category : t.category;
-            return { ...rest, ...(category && category !== UNCATEGORIZED ? { category } : {}), ...(note ? { note } : {}) };
+            // A new reminder hasn't been sent yet; one left as it was keeps its place.
+            const remindAt = "remindAt" in updates ? updates.remindAt : t.remindAt;
+            const reminded = remindAt === t.remindAt && t.reminded;
+            return { ...rest, ...(category && category !== UNCATEGORIZED ? { category } : {}), ...(note ? { note } : {}), ...(remindAt !== undefined ? { remindAt } : {}), ...(reminded ? { reminded } : {}) };
         });
         await setTabs(updated);
         return { duplicateOf: null };
@@ -146,7 +165,7 @@ export async function refreshTab(id: string, page: { title: string; url: string;
         if (!previous) return null;
         // Brought up to date is current again: an archived copy comes back to the list (Undo puts it back as it was).
         const { archivedAt: _archived, ...kept } = previous;
-        const refreshed: SavedTab = { ...kept, title: page.title, url: page.url, category: page.category, savedAt: Date.now() };
+        const refreshed: SavedTab = { ...kept, title: tidyTitle(page.title), url: page.url, category: page.category, savedAt: Date.now() };
         await setTabs(tabs.map((t) => (t.id === id ? refreshed : t)));
         return previous;
     });
@@ -408,6 +427,40 @@ export async function recordOpen(ids: string[]): Promise<void> {
         const tabs = await getTabs();
         if (!tabs.some((t) => wanted.has(t.id))) return;
         const now = Date.now();
-        await setTabs(tabs.map((t) => (wanted.has(t.id) ? { ...t, lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 } : t)));
+        await setTabs(
+            tabs.map((t) => {
+                if (!wanted.has(t.id)) return t;
+                // Opening a tab whose reminder is due is what the reminder asked for.
+                const { remindAt: _due, reminded: _sent, ...done } = t;
+                return { ...(isReminderDue(t, now) ? done : t), lastOpenedAt: now, openCount: (t.openCount ?? 0) + 1 };
+            })
+        );
+    });
+}
+
+/**
+ * Puts a saved tab in `category` (undefined: Uncategorized), back from the archive if it's there;
+ * everything else about it stays. False: it was already there, and nothing was written.
+ */
+export async function placeInCategory(id: string, category: string | undefined): Promise<boolean> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const tab = tabs.find((t) => t.id === id);
+        if (!tab || (tab.archivedAt === undefined && getTabCategory(tab) === (category ?? UNCATEGORIZED))) return false;
+        const { archivedAt: _back, category: _was, ...rest } = tab;
+        await setTabs(tabs.map((t) => (t.id === id ? { ...rest, ...(category ? { category } : {}) } : t)));
+        return true;
+    });
+}
+
+/** Marks the reminders that have come due as sent, and hands them back: each goes out once. */
+export async function markReminded(now: number): Promise<SavedTab[]> {
+    return withStorageLock(async () => {
+        const tabs = await getTabs();
+        const due = remindersToSend(tabs, now);
+        if (due.length === 0) return [];
+        const ids = new Set(due.map((t) => t.id));
+        await setTabs(tabs.map((t) => (ids.has(t.id) ? { ...t, reminded: true } : t)));
+        return due;
     });
 }

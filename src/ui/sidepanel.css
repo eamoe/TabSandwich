@@ -1,0 +1,2 @@
+/* The side panel is as tall as the window, and as wide as you drag it. */
+:root { --screen-max: 100vh; --screen-min: 100vh; }

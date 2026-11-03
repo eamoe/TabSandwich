@@ -10,10 +10,14 @@ const manifest = JSON.parse(readFileSync(new URL("../../manifest.json", import.m
  */
 describe("manifest.json", () => {
     it("TC-103: asks for exactly the minimal permission set", () => {
-        expect(manifest.permissions).toEqual(["activeTab", "storage", "favicon"]);
-        // Asked for only when you first save a whole window (v3.2), never at install.
-        expect(manifest.optional_permissions).toEqual(["tabs"]);
+        expect(manifest.permissions).toEqual(["activeTab", "storage", "favicon", "contextMenus", "scripting", "sidePanel", "alarms"]);
+        // Asked for only when first needed, never at install: saving a whole window (v3.2), a first reminder (v4.0).
+        expect(manifest.optional_permissions).toEqual(["tabs", "notifications"]);
         expect(manifest.host_permissions).toBeUndefined();
+    });
+
+    it("runs one background worker, as a module, from the file the build names", () => {
+        expect(manifest.background).toEqual({ service_worker: "background.js", type: "module" });
     });
 
     it("TC-142 / TC-179: no downloads or unlimitedStorage permission", () => {

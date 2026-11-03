@@ -1,0 +1,3 @@
+/* The library fills its browser tab; the table scrolls, not the page, and so does Settings. */
+:root { --screen-max: 100%; }
+body { height: 100vh; overflow: hidden; }

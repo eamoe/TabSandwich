@@ -1,8 +1,9 @@
 {
     "manifest_version": 3,
     "name": "Tab Sandwich",
-    "version": "3.3.1",
+    "version": "4.0.0",
     "description": "Save a tab or a whole window in one click, organize with color-coded categories. 100% local — nothing leaves your browser.",
+    "minimum_chrome_version": "116",
     "icons": {
         "16": "images/icon-16.png",
         "32": "images/icon-32.png",
@@ -18,13 +19,25 @@
             "128": "images/icon-128.png"
         }
     },
+    "side_panel": {
+        "default_path": "sidepanel/sidepanel.html"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
     "permissions": [
         "activeTab",
         "storage",
-        "favicon"
+        "favicon",
+        "contextMenus",
+        "scripting",
+        "sidePanel",
+        "alarms"
     ],
     "optional_permissions": [
-        "tabs"
+        "tabs",
+        "notifications"
     ],
     "web_accessible_resources": [
         {
@@ -36,6 +49,9 @@
             ]
         }
     ],
+    "omnibox": {
+        "keyword": "ts"
+    },
     "commands": {
         "_execute_action": {
             "suggested_key": {

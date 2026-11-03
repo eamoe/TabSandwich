@@ -8,7 +8,12 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 ## Features
 
+- **A welcome page** — after a fresh install, one page shows how to pin the icon, save a page and open Tab Sandwich from the keyboard.
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
+- **Address-bar search** — type `ts`, a space and a word in Chrome's address bar to jump straight to a saved tab.
+- **Full-page library** — all your tabs on a page of their own: a sidebar of categories and saved windows, a wide table that sorts by any column, bulk editing and cleanup, quick even with thousands of tabs. Open it from the **Open in** menu in the popup's header, in Settings › General, or from the toolbar icon's right-click menu.
+- **Side panel** — keep your list open beside the page while you browse: the **Open in** menu in the popup's header opens it, and Settings › General can make it what the toolbar icon opens. The first Save from the panel asks Chrome once to let it see the page you're on.
+- **Right-click to save** — right-click any link or page, then **Save to Tab Sandwich** and a category. The link's own words become its title, and the toolbar icon flashes ✓. A link you've already saved moves to the category you pick.
 - **Save a whole window** — "Save all tabs in this window", under Save, saves every web page open in the window into the picked category (Uncategorized when the page you're on is already saved, since its category is that one page's), skipping browser pages and pages already saved, and says exactly how many it saved and skipped. It then offers to close the saved tabs (never on its own; the tab you're on stays open). Chrome asks for permission to see your open tabs the first time; saying no leaves everything else working.
 - **Saved windows** — a window saved in one go stays together in the list as one row with a random sandwich name ("Toasted Rye"), its tab count and the date; click it (or press →) to open it and see its tabs. Its ⋯ menu opens all its tabs in a new window (keeping or archiving them), renames it, breaks it apart, or archives it with its tabs — restoring them puts the window back together (all undoable; nothing is closed in the browser). Filtering or searching shows every tab as its own row, so nothing stays hidden in a closed window. Drag a tab out of a window to take it out, or onto a window's tab to add it (Alt+↑ / Alt+↓ past a window's edge steps a tab out too); both say so and can be undone.
 - **Select many at once** — the ☑ button at the end of the filter row turns the rows into checkboxes (the bar replaces the filter row, so nothing moves): click or Space to pick, Shift-click for a range, a saved window's row picks all its tabs, **Select all** picks everything shown. Then **Move to…** a category or archive them, in one step with one Undo; on the Archived pill, restore them or delete them for good. ✕ or Escape stops.
@@ -29,6 +34,8 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 - **Pin** — pin the tabs you use most (the pin on a row, or P): they stay on top in every sort, at the top of their saved window, and never show as waiting.
 - **Drag-to-reorder** — arrange saved tabs in whatever order makes sense to you: a line shows where a tab will land, above or below the row you're over. Pinned tabs and the rest each keep to their side.
 - **Sorting** — newest, oldest, title, site, recently opened or most opened (counting opens from Tab Sandwich itself), remembered between opens. Sorting never rewrites your own order, so switching back restores it exactly.
+- **Reminders** — while editing a tab, choose **Remind me tomorrow** or **next week**. At 9:00 that day you get a notification (Chrome asks once, with your first reminder), and the tab shows under **Waiting** until you open it. Refuse notifications and it still shows there.
+- **Waiting count** — an optional badge on the toolbar icon (off to start, in Settings › General) shows how many tabs are waiting, reminders due included.
 - **Read later or keep** — tabs in the categories you choose (Reading and Uncategorized to start) get a small moon badge once they've waited a configurable number of days (7 by default), and their own "Waiting" filter; every other category is kept and never ages, so tools, docs and accounts don't nag.
 - **Light and dark** — the popup follows your computer's light or dark mode, even while it's open, or you can pin it to Light or Dark in Settings.
 - **Calm Settings** — grouped into General, Categories, Backup and About; each category has one color dot that opens a small palette.
@@ -69,7 +76,7 @@ Then load the `dist/` folder (not the repository root) as an unpacked extension 
 - `pnpm icons` — renders the extension's icons into `images/` from the drawings in `branding/`.
 - `pnpm lint` / `pnpm typecheck` — code checks.
 - `pnpm check` — all of the above, in the same order CI runs them.
-- GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` (`.github/workflows/release.yml`); `dist/` itself is never committed.
+- GitHub Actions runs every check on each pull request (`.github/workflows/ci.yml`). Each version tag is checked the same way before its release zip is built from the tested `dist/` and published with that version's notes from `release-notes/` (`.github/workflows/release.yml`); `dist/` itself is never committed.
 
 ## License
 

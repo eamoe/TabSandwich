@@ -14,6 +14,19 @@ export interface StorageFake {
     setDelayMs: number;
     /** Finer-grained failure: return an error to reject a particular `set` call (checked on every call). */
     rejectSet: ((items: Record<string, unknown>) => Error | null) | null;
+    /** Addresses of the tabs the code asked Chrome to open, in order. */
+    openedTabs: string[];
+    /** The right-click menu as built: each item's id, parent and title. */
+    menu: { id: string; parentId?: string; title: string }[];
+    /** The toolbar icon's badge. */
+    badge: { text: string; color: string; title?: string };
+    /** Alarms set, by name. */
+    alarms: Record<string, { periodInMinutes?: number }>;
+    /** What the toolbar icon opens: its popup page ("" for none), and whether a click opens the side panel. */
+    toolbarPopup: string | null;
+    panelOnClick: boolean | null;
+    /** What the page answers when read for a link's text; an Error makes the read fail. */
+    pageReply: string | Error;
 }
 
 export const QUOTA_BYTES = 10_485_760;
@@ -32,7 +45,7 @@ function selectKeys(data: Record<string, unknown>, keys?: string | string[] | Re
 }
 
 export function installChromeFake(): StorageFake {
-    const fake: StorageFake = { data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null };
+    const fake: StorageFake = { alarms: {}, data: {}, failNextSetWith: null, setDelayMs: 0, rejectSet: null, openedTabs: [], menu: [], badge: { text: "", color: "" }, pageReply: "", toolbarPopup: null, panelOnClick: null };
 
     const local = {
         QUOTA_BYTES,
@@ -62,8 +75,62 @@ export function installChromeFake(): StorageFake {
     };
 
     (globalThis as unknown as { chrome: unknown }).chrome = {
-        storage: { local },
-        runtime: { getURL: (path: string) => `chrome-extension://test-extension-id${path.startsWith("/") ? "" : "/"}${path}` },
+        storage: { local, onChanged: { addListener() {} } },
+        runtime: {
+            getURL: (path: string) => `chrome-extension://test-extension-id${path.startsWith("/") ? "" : "/"}${path}`,
+            getManifest: () => ({ version: "9.9.9" }),
+        },
+        tabs: {
+            async create({ url }: { url: string }) {
+                fake.openedTabs.push(url);
+            },
+        },
+        alarms: {
+            async clear(name: string) {
+                delete fake.alarms[name];
+                return true;
+            },
+            async create(name: string, options: { periodInMinutes?: number }) {
+                fake.alarms[name] = options;
+            },
+            async get(name: string) {
+                return fake.alarms[name];
+            },
+        },
+        contextMenus: {
+            async removeAll() {
+                fake.menu = [];
+            },
+            create({ id, parentId, title }: { id: string; parentId?: string; title: string }) {
+                if (fake.menu.some((item) => item.id === id)) throw new Error(`Duplicate id ${id}`);
+                fake.menu.push(parentId ? { id, parentId, title } : { id, title });
+            },
+        },
+        action: {
+            async setBadgeText({ text }: { text: string }) {
+                fake.badge.text = text;
+            },
+            async setBadgeBackgroundColor({ color }: { color: string }) {
+                fake.badge.color = color;
+            },
+            async setTitle({ title }: { title: string }) {
+                fake.badge.title = title;
+            },
+            async setPopup({ popup }: { popup: string }) {
+                fake.toolbarPopup = popup;
+            },
+        },
+        sidePanel: {
+            async setPanelBehavior({ openPanelOnActionClick }: { openPanelOnActionClick: boolean }) {
+                fake.panelOnClick = openPanelOnActionClick;
+            },
+        },
+        scripting: {
+            async executeScript() {
+                if (fake.pageReply instanceof Error) throw fake.pageReply;
+                return [{ result: fake.pageReply }];
+            },
+        },
     };
     return fake;
 }

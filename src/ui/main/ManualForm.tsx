@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { SavedTab } from "../../types";
-import { addTab, MAX_NOTE_LENGTH, type AddTabResult } from "../../domain/TabRepository";
+import { addTab, MAX_NOTE_LENGTH, MAX_TITLE_LENGTH, type AddTabResult } from "../../domain/TabRepository";
 import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { suggestCategory } from "../../domain/suggest";
 import { normalizeUrl } from "../../util/url";
@@ -111,6 +111,7 @@ export function ManualForm(props: {
                     class={controls.field}
                     type="text"
                     placeholder={strings.titleOptionalLabel}
+                    maxLength={MAX_TITLE_LENGTH}
                     value={title}
                     onInput={(e) => setTitle(e.currentTarget.value)}
                 />
@@ -146,7 +147,7 @@ export function ManualForm(props: {
                         </button>
                     )}
                 </div>
-                <div class={styles.actionRow}>
+                <div class={styles.actionRow} data-form-actions>
                     <CategoryPicker
                         id="manual-category"
                         label={strings.categoryOptionalLabel}

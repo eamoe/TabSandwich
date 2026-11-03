@@ -28,6 +28,15 @@ jobs:
             exit 1
           fi
 
+      # The notes are part of the release PR, so the release is published with them and GitHub's
+      # release email carries them (notes added by editing a release afterwards never reach it).
+      - name: Check the release notes exist
+        run: |
+          if [ ! -s "release-notes/${GITHUB_REF_NAME}.md" ]; then
+            echo "release-notes/${GITHUB_REF_NAME}.md is missing or empty: add it in the release PR." >&2
+            exit 1
+          fi
+
       # The exact build the checks job tested — not a second, separate build of the same commit.
       - name: Get the tested build
         uses: actions/download-artifact@v4
@@ -45,3 +54,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: tab-sandwich-${{ github.ref_name }}.zip
+          body_path: release-notes/${{ github.ref_name }}.md

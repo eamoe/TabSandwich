@@ -112,6 +112,12 @@ const PATHS: Record<IconName, JSX.Element> = {
             <line x1="12" y1="12" x2="12" y2="17.5" />
         </>
     ),
+    bell: (
+        <>
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+        </>
+    ),
     pin: (
         <>
             <line x1="12" y1="17" x2="12" y2="22" />
@@ -119,6 +125,20 @@ const PATHS: Record<IconName, JSX.Element> = {
         </>
     ),
     check: <polyline points="5 12 10 17 19 7" />,
+    library: (
+        <>
+            <rect x="4" y="4" width="7" height="7" rx="1.5" />
+            <rect x="13" y="4" width="7" height="7" rx="1.5" />
+            <rect x="4" y="13" width="7" height="7" rx="1.5" />
+            <rect x="13" y="13" width="7" height="7" rx="1.5" />
+        </>
+    ),
+    panel: (
+        <>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <line x1="15" y1="4" x2="15" y2="20" />
+        </>
+    ),
     chevronDown: <polyline points="6 9 12 15 18 9" />,
     chevronUp: <polyline points="18 15 12 9 6 15" />,
     chevronLeft: <polyline points="15 18 9 12 15 6" />,
@@ -162,6 +182,8 @@ const PATHS: Record<IconName, JSX.Element> = {
 };
 
 export type IconName =
+    | "panel"
+    | "library"
     | "search"
     | "sort"
     | "download"
@@ -177,6 +199,7 @@ export type IconName =
     | "tabs"
     | "moon"
     | "pin"
+    | "bell"
     | "archive"
     | "restore"
     | "check"

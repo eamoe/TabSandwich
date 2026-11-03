@@ -71,12 +71,27 @@ test.describe("Pinned tabs", () => {
     test("TC-263: Alt+arrows stop at the line between pinned tabs and the rest", async ({ popup }) => {
         await seed(popup);
         await popup.getByRole("button", { name: "Pin Echo" }).click();
+        await expect.poll(async () => (await rowTitles(popup))[0]).toBe("Echo");
         const alpha = tabList(popup).getByRole("button", { name: "Alpha", exact: true });
         await alpha.focus();
         await popup.keyboard.press("Alt+ArrowUp");
-        await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Press P to pin this one." })).toBeAttached();
+        await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Press P to pin this one." })).toBeVisible();
         await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
         await expect(windowRow(popup, "Research")).toBeVisible();
+    });
+
+    test("TC-263: a drag across that line goes back, and says why", async ({ popup }) => {
+        await seed(popup);
+        await popup.getByRole("button", { name: "Pin Echo" }).click();
+        await expect.poll(async () => (await rowTitles(popup))[0]).toBe("Echo");
+        const rowOf = (title: string) => tabList(popup).locator("li[data-tab-id]").filter({ hasText: title });
+        await rowOf("Echo").dragTo(rowOf("Bravo"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 40 } });
+        await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Unpin it to move it lower." })).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
+
+        await rowOf("Bravo").dragTo(rowOf("Echo"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 6 } });
+        await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Pin it to move it up there." })).toBeVisible();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
     });
 
     test("TC-279: Unpin sits where the pin mark was, and a mouse click doesn't leave the row looking hovered", async ({ popup }) => {

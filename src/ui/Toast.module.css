@@ -18,6 +18,21 @@
     transition: transform 0.2s ease-out;
 }
 .visible { transform: none; }
+.compact {
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    width: fit-content;
+    min-width: 280px;
+    max-width: min(560px, calc(100% - 24px));
+    margin-inline: auto;
+    gap: 24px;
+    padding-left: 16px;
+    font-size: 13.5px;
+    /* Further down while hidden: its shadow would otherwise show as a line at the window's foot. */
+    transform: translateY(calc(100% + 56px));
+}
+.compact.visible { transform: none; }
 /* ToastSpace: the toast's height, the gap under it and as much again above it. */
 .space { flex-shrink: 0; height: calc(36px + 12px + 8px); }
 .message { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

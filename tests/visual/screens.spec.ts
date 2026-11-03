@@ -1,4 +1,4 @@
-import { test, expect } from "../e2e/fixtures";
+import { test, expect, LIBRARY_URL, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
 import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
@@ -95,6 +95,12 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`edit-${colorScheme}.png`);
         });
 
+        test("reminders on rows", async ({ popup }) => {
+            await seedLibrary(popup, [{ ...LIBRARY[0], remindInDays: 1 }, { ...LIBRARY[1], remindInDays: -1 }, { ...LIBRARY[2], remindInDays: 12, pinned: true }], SETTINGS);
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`reminders-${colorScheme}.png`);
+        });
+
         test("adding a link by hand", async ({ popup }) => {
             await popup.getByRole("button", { name: "Add link manually" }).click();
             await expect(popup).toHaveScreenshot(`manual-${colorScheme}.png`);
@@ -182,6 +188,12 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`settings-general-${colorScheme}.png`);
         });
 
+        test("the header's Open in menu", async ({ popup }) => {
+            await popup.getByRole("button", { name: "Open in" }).click();
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`open-in-${colorScheme}.png`);
+        });
+
         test("settings: categories with the color strip open", async ({ popup }) => {
             await openSettings(popup, "Categories");
             await popup.getByRole("button", { name: "Color for Reading" }).click();
@@ -214,5 +226,105 @@ for (const colorScheme of ["light", "dark"] as const) {
         await seedLibrary(popup, []);
         await expect(popup.getByRole("heading", { name: "Nothing saved yet" })).toBeVisible();
         await expect(popup).toHaveScreenshot(`empty-${colorScheme}.png`);
+    });
+
+    test(`the library (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY.map((t, i) => (i === 5 ? { ...t, note: "numbers for Thursday's board meeting", pinned: true } : t)), SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-${colorScheme}.png`);
+    });
+
+    test(`the library, with tabs picked and a row hovered (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("checkbox", { name: "Select Q3 Roadmap" }).click();
+        await popup.getByRole("checkbox", { name: "Select Local-first software" }).click();
+        await popup.getByRole("row").filter({ hasText: "Vite 8 release notes" }).hover();
+        await expect(popup).toHaveScreenshot(`library-picked-${colorScheme}.png`);
+    });
+
+    test(`the library's Undo toast (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("row").filter({ hasText: "Q3 Roadmap" }).hover();
+        await popup.getByRole("button", { name: "Archive Q3 Roadmap" }).click();
+        await expect(popup.getByRole("button", { name: "Undo" })).toBeVisible();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-toast-${colorScheme}.png`);
+    });
+
+    test(`the library's Settings (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("button", { name: "Open settings" }).click();
+        await expect(popup.getByRole("main", { name: "Settings" })).toBeVisible();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-settings-${colorScheme}.png`);
+    });
+
+    test(`the library's add dialog (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        await popup.getByRole("button", { name: "Add link manually" }).click();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-add-${colorScheme}.png`);
+    });
+
+    test(`the side panel (${colorScheme})`, async ({ context, popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, LIBRARY, SETTINGS);
+        await popup.setViewportSize({ width: 360, height: 800 });
+        await popup.goto(SIDE_PANEL_URL);
+        await waitUntilReady(popup);
+        await openSiteTab(context, popup, "Designing calm interfaces");
+        await popup.mouse.move(0, 799);
+        await expect(popup).toHaveScreenshot(`side-panel-${colorScheme}.png`);
+    });
+
+    test(`the side panel, before it may see the page (${colorScheme})`, async ({ context, popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, LIBRARY, SETTINGS);
+        await popup.setViewportSize({ width: 360, height: 800 });
+        await popup.goto(SIDE_PANEL_URL);
+        await waitUntilReady(popup);
+        const url = "https://unseen.example.org/article";
+        await context.route(url, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Unseen</title>" }));
+        const opened = context.waitForEvent("page");
+        await popup.evaluate((u) => chrome.tabs.create({ url: u, active: true }), url);
+        await (await opened).waitForLoadState();
+        await expect(popup.getByRole("region", { name: "Current tab" })).toContainText("The page you're on");
+        await popup.mouse.move(0, 799);
+        await expect(popup).toHaveScreenshot(`side-panel-unseen-${colorScheme}.png`);
+    });
+
+    test(`the welcome page (${colorScheme})`, async ({ popup }) => {
+        await popup.setViewportSize({ width: 1000, height: 640 });
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await popup.goto(WELCOME_URL);
+        await expect(popup.getByRole("main")).toContainText("Press");
+        await expect(popup).toHaveScreenshot(`welcome-${colorScheme}.png`);
     });
 }

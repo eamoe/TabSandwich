@@ -2,7 +2,7 @@ import { SavedTab, Settings, SortOrder, TabGroup, ThemeChoice } from "../types";
 import { DEFAULT_SETTINGS } from "../storage/chromeStorage";
 import { normalizeUrl, urlsMatch } from "../util/url";
 import { CATEGORY_COLOR_PALETTE, UNCATEGORIZED } from "./CategoryRepository";
-import { tidyNote } from "./TabRepository";
+import { tidyNote, tidyTitle } from "./TabRepository";
 
 /** 2 since v3.2: adds saved windows (`groups`, and `groupId` on their tabs). Version 1 files still import. */
 export const BACKUP_FORMAT_VERSION = 2;
@@ -26,7 +26,7 @@ export function backupFileName(): string {
 }
 
 /** `groupId` here is the id the file used — only for matching tabs to the file's groups; never kept. */
-type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId" | "pinned" | "archivedAt" | "note" | "lastOpenedAt" | "openCount">;
+type ImportedTab = Pick<SavedTab, "title" | "url" | "category" | "savedAt" | "groupId" | "pinned" | "archivedAt" | "note" | "lastOpenedAt" | "openCount" | "remindAt" | "reminded">;
 
 export interface ParsedImport {
     tabs: ImportedTab[];
@@ -55,7 +55,7 @@ function readImportedTab(raw: unknown): ImportedTab | null {
     const url = normalizeUrl(raw.url);
     if (!url) return null;
     return {
-        title: raw.title,
+        title: tidyTitle(raw.title),
         url,
         category: typeof raw.category === "string" ? raw.category : undefined,
         savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now(),
@@ -65,6 +65,7 @@ function readImportedTab(raw: unknown): ImportedTab | null {
         ...(typeof raw.openCount === "number" && Number.isInteger(raw.openCount) && raw.openCount > 0 ? { openCount: raw.openCount } : {}),
         ...(typeof raw.note === "string" && tidyNote(raw.note) ? { note: tidyNote(raw.note) } : {}),
         ...(typeof raw.archivedAt === "number" && Number.isFinite(raw.archivedAt) ? { archivedAt: raw.archivedAt } : {}),
+        ...(typeof raw.remindAt === "number" && Number.isFinite(raw.remindAt) ? { remindAt: raw.remindAt, ...(raw.reminded === true ? { reminded: true } : {}) } : {}),
     };
 }
 
@@ -132,6 +133,8 @@ export function parseBackupFile(raw: string): ParsedImport | null {
         }
         if (isThemeChoice(s.theme)) settingsFields.theme = s.theme;
         if (isSortOrder(s.sort)) settingsFields.sort = s.sort;
+        if (s.toolbarOpens === "popup" || s.toolbarOpens === "panel") settingsFields.toolbarOpens = s.toolbarOpens;
+        if (typeof s.toolbarBadge === "boolean") settingsFields.toolbarBadge = s.toolbarBadge;
     }
 
     return { tabs, settingsFields, groups: readImportedGroups(data.groups) };

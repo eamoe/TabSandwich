@@ -26,9 +26,15 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored).
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored; 4.0 upgrades nothing either, only adding what's new, like reminders, and the update must not disable the extension, since its new permissions show no warning).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
-10. Anything new in this release that isn't marked **[auto]** yet.
+10. The toolbar badge on the real icon, in light and dark Chrome: readable on the purple tile, and the count coming back after a right-click save's ✓ (TC-310, TC-312).
+11. Reminders in real Chrome: set one for tomorrow, allow Chrome's prompt, and on another profile refuse it. So as not to wait a day, set `remindAt` a minute ahead from the worker's console (DevTools from `chrome://extensions`), then check the notification comes once and clicking it opens the tab (TC-304 – TC-306). On a Mac, allow Google Chrome in System Settings › Notifications first, with Focus off, or nothing will appear.
+12. The address bar in real Chrome: `ts`, a space and a word lists saved tabs, Enter opens them here, Alt+Enter (Mac: Option+Return) in a new tab (TC-301, TC-302).
+13. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
+14. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
+15. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
+16. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -346,7 +352,7 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 
 **TC-103 — Manifest permissions remain minimal (P1, release gate)** **[auto]**
 - Steps: Inspect `manifest.json`.
-- Expected: `permissions` is exactly `["activeTab", "storage", "favicon"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
+- Expected: `permissions` is exactly `["activeTab", "storage", "favicon", "contextMenus", "scripting", "sidePanel"]`; `optional_permissions` is exactly `["tabs"]` (asked for only when you first save a whole window, TC-229); `web_accessible_resources` exposes only `_favicon/*`; no other permission has crept back in.
 
 **TC-104 — Build output is not committed (P2, release gate)**
 - Steps: `git status` after a fresh `pnpm build`.
@@ -930,7 +936,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (for 3.3.1: 3.3.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (for 4.0: 3.3.1's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
 - Expected: Every tab, window, category, color, theme and sort is as it was. From 3.3.0 to 3.3.1: no "What's new" note (a patch release has none), every ☾ as it was. From 3.2.x: "New in 3.3" shows once. Only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
@@ -965,7 +971,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-263 — Moving stops at the pinned line (P2)** **[auto]**
 - Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
-- Expected: Alt+↑ doesn't move it, and screen readers hear "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
+- Expected: Alt+↑ doesn't move it, and a message at the bottom says "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; let go anywhere else and the tab goes back, with a message saying why ("Unpin it to move it lower", or "Pin it to move it up there"); a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
 
 **TC-264 — Archived tabs are out of the list (P1)** **[auto]**
 - Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
@@ -1047,3 +1053,125 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-282 — Editing a tab to Uncategorized (P2)** **[auto]**
 - Steps: Edit a tab in a category, pick Uncategorized, Save. Then open the popup on a new page from that site.
 - Expected: The tab shows as Uncategorized (stored with no category, like any other uncategorized tab), and it doesn't make Uncategorized a suggestion: the picker shows no sparkle on Uncategorized. Tabs edited this way before 3.3.1 don't count as suggestions either (logic-tested).
+
+## 23. Beyond the Popup (v4.0)
+
+**TC-301 — Search from the address bar (P1)** **[auto]**
+- Steps: In the address bar, type `ts`, a space, and part of a saved tab's title, note, category or window name. Try a word in a title with `&` or `<` in it.
+- Expected: Up to six saved tabs are listed, best first, with what matched marked and the site beside each; archived tabs aren't. Odd characters show as they are. The robot test delivers what Chrome would send: **check the real address bar by hand each release**.
+
+**TC-302 — Going to a saved tab from there (P1)** **[auto]**
+- Steps: Pick a suggestion with Enter; with Alt+Enter (Mac: Option+Return); type words and press Enter without picking one.
+- Expected: The tab opens where the address bar says (this tab, or a new one), and counts as opened (the library's Opened column). Words alone go to the best match.
+
+**TC-303 — When the address bar finds nothing (P2)** **[auto]**
+- Steps: Type words that match nothing and press Enter, with and without a library tab open (also on Settings).
+- Expected: The library opens on that search, saying nothing matches; one that's already open is used, not a second.
+
+**TC-304 — Setting a reminder (P1)** **[auto]**
+- Steps: Edit a tab, choose Remind me tomorrow or Remind me next week under Reminder, Save. Later edit it again and choose No reminder.
+- Expected: The first reminder ever set asks Chrome for notifications, once; whatever the answer, the reminder is set, and after a no a message says it will show under Waiting. The row's quiet line shows a bell and when ("Tomorrow", or the date); the title keeps its width. Next week means seven days from today, and the choice names the date. It's 9:00 local time, and a clock change doesn't move it. Cancel leaves the reminder as it was. No reminder takes it away.
+
+**TC-305 — A due reminder (P1)** **[auto]**
+- Steps: Let a reminder come due, with notifications refused. Try a pinned tab and one in a kept category. Open the tab. Also open a tab whose reminder hasn't come yet.
+- Expected: It shows under Waiting, marked Due, pinned or not, without a moon unless it has aged too. Opening it ends the reminder and it leaves Waiting (at once in the side panel, which stays open). Opening it before the day leaves the reminder alone. An archived tab's reminder doesn't count until it's restored.
+
+**TC-306 — A reminder's notification (P1)** **[auto]**
+- Steps: With notifications allowed, let a reminder come due, with Chrome open, and again with Chrome closed at that time. Click the notification.
+- Expected: One notification with the tab's title and site, the moment it's due or the next time Chrome starts; it comes once however often the worker wakes. Clicking it opens that tab, counted as an open, which ends the reminder. The robot test keeps the notification instead of showing it: **check a real one by hand each release**.
+
+**TC-307 — Several reminders at once (P2)** **[auto]**
+- Steps: Let two or more come due together. Click the notification.
+- Expected: One notification saying how many; clicking it opens the library on Waiting.
+
+**TC-308 — Notifications in Settings (P2)** **[auto]**
+- Steps: Open Settings › General with notifications off, then on.
+- Expected: The Reminder notifications row says which, and offers Turn on or Turn off. Turn on is Chrome's own prompt (the way back after refusing it). The robot test checks what the row says; **the prompt needs a person**.
+
+**TC-309 — Reminders in the library (P2)** **[auto]**
+- Steps: Open the library with a reminder set and one due. Edit a tab there.
+- Expected: The reminder shows under the title, before the window and note. The edit panel sets one the same way as the popup.
+
+**TC-310 — The toolbar badge (P1)** **[auto]**
+- Steps: Open Settings › General. Press Turn on under Waiting count. Press Turn off.
+- Expected: Off on a fresh install. Turned on, the toolbar icon shows how many tabs are waiting, due reminders included, a tab counted once, and nothing at zero; past 99 it says 99+. Hovering the icon names the count. Turned off, it's gone. The robot test reads the badge from Chrome: **glance at the real icon by hand each release**.
+
+**TC-311 — The badge stays right (P1)** **[auto]**
+- Steps: With it on: archive a waiting tab, change the days or a category's moon, let a reminder come due, leave Chrome open for a tab to age, restart Chrome.
+- Expected: The count follows each one by itself, from any screen. A tab that ages with nothing else happening counts within the hour.
+
+**TC-312 — The badge and a save's flash (P2)** **[auto]**
+- Steps: With it on, save a link from the right-click menu.
+- Expected: The ✓ (or !) shows for a moment, then the count, up to date, comes back.
+
+**TC-295 — The library's sidebar (P1)** **[auto]**
+- Steps: Open the library. Click All tabs, Waiting, Archived, a category, a saved window. Save a link by right-clicking it with the library open.
+- Expected: Each shows just those tabs, under a heading with the count, and the sidebar counts match. Archived tabs show only under Archived. Categories come in your order, Uncategorized last, even empty ones. The new link appears without a refresh. In a narrow window the sidebar becomes a row across the top.
+
+**TC-296 — Sorting and search in the library (P1)** **[auto]**
+- Steps: Click each column heading, twice. Press / and type part of a title, note, category or window name.
+- Expected: Title, Category, Site, Saved and Opened each sort both ways, the heading showing which way; text starts A to Z, dates newest first; Saved newest first is the default. Opened means opened from Tab Sandwich, as the heading's tooltip says (a row's date shows how many times); a tab never opened counts as the longest ago. A category name always shows whole. Search narrows the current filter, highlights what matched in the title, and says when nothing matches. Sorting here never changes your own order in the popup.
+
+**TC-297 — Working with tabs in the library (P1)** **[auto]**
+- Steps: Tick a row, Shift-click another, use the box in the heading. Move them to a category, then Archive, each followed by Undo. On a row: Edit, Pin (the row flashes, and the button stays lit where you pressed it, on show even when the pointer's gone; pressing it again unpins), Archive. Under Archived: Restore, Delete for good. Use **Archive them** and **Not now** on the cleanup tip.
+- Expected: The heading row becomes the selection bar at the same height, so nothing moves. Each action takes one step, with Undo, in a toast only as wide as its message, centered at the bottom (in the popup and side panel it spans the width). A title can never be squeezed by anything on its row (a saved window's name and a note sit under it). Nothing is deleted anywhere but Archived.
+
+**TC-298 — Getting to the library, and around it (P1)** **[auto]**
+- Steps: Use **Open library** in the popup's Open in menu, in the side panel's header, in Settings › General, and on the toolbar icon's right-click menu. Do it again with the library already open, also from another window. In the library, open a title, + and the gear.
+- Expected: It opens in a tab of its own; with one already open it goes there instead of opening a second. The way in is always in view, however long the list and wherever it's scrolled. A title opens the tab and counts it. The toolbar menu's real click: **by hand**.
+
+**TC-299 — A thousand tabs (P1)** **[auto]**
+- Steps: With 1,000 saved tabs, scroll the library to the end, sort, search.
+- Expected: Only the rows in view are drawn, scrolling stays smooth, and search answers within a quarter of a second. Scrolling feel on your own computer: **by hand**.
+
+**TC-300 — Settings, adding and editing in the library (P1)** **[auto]**
+- Steps: Filter the library and scroll it. Press the gear; change something; leave with **Back**, the gear, the sidebar, a search, and the browser's own Back and Forward; reload while there. Press + and a row's Edit, then another row's Edit; scroll the list beside the panel; leave with Cancel, Escape, a click outside it, + again, Save and Add. Open the address of a tab that's since been deleted.
+- Expected: Settings is a section of the page, a column centered beside the sidebar: the sidebar and top bar stay, with **Back** beside its heading, and **Open library** isn't offered. Adding and editing open in a panel from under the top bar to the window's edges, over the table's right end, the row being edited marked: nothing on the page moves, the list stays in view and stays where it's scrolled, and what's typed in a panel goes when it closes without saving, as with Cancel. Each has an address of its own (`#settings`, `#add`, `#edit/…`), so a reload stays there. Going back finds the filter, search and scroll position as you left them, with focus on the button you came from; a new link shows on All tabs. A tab that's gone just shows the list.
+
+**TC-291 — The side panel (P1)** **[auto]**
+- Steps: Open the side panel beside a page and browse. Drag it wider and narrower. Save a link by right-clicking it. Change something in a popup while the panel is open.
+- Expected: It's the whole app: save card, list, Settings. It's as tall as the window, only the list scrolls, nothing is cut off at any width, and a right-click save appears without a refresh: the logo hops, and the new row scrolls into view and flashes, however many pinned tabs are above it (unless you're filling in a form, when only the logo hops). A popup and the panel stay in step, both ways.
+
+**TC-292 — The panel asks once, on the first Save (P1)** **[auto]**
+- Steps: On a profile without the "tabs" permission, open the panel on a web page. Press **Save** and say no. Press it again and say yes. Browse on.
+- Expected: Before asking, the card says "The page you're on" and that Chrome asks once. No prompt appears until Save. A no saves nothing and says why; a yes saves the page, and from then on the card shows each page you're on, with no more asking. Someone who allowed it for saving a whole window never sees the prompt. Chrome's real prompt: **by hand**.
+
+**TC-293 — What the toolbar icon opens (P1)** **[auto]**
+- Steps: Settings › General › Toolbar icon: pick **Side panel**. Click the icon, press the shortcut, restart Chrome and click again. Pick **Popup** from the panel's Settings.
+- Expected: With Side panel, the icon and the shortcut open the panel instead of the popup, and it stays that way after a restart; the popup is the default, and comes back when picked. A backup carries the choice. The real click and restart: **by hand**.
+
+**TC-294 — The popup's Open in menu (P2)** **[auto]**
+- Steps: In the popup, press **Open in**, next to +: use it with the mouse and with the keys (arrows, Enter, Escape), click away from it. Pick **Open side panel**, also in a second window.
+- Expected: The menu floats over the card, moving nothing, and closes on Escape (focus back on its button) or a click away. The panel opens in that window and the popup closes. If Chrome refuses, the popup stays open and says so. In the side panel the button opens the library directly, there being nowhere else to go.
+
+**TC-283 — Titles stop at 300 characters (P2)** **[auto]**
+- Steps: Save a page whose title is longer than 300 characters. In the + form, paste a title of 400 characters; then edit a saved tab and paste one into its Title field. Import a backup whose tab has a 400-character title.
+- Expected: In both forms the field stops taking text at 300 characters (like a note at 120). The page's title and the imported one are shortened to 300 characters, ending in "…" (never cutting an emoji in half; logic-tested, like saving a whole window and Update). Titles saved before 4.0 stay as they were until their tab is edited; nothing stored is upgraded.
+
+**TC-284 — The welcome page, once, after a fresh install (P1)** **[auto]**
+- Steps: Install the extension on a new profile. Open the popup, then close and reopen it. Press **Got it** on the welcome page. Then update an existing install in place (TC-256; by hand).
+- Expected: One welcome page opens by itself: pin it, save a page, the keyboard shortcut as Chrome words it (with **Set one** if there's none), and the local-only promise. Opening the popup doesn't bring it back, no "What's new" note shows, and **Got it** closes the page. An update opens nothing (logic-tested).
+
+**TC-285 — Everything open stays up to date (P1)** **[auto]**
+- Steps: Open the popup in two places (or, once they exist, the popup and the side panel). Start editing a row in one, type something; save a link in the other; change the theme there.
+- Expected: The new link shows up in the first without a refresh, the half-typed edit stays as it was, and the theme follows. A screen's own saves keep their timing: a deleted row still slides away, then Undo appears.
+
+**TC-286 — Saves from different places never overwrite each other (P1)** **[auto]**
+- Steps: With two places open, save something in each at the same moment, while a third is in the middle of writing.
+- Expected: They take turns: nothing is written until the third finishes, then both saves land and show in both places.
+
+**TC-287 — Save a link by right-clicking it (P1)** **[auto]**
+- Steps: On a web page, right-click a link, then **Save to Tab Sandwich** › a category. Do it again with a popup or side panel open beside it.
+- Expected: The link is saved into that category, titled with the link's own words (spaces tidied); the toolbar icon flashes ✓ for a couple of seconds, and it appears in whatever's open without a refresh. The robot test delivers the click Chrome would send: **check the real menu by hand each release**.
+
+**TC-288 — A link with no words of its own (P2)** **[auto]**
+- Steps: Right-click a picture that's a link; a link with neither (with some text selected on the page, then with none); a link on a page Chrome won't let extensions read, such as the Chrome Web Store.
+- Expected: The title is the first of: the link's words, its spoken name or tooltip, its picture's description, the selected text, the site's name. The selected text counts whether or not the right-click was on it. The save always goes through. Pick Uncategorized and the tab has no category.
+
+**TC-289 — The other things you can right-click (P2)** **[auto]**
+- Steps: Right-click the page away from any link, and save. Right-click a link that's already saved, in another category; do it again, picking the same category; do it with an archived link. Right-click a `mailto:` link, and save.
+- Expected: The page itself is saved, with its title. A saved link stays one copy and moves to the category picked, keeping its title, note, pin and reminder, and the icon flashes ✓; an archived one comes back to the list there. Picking the category it's already in changes nothing: the icon flashes a purple ✓✓, and hovering it says "Already saved in" that category. The `mailto:` link saves nothing, and the icon flashes ! (as it does when a save fails).
+
+**TC-290 — The menu follows your categories (P1)** **[auto]**
+- Steps: Add, rename, remove or reorder a category in Settings, or import a backup; right-click a link.
+- Expected: The menu lists your categories in your order, Uncategorized last, straight away. It's still there after restarting Chrome.

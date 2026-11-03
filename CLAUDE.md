@@ -5,7 +5,7 @@ Guidance for Claude Code (or any AI collaborator) working in this repo.
 ## What this is
 
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
-revisiting browser tabs. Popup-only UI (no background/content scripts),
+revisiting browser tabs. A toolbar popup plus a small background worker,
 category tagging with color coding, a "Waiting" reminder for categories you read later (others are kept), drag-to-reorder,
 saving a whole window at once,
 keyboard shortcut to open. Everything is stored locally via
@@ -16,9 +16,17 @@ keyboard shortcut to open. Everything is stored locally via
 TypeScript, built with Vite, no state library. Since v3.0 the screens are
 Preact (a ~4 KB component library): every screen is a `.tsx` component in
 `src/ui/`, styled with CSS modules and the shared tokens.
-`popup/popup.html` points straight
-at `src/popup.ts`; `pnpm build` type-checks with `tsc` (Vite itself
-doesn't), then Vite bundles the popup into `dist/` and copies in
+Each page has its own folder and entry: `popup/popup.html` points straight
+at `src/popup.ts`, `sidepanel/sidepanel.html` at `src/sidepanel.ts` (the same
+app, told which `surface` it's on), `library/library.html` at `src/library.ts`,
+`welcome/welcome.html` at `src/welcome.ts`. Since v4.0 the
+background worker (`src/background.ts`, always `dist/background.js`, the name
+the manifest uses) runs beside them; it shares the domain and storage modules,
+so nothing it imports may touch the DOM. Several parts of the extension can now
+be open and writing at once: `withStorageLock` is shared by all of them, and
+each screen refreshes itself when another one changes the library. `pnpm build`
+type-checks with `tsc` (Vite itself
+doesn't), then Vite bundles everything into `dist/` and copies in
 `manifest.json` and `images/`. `dist/` is the complete, loadable extension —
 the folder you load unpacked, the one the robot tests run against, and the
 one the release zip is made from.
@@ -28,6 +36,8 @@ src/
   types.ts              SavedTab, TabGroup (a saved window), Settings, ThemeChoice, SortOrder
   storage/
     chromeStorage.ts     chrome.storage.local wrappers, DEFAULT_SETTINGS, StorageWriteError on a rejected write;
+                            onLibraryChanged: another part of the extension changed the library (each write
+                            says who made it, so a screen never reacts to its own);
                             tabs and saved windows (or tabs and settings) written together in one write when a change touches both;
                             the last "What's new" version seen, since when opens are counted and the cleanup tip's
                             "Not now" date — kept apart from Settings so backups can't revive them
@@ -35,16 +45,18 @@ src/
     upgrade.ts            versioned data upgrades: schema version stamp, ordered migration steps,
                             backup before writing, original restored if anything fails (version 2 = v3.2: saved windows; 3 = v3.3: which categories age)
     writeQueue.ts          withStorageLock — serializes every read-modify-write cycle against
-                            chrome.storage.local so two overlapping mutations can't lose one's update
+                            chrome.storage.local, across every page and the worker (Web Locks),
+                            so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, archive/restore (one or many), notes (tidyNote), counting opens (recordOpen), duplicate detection,
+                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
                             which tabs "Close" may close — pure
+    reminders.ts           when a reminder comes (9:00 by the calendar), which are due, which are still to send, the next one — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     suggest.ts             category suggestions: where pages sharing most of a new page's address went
                             (the two newest agreeing, else the most common) — pure, from your library alone
@@ -55,11 +67,25 @@ src/
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme, sort, the waiting days and which categories age; clamps the day count to 1–365
+    SettingsRepository.ts  theme, sort, what the toolbar icon opens and whether it shows a count, the waiting days and which categories age; clamps the day count to 1–365
+  worker/
+    install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
+                            builds the right-click menu, opens the welcome page (fresh installs only)
+    contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change, and "Open library" on the
+                            toolbar icon's own menu; saves the link or page,
+                            titled with the link's own words (readLinkText, run in the page at that moment); a link already saved moves to the category picked
+    omnibox.ts             the address bar's "ts": suggestions from the app's own search, opening the pick, the library when nothing's found
+    reminders.ts           one alarm for the earliest reminder, rebuilt from storage; sends each once, notifying only if allowed;
+                            a notification's click opens the tab, or the library on Waiting when several came together
+    toolbar.ts             what the toolbar icon opens, set again each time Chrome starts
+    badge.ts               the toolbar badge: the waiting count, if turned on (recounted hourly, since tabs age with nothing else happening),
+                            and ✓, ✓✓ (already there) or ! flashing after a save, with no popup open to say so, the count coming back after it
   util/
     errors.ts               writeErrorMessage — turns a caught error into the text shown to the user
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
+    notifications.ts       the optional "notifications" permission, as Chrome's calls want it
+    openLibrary.ts         goes to the library's open tab, or opens it, optionally on a search (?q=) or on Waiting (?show=waiting)
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
     iconInk.ts             whether an icon is one dark/mid-gray or one light color on transparency (GitHub's cat,
@@ -69,6 +95,9 @@ src/
     tokens.css              every color/shadow/size, light + dark; "System" = no data-theme attribute
                             (CSS follows the OS, even while open), Light/Dark = data-theme on <html>
     base.css                page-level basics (body, color-scheme, focus ring, reduced motion, .visually-hidden)
+    popup.css               the toolbar popup's size; every other page fills what it's given
+    sidepanel.css           the side panel's: as tall as the window
+    startApp.ts             starts the app on the popup or panel page: fresh install → migrate → upgrade → theme → render
     controls.module.css     buttons, fields, the color dot — shared by several components
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
     strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
@@ -80,17 +109,21 @@ src/
     SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
                              a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
     CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
-    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error); a tiny store any screen can call; ToastSpace makes
+    Toast.tsx / toastStore.ts  the one bottom toast (Undo or error; across the popup and panel, sized to its message on the
+                             library's wide page); a tiny store any screen can call; ToastSpace makes
                              room for it at the end of each screen while it shows, so it never covers the last row
     main/                   the main screen
       App.tsx               root of the whole popup ("/" and Ctrl/⌘+Z work anywhere on its main screen): loads the library, owns filter/search/highlight
                              and which screen shows; the main screen is hidden (not unmounted) while
                              Settings is open, so it keeps your place; re-applies the stored theme
       useLibrary.ts         loads tabs + settings + storage use (+ open-counting and tip dates) for both screens;
-                             only the newest load paints
+                             only the newest load paints; reloads by itself when another part of the extension changes them,
+                             and says when that brought a new tab, so the panel can show it
       useActiveTab.ts       the page the save card describes (re-read on tab switch; Save re-reads)
-      Header.tsx            logo (hops on each new save), search, + (add link manually), gear
-      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button;
+      Header.tsx            logo (hops on each new save), search, + (add link manually), Open in, gear
+      OpenMenu.tsx          the popup's Open in menu: side panel, library (in the panel, the header just opens the library)
+      SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button; in the side panel,
+                             which can't see the page without the "tabs" permission, the first Save asks for it;
                              on a page already saved: "Saved N days ago", Show and Update instead of Save
                              ("In your archive" and Restore for an archived one); "Add a note" before saving; a new page's
                              picker starts on its suggested category (a sparkle until you pick)
@@ -113,33 +146,51 @@ src/
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
                              in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
-    settings/               the Settings screen: four tabs (arrow keys move between them)
+    settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
-      GeneralTab.tsx        Light/Dark/System, keyboard shortcut and the list's keys, storage meter
+      GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, the waiting count on the icon, reminder notifications on or off, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove (in use: asks in the row first; Undo from the toast),
                              drag; the days field and the moon's legend above the list; the ☾ on each row (its tabs age
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
+    library/                the full-page library
+      Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn), bulk editing, cleanup tip;
+                             the popup's own selection bar; Settings as a centered column beside the sidebar, its add and edit forms in a panel over the
+                             table so nothing moves, closed by a click outside or Escape; each at an address of its own (#settings, #add, #edit/…)
+      libraryModel.ts       pure: its filters (saved windows too), column sorting, sidebar counts, which rows are in view — logic-tested
+      library.css           fills the tab; the table scrolls, not the page
+    welcome/
+      Welcome.tsx           the one page shown after a fresh install: pin it, save a page, the shortcut, the local-only promise
   vite-env.d.ts             types for non-code imports, e.g. *.module.css
-  popup.ts                  entry point — note a fresh install → migrate → upgrade → apply theme → render App
-                            (with the "What's new" release to show, if any)
+  popup.ts                  entry point of the toolbar popup
+  sidepanel.ts              entry point of the side panel
+  library.ts                entry point of the full-page library
+  welcome.ts                entry point of the welcome page
+  background.ts             entry point of the background worker: registers its listeners, the work is in worker/
 
 popup/popup.html               just the mount point for the Preact app
-manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon; "tabs" only as an
-                                optional permission, asked for when you first save a whole window
+sidepanel/sidepanel.html       the same, for the side panel
+library/library.html           the same, for the full-page library
+welcome/welcome.html           the same, for the welcome page
+manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting + sidePanel + alarms;
+                                "tabs" only as an optional permission, asked for when you first save a whole window or save from the side panel;
+                                "notifications" the same, asked for with the first reminder
+release-notes/                 vX.Y.Z.md per release, added in its pull request; the release workflow publishes it
+                                as the GitHub release's notes (and refuses a tag without one)
 branding/                      the icon's drawings: icon.svg (128 px Store icon, with the Store's margin; cropped
                                 to its tile for 48 px), icon-32.svg and icon-16.svg (redrawn on whole pixels,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
 images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
-vite.config.ts                 build: bundles the popup, copies manifest + icons into dist/
+vite.config.ts                 build: bundles each page and the worker, copies manifest + icons into dist/
 tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
                                 component tests (*.test.tsx, simulated DOM via happy-dom)
 tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
-                                the popup, and runs an accessibility scan (axe) in light and dark
+                                the popup, and runs an accessibility scan (axe) in light and dark; each test
+                                starts as a fresh install (the fixture closes the welcome page unless asked not to)
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
                                 pixel (playwright.visual.config.ts); baselines in __screenshots__/
 tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
@@ -147,7 +198,8 @@ tests/store/                   not tests: render the Chrome Web Store screenshot
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
-                                release.yml (version tags: checks, then zip the tested dist/)
+                                release.yml (version tags: checks, then zip the tested dist/ and publish it
+                                with release-notes/vX.Y.Z.md as the notes)
 ```
 
 ## Build & verify
@@ -207,8 +259,13 @@ animation smoothness, and the manual release pass at the top of
   `MIGRATIONS`, with tests (see `tests/unit/upgrade.test.ts`). Never
   reshape stored data anywhere else.
 - **Manifest permissions are minimal on purpose** (`activeTab`, `storage`,
-  `favicon`, plus the optional `tabs`, requested at the moment you first save
-  a whole window). If a new feature needs a new permission, that's a deliberate,
+  `favicon`, `contextMenus`, `scripting`, `sidePanel`, `alarms`, plus the optional `tabs`,
+  requested at the moment you first save a whole window, or first save from the
+  side panel, which gets no `activeTab`, and the optional `notifications`, with the first reminder). There are no content scripts: the
+  only code that runs in a page is `readLinkText`, once, when you pick a category
+  in the right-click menu (that click is what grants `activeTab`). Never put a
+  permission that shows a warning in the required list: an update adding one
+  disables the extension until the user accepts it. If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
 - **Preact for screens, no state library.** Preact was adopted for the
   v3.0 redesign; don't add another UI or state library. Components keep
@@ -227,7 +284,9 @@ animation smoothness, and the manual release pass at the top of
 - **Build output (`dist/`) is never committed.** CI
   (`.github/workflows/release.yml`) builds and packages a distributable
   zip on every `vX.Y.Z` tag push (after all checks pass, and only if the
-  tag matches `manifest.json`'s version) — that's the artifact that gets
+  tag matches `manifest.json`'s version and `release-notes/vX.Y.Z.md`
+  exists — the release is published with those notes, so GitHub's release
+  email carries them) — that's the artifact that gets
   distributed, not a locally-built copy, except when explicitly noted
   otherwise (e.g. `PUBLISHING.md` has a documented one-off exception for
   the first Store submission).
