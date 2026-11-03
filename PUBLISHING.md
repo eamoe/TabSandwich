@@ -44,14 +44,23 @@ Tab Sandwich is a fast, focused way to save and organize the tabs you want to co
 SAVE INSTANTLY
 Click the toolbar icon (or press Alt+S): the popup shows the page you're on. Pick a category if you like and hit Save — its title and URL are saved immediately. Need to save a link that isn't your active tab? Use the + button. Already saved the page? The popup says so, and one click updates the saved copy.
 
+SAVE WITHOUT OPENING ANYTHING
+Right-click any link or page, choose Save to Tab Sandwich and a category: the link is saved with its own words as the title, and the toolbar icon flashes a check mark to say so.
+
+BESIDE THE PAGE, OR ON A PAGE OF ITS OWN
+Keep Tab Sandwich open in Chrome's side panel while you browse, or make the side panel what the toolbar icon opens. Big collection? The full-page library shows everything in one table: categories and saved windows in a sidebar, sort by any column, edit many tabs at once, and tidy up with a tip. It stays quick with thousands of tabs.
+
 FIND IT AGAIN, FAST
-Search matches titles, sites and your notes as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. Sort by newest, oldest, title, site, recently opened or most opened, and switch back to your own order any time. Kept tabs you haven't opened in six months? A quiet tip offers to archive them.
+Search matches titles, sites and your notes as you type, with the matching letters highlighted; type a category's or saved window's name to see everything in it. Press Enter to open the top result. From anywhere, type ts and a space in Chrome's address bar to search your saved tabs without opening anything. Sort by newest, oldest, title, site, recently opened or most opened, and switch back to your own order any time. Kept tabs you haven't opened in six months? A quiet tip offers to archive them.
 
 ORGANIZE WITH CATEGORIES
 Give any saved tab a color-coded category, and Tab Sandwich learns where pages go: save another page from the same site or project and it suggests the category you used, worked out on your device. Each row is tinted in its category's color and names it under the title, so the list is easy to scan. Filter with a click, and manage categories (add, rename, remove, reorder, recolor) in Settings.
 
 READ LATER, OR KEEP
 Pick the categories you save things to read later: once a tab there has waited a week (or however long you like), it gets a small moon badge, and a "Waiting" filter rounds them all up. Everything else, like dev tools, docs and accounts, is kept and never nags. Pin the ones you use most to keep them on top, and add a note on why you saved something.
+
+REMINDERS
+Want a tab back on a certain day? While editing it, choose Remind me tomorrow or next week: at 9:00 that day a notification brings it back, and it waits under Waiting until you open it. Turn on the waiting count and the toolbar icon shows how many tabs are waiting.
 
 SAVE A WHOLE WINDOW
 Forty tabs open? One click saves every page in the window into a category, skipping browser pages and anything already saved, with an exact count. Then close them all with one more click, or keep them open. A saved window stays together in your list under a name like "Toasted Rye": open it, rename it, reopen all its tabs in a new window, or break it apart.
@@ -66,23 +75,23 @@ BACKUP AND KEYBOARD
 Export everything to a file and import it later. Every action works from the keyboard — arrow keys, Enter to open, E to edit, P to pin, Delete to archive, Alt+arrows to reorder, / to search — and a customizable keyboard shortcut opens the popup.
 
 YOUR DATA STAYS YOURS
-Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension), local storage, and read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site). Saving a whole window needs permission to see your open tabs; Chrome asks only when you first use it, and everything else works if you say no.
+Tab Sandwich stores everything locally on your device using Chrome's own storage APIs. Nothing is ever sent to a server, tracked, or shared — there is no server. The extension requests only the permissions it actually uses: access to your current tab (only when you click the extension or its right-click menu), local storage, read-only access to Chrome's own local favicon cache to show each saved tab's icon (no favicon data is stored, and nothing is ever fetched from the tab's own site), the right-click menu (and, when you save a link from it, reading that one link's words for its title), the side panel, and alarms to wake it for your reminders. Saving a whole window, or saving from the side panel, needs permission to see your open tabs; showing a reminder needs permission for notifications. Chrome asks for each only when you first need it, and everything else works if you say no.
 
-NEW IN 3.3
-Read later, or keep: only the categories you choose ever nag you about old tabs. Archive instead of delete, and restore anything exactly where it was. Pin the tabs you use most, add a note on why you saved something, and let Tab Sandwich suggest the category for a new page. Search now finds categories, saved windows and notes too.
+NEW IN 4.0
+Tab Sandwich goes beyond the popup. Right-click any link to save it straight into a category. Keep your list open in the side panel, or browse it all in the full-page library. Search from the address bar with ts, set a reminder on any tab, and, if you like, see on the toolbar icon how many tabs are waiting.
 ```
 
 ### Screenshots
 
-Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the popup next to a headline on the brand's purple background; the first (main) one also carries the icon, large (`branding/icon.svg`):
+Upload all five from `store-assets/`, in this order (each exactly 1280×800, as the Store requires). Each shows the extension next to a headline on the brand's purple background; the first (main) one leads with the icon and the name, large, side by side (`branding/icon.svg`):
 
-1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list (a pinned tab, a note) and save card; its last line carries the privacy promise ("Stored only in your browser. No account, no tracking.")
-2. `screenshot-2-whole-window.png` — "Forty tabs open? Save them all at once": a window just saved, open as a saved window, with "Close N tabs" on offer
-3. `screenshot-3-dark-mode.png` — "Easy on the eyes, day or night": the list in dark mode
-4. `screenshot-4-search.png` — "Find any saved tab in a keystroke": search with highlighted matches
-5. `screenshot-5-read-later.png` — "Read it later, or keep it for good": the Waiting filter in dark mode, with "Archive all N waiting tabs"
+1. `screenshot-1-main-list.png` — "Save the tab you're on, in one click": the main list (a pinned tab, a note) and save card, under the icon and the name; the privacy promise is a badge at the bottom ("Stored only in your browser. No account, no tracking.")
+2. `screenshot-2-side-panel.png` — "Keep your list open beside the page": a Chrome window with a Wikipedia article and the side panel beside it, describing that page (the page and the panel are rendered apart; the window around them, tab strip, address bar and the panel's header, is drawn plainly, with no browser logo); its lines mention right-click saving
+3. `screenshot-3-library.png` — "Your whole collection, on one page": the full-page library in dark mode, with its search, its sortable table and a reminder on one tab
+4. `screenshot-4-whole-window.png` — "Forty tabs open? Save them all at once": a window just saved, open as a saved window, with "Close N tabs" on offer
+5. `screenshot-5-read-later.png` — "Read it later, or keep it for good": the Waiting filter in dark mode, a reminder that's come among the waiting tabs, with "Archive all N waiting tabs"
 
-(Since 3.2 the categories screenshot is gone to make room for saving a whole window; the main list still shows categories. Since 3.3.1 the About screenshot is gone too: it showed no feature, so read later / keep has its place, and the privacy promise moved onto the first screenshot.)
+(Since 3.2 the categories screenshot is gone to make room for saving a whole window; the main list still shows categories. Since 3.3.1 the About screenshot is gone too: it showed no feature, so read later / keep has its place, and the privacy promise moved onto the first screenshot. Since 4.0 the side panel and the library take the places of dark mode, which the library and read-later shots still show, and search, which the library shows.)
 
 They're rendered from the built extension, not edited by hand: `pnpm build && pnpm store:screenshots` (on a Mac, with network access — it visits each sample site once so the rows show real site icons). Re-run it whenever the look changes, and check the pictures before uploading: they're public.
 
@@ -138,6 +147,7 @@ Once the listing exists, publishing a new version doesn't repeat Steps 0/2 (acco
 2. Tag and push (`git tag -a vX.Y.Z -m "..."`, `git push origin vX.Y.Z`) — CI builds the new zip and publishes the GitHub release with those notes already in it, so GitHub's release email carries them (notes added by editing a release afterwards never reach that email). A tag without its notes file gets no release.
 3. In the Developer Dashboard, open the existing Tab Sandwich item → **Package** tab → upload the new zip.
 4. Update the description/screenshots only if something user-facing actually changed (3.2.0 did: paste the summary and detailed description above, including its "New in 3.2" paragraph, and replace all five screenshots — delete the old ones first, since two were renamed — re-rendered with `pnpm build && pnpm store:screenshots` after the version bump). The Store has no per-version notes field; the full notes go in the GitHub release.
+   - 4.0.0 changes the description (paste it again, with its "New in 4.0" paragraph) and all five screenshots: delete the old ones first, since three are new or renamed (`screenshot-2-side-panel.png`, `screenshot-3-library.png`, `screenshot-4-whole-window.png`; `screenshot-3-dark-mode.png` and `screenshot-4-search.png` are gone). In the **Privacy practices** tab, add the justifications for `contextMenus`, `scripting`, `sidePanel`, `alarms` and the optional `notifications` (Step 3 above). None of the new required permissions shows a warning, so updating doesn't disable the extension; `notifications`, being optional, is asked for only with someone's first reminder. Nothing is sent anywhere: reminders and the badge setting stay on the device like the rest, so the **Data usage** answers stay as they are; `PRIVACY.md` lists them.
    - 3.3.1 keeps the description as it is but replaces all five screenshots (delete the old ones first: `screenshot-5-private.png` is gone, `screenshot-5-read-later.png` takes its place; screenshot 1 gains the privacy line, and every headline now breaks into balanced lines). No permission change, nothing new stored: **Privacy practices** stays as it is.
    - 3.3.0 changes the description (paste it again, with its "New in 3.3" paragraph) and all five screenshots (same names; re-render after the version bump). It adds no permission and sends nothing anywhere: the new data (pins, archive, notes, when a tab was last opened from Tab Sandwich) stays on the device like the rest, so the **Privacy practices** answers stay as they are; `PRIVACY.md` lists it.
    - 3.2.0 adds the optional `tabs` permission: in the **Privacy practices** tab, add its justification (Step 3 above). Being optional, it's asked for only when someone first saves a whole window, so updating doesn't disable the extension for existing users.
