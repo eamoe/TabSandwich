@@ -1175,3 +1175,17 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-290 — The menu follows your categories (P1)** **[auto]**
 - Steps: Add, rename, remove or reorder a category in Settings, or import a backup; right-click a link.
 - Expected: The menu lists your categories in your order, Uncategorized last, straight away. It's still there after restarting Chrome.
+
+## 24. Reach (v4.1)
+
+**TC-313 — Tab Sandwich speaks Chrome's language (P1)**
+- Steps: Set Chrome's language (Settings › Languages › Display Chrome in this language, then Relaunch; on a Mac, Chrome follows macOS's Language & Region list) to each of German, Spanish, French, Portuguese (Brazil), Russian, Japanese and Simplified Chinese, then to one Tab Sandwich doesn't have, such as Italian, Portuguese (Portugal) or traditional Chinese.
+- Expected: The popup, the side panel, the library, the welcome page, the right-click menu, the address bar's `ts` hint, the toolbar icon's name, notifications and `chrome://extensions` (the summary and the shortcut's name) all speak that language; Austrian German gets German and Latin American Spanish gets Spanish. A language Tab Sandwich doesn't have gets English everywhere, never a mix. There's no language setting in Tab Sandwich itself. Dates ("4 Nov", "Tue 4 Nov") and alphabetical sorting follow the language too. Which language is picked is logic-tested.
+
+**TC-314 — Your names are never translated (P1)**
+- Steps: In a language other than English, look at your categories, saved windows' names, titles and notes. Filter by Uncategorized, search for its name in that language, sort the library by Category, and right-click a link.
+- Expected: Everything you named stays exactly as you wrote it. Only "Uncategorized" shows in that language (in the pills, pickers, rows, the library's sidebar and table, Settings › Categories and the right-click menu), and searching for that word finds those tabs. Switching Chrome back to English shows "Uncategorized" again, and nothing stored has changed: a backup made in either language reads the same.
+
+**TC-315 — Counts read naturally (P2)**
+- Steps: In English and in Russian, look at texts with a count of 1, 2, 5 and 21: the search box's hint, "Saved 1 tab", the selection bar, the days field in Settings › Categories.
+- Expected: Each count takes its own form ("1 tab", "2 tabs"; in Russian "1 вкладка", "2 вкладки", "5 вкладок", "21 вкладка"), never a word with "(s)" or a form that doesn't agree. Logic-tested for English and each language's rules.

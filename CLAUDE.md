@@ -27,7 +27,7 @@ be open and writing at once: `withStorageLock` is shared by all of them, and
 each screen refreshes itself when another one changes the library. `pnpm build`
 type-checks with `tsc` (Vite itself
 doesn't), then Vite bundles everything into `dist/` and copies in
-`manifest.json` and `images/`. `dist/` is the complete, loadable extension —
+`manifest.json`, `images/` and `_locales/`. `dist/` is the complete, loadable extension —
 the folder you load unpacked, the one the robot tests run against, and the
 one the release zip is made from.
 
@@ -100,7 +100,13 @@ src/
     startApp.ts             starts the app on the popup or panel page: fresh install → migrate → upgrade → theme → render
     controls.module.css     buttons, fields, the color dot — shared by several components
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
-    strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
+    strings.ts              the text in Chrome's language: picks a dictionary from locales/, the locale for dates and
+                             sorting, categoryLabel (only "Uncategorized" is translated; it's stored in English)
+    locales/                one dictionary per language, key for key: en.ts is the source every other one translates
+                             (a count is a whole sentence per plural form; "{}" marks a key cap or field in a sentence)
+    i18n.ts                 which dictionary Chrome's language gets (Chrome's own _locales rule), plural rules, "{}" slots — pure
+    Slotted.tsx             a sentence with a key cap or a field inside it, wherever the language puts it
+    pageLanguage.ts         each page's lang and tab name, which the HTML can only say in English
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
                             when the popup is too short, never clipped by the list
@@ -175,6 +181,8 @@ popup/popup.html               just the mount point for the Preact app
 sidepanel/sidepanel.html       the same, for the side panel
 library/library.html           the same, for the full-page library
 welcome/welcome.html           the same, for the welcome page
+_locales/                      the manifest's own words in each language (its summary, the shortcut's name), one folder
+                                per dictionary in src/ui/locales/; the name "Tab Sandwich" is never translated
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting + sidePanel + alarms;
                                 "tabs" only as an optional permission, asked for when you first save a whole window or save from the side panel;
                                 "notifications" the same, asked for with the first reminder
@@ -185,7 +193,7 @@ branding/                      the icon's drawings: icon.svg (128 px Store icon,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
 images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
-vite.config.ts                 build: bundles each page and the worker, copies manifest + icons into dist/
+vite.config.ts                 build: bundles each page and the worker, copies manifest + icons + _locales into dist/
 tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
                                 component tests (*.test.tsx, simulated DOM via happy-dom)
 tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
@@ -267,6 +275,13 @@ animation smoothness, and the manual release pass at the top of
   permission that shows a warning in the required list: an update adding one
   disables the extension until the user accepts it. If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
+- **Every word on screen comes from the dictionaries.** Text the user can see or hear
+  (labels, tooltips, toasts, accessible names, notifications, menus) goes in
+  `src/ui/locales/en.ts` and in every other dictionary there, never as a literal in a
+  component. Write a count as a whole sentence per plural form, never `"tab" + "s"`, and a
+  sentence with a key cap or field in it as one string with `{}` (see `Slotted.tsx`), never
+  as pieces glued around it. Names the user gave (categories, saved windows, titles, notes)
+  are never translated; "Uncategorized" is stored in English and shown with `categoryLabel`.
 - **Preact for screens, no state library.** Preact was adopted for the
   v3.0 redesign; don't add another UI or state library. Components keep
   their styles in a sibling `*.module.css` (scoped by the build, so two

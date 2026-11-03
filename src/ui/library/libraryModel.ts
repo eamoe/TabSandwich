@@ -1,6 +1,7 @@
 import type { SavedTab, Settings } from "../../types";
 import { getTabCategory } from "../../domain/CategoryRepository";
 import { ALL, ARCHIVED, OUTDATED, applyFilter, isArchived, siteName } from "../main/listModel";
+import { categoryLabel, locale } from "../strings";
 
 /** The library's sidebar: what `applyFilter` knows, plus one saved window. */
 export const WINDOW_PREFIX = "\u0000window:";
@@ -20,11 +21,11 @@ export interface LibrarySort {
 /** Newest saved first: the order a list of saved things is usually read in. */
 export const DEFAULT_LIBRARY_SORT: LibrarySort = { column: "saved", ascending: false };
 
-const byText = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+const byText = new Intl.Collator(locale, { sensitivity: "base", numeric: true });
 
 const COMPARE: Record<LibraryColumn, (a: SavedTab, b: SavedTab) => number> = {
     title: (a, b) => byText.compare(a.title, b.title),
-    category: (a, b) => byText.compare(getTabCategory(a), getTabCategory(b)),
+    category: (a, b) => byText.compare(categoryLabel(getTabCategory(a)), categoryLabel(getTabCategory(b))),
     site: (a, b) => byText.compare(siteName(a.url), siteName(b.url)),
     saved: (a, b) => a.savedAt - b.savedAt,
     opened: (a, b) => (a.lastOpenedAt ?? -1) - (b.lastOpenedAt ?? -1),

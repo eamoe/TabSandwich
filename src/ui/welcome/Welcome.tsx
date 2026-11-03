@@ -1,6 +1,7 @@
 import { Fragment } from "preact";
 import controls from "../controls.module.css";
 import { Icon } from "../Icon";
+import { Slotted } from "../Slotted";
 import { Logo } from "../Logo";
 import { strings } from "../strings";
 import { SHORTCUTS_PAGE, useShortcut } from "../useShortcut";
@@ -47,13 +48,14 @@ export function Welcome() {
                                 <h2 class={styles.stepTitle}>{strings.welcomeShortcutTitle}</h2>
                                 {shortcut === null ? null : shortcut ? (
                                     <p class={styles.stepText}>
-                                        {strings.welcomeShortcutText}{" "}
-                                        {shortcut.split("+").map((key, i) => (
-                                            <Fragment key={key}>
-                                                {i > 0 && "+"}
-                                                <kbd class={styles.kbd}>{key}</kbd>
-                                            </Fragment>
-                                        ))}
+                                        <Slotted sentence={strings.welcomeShortcutText}>
+                                            {shortcut.split("+").map((key, i) => (
+                                                <Fragment key={key}>
+                                                    {i > 0 && "+"}
+                                                    <kbd class={styles.kbd}>{key}</kbd>
+                                                </Fragment>
+                                            ))}
+                                        </Slotted>
                                     </p>
                                 ) : (
                                     <p class={styles.stepText}>
@@ -63,7 +65,9 @@ export function Welcome() {
                                     </p>
                                 )}
                                 <p class={styles.stepText}>
-                                    {strings.welcomeSearchBefore} <kbd class={styles.kbd}>ts</kbd> {strings.welcomeSearchAfter}
+                                    <Slotted sentence={strings.welcomeSearch}>
+                                        <kbd class={styles.kbd}>ts</kbd>
+                                    </Slotted>
                                 </p>
                             </div>
                         </li>

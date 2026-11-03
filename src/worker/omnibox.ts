@@ -5,6 +5,7 @@ import { searchTabs, type MatchRange, type SearchMatch } from "../domain/search"
 import { getGroups, getTabs } from "../storage/chromeStorage";
 import { upgradeStoredData } from "../storage/upgrade";
 import { isArchived, siteName, windowNames } from "../ui/main/listModel";
+import { categoryLabel } from "../ui/strings";
 import { openLibrary } from "../util/openLibrary";
 
 /** About as many as the address bar has room for. */
@@ -33,7 +34,7 @@ function withMatches(title: string, ranges: MatchRange[]): string {
 function find(tabs: SavedTab[], groups: TabGroup[], text: string): SearchMatch[] {
     const live = tabs.filter((t) => !isArchived(t));
     const windowOf = windowNames(live, groups);
-    return searchTabs(live, text, (t) => ({ category: getTabCategory(t), window: windowOf.get(t.id) ?? "" }));
+    return searchTabs(live, text, (t) => ({ category: categoryLabel(getTabCategory(t)), window: windowOf.get(t.id) ?? "" }));
 }
 
 /** What the address bar lists for what's been typed after "ts". Picking one hands back its address. */

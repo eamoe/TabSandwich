@@ -37,6 +37,12 @@ type Fixtures = {
     keepWelcomePage: boolean;
     /** A test can't answer Chrome's prompt, so these tests start with the optional "notifications" permission already given. */
     notificationsAllowed: boolean;
+    /**
+     * Chrome's language, as Linux spells it ("de", "pt_BR"): what the screens speak. The tests
+     * find controls by their English names, so English unless a test is about another language.
+     * Only Linux Chromium (Docker, CI) takes it from here; on a Mac it follows macOS's own list.
+     */
+    chromeLanguage: string;
     context: BrowserContext;
     popup: Page;
 };
@@ -44,7 +50,8 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
     keepWelcomePage: [false, { option: true }],
     notificationsAllowed: [false, { option: true }],
-    context: async ({ keepWelcomePage, notificationsAllowed }, use) => {
+    chromeLanguage: ["en", { option: true }],
+    context: async ({ keepWelcomePage, notificationsAllowed, chromeLanguage }, use) => {
         if (!readFileSyncSafe(join(DIST, "manifest.json"))) {
             throw new Error("dist/ is missing — run `pnpm build` before the robot tests.");
         }
@@ -68,6 +75,7 @@ export const test = base.extend<Fixtures>({
             channel: "chromium",
             viewport: { width: 380, height: 580 },
             args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
+            env: { ...process.env, LANGUAGE: chromeLanguage },
         });
         await context.route(`${TEST_SITE}/**`, (route) => {
             const path = new URL(route.request().url()).pathname;

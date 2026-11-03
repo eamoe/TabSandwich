@@ -26,7 +26,7 @@ import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, isArchived, isTabAged, siteNa
 import { useLibrary } from "../main/useLibrary";
 import { SettingsScreen } from "../settings/SettingsScreen";
 import { SiteIcon } from "../SiteIcon";
-import { strings } from "../strings";
+import { categoryLabel, strings } from "../strings";
 import { applyTheme } from "../theme";
 import { Toast } from "../Toast";
 import { showErrorToast, showUndoToast } from "../toastStore";
@@ -150,7 +150,7 @@ export function Library() {
         if (!library) return { rows: [] as SavedTab[], matches: new Map<string, SearchMatch>() };
         const filtered = filterLibrary(library.tabs, library.settings, filter);
         const q = query.trim();
-        const found = q ? searchTabs(filtered, q, (t) => ({ category: getTabCategory(t), window: windowOf.get(t.id) ?? "" })) : null;
+        const found = q ? searchTabs(filtered, q, (t) => ({ category: categoryLabel(getTabCategory(t)), window: windowOf.get(t.id) ?? "" })) : null;
         return {
             rows: sortLibrary(found ? found.map((m) => m.tab) : filtered, sort),
             matches: new Map((found ?? []).map((m) => [m.tab.id, m])),
@@ -162,8 +162,8 @@ export function Library() {
     const { rows, matches } = shown;
     const { settings } = library;
     const configured = settings.categories;
-    const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: c }));
-    const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: c }));
+    const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: categoryLabel(c) }));
+    const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: categoryLabel(c) }));
     const colorOf = (category: string) => getCategoryColorHex(category, settings.categoryColors);
     const inArchive = filter === ARCHIVED;
     const live = counts.get(ALL) ?? 0;
@@ -207,7 +207,7 @@ export function Library() {
     const move = (ids: string[], category: string) =>
         undoable(async () => {
             const previous = await setCategoryOf(ids, category === UNCATEGORIZED ? undefined : category);
-            return { message: strings.movedTabs(previous.length, category), undo: () => restoreCategories(previous) };
+            return { message: strings.movedTabs(previous.length, categoryLabel(category)), undo: () => restoreCategories(previous) };
         });
     // The answer has to show where you're looking: the button stays lit, and the row flashes.
     const togglePin = async (tab: SavedTab) => {
@@ -300,7 +300,7 @@ export function Library() {
             ? strings.archived
             : filter.startsWith(WINDOW_PREFIX)
               ? (library.groups.find((g) => windowFilter(g.id) === filter)?.name ?? "")
-              : filter;
+              : categoryLabel(filter);
     const editing = page.kind === "edit" ? library.tabs.find((t) => t.id === page.id) : undefined;
 
     return (
@@ -361,7 +361,7 @@ export function Library() {
                     {navButton(OUTDATED, strings.outdated)}
                     {navButton(ARCHIVED, strings.archived)}
                     <h2 class={styles.sideTitle}>{strings.tabCategories}</h2>
-                    {[...configured, UNCATEGORIZED].map((c) => navButton(c, c, colorOf(c)))}
+                    {[...configured, UNCATEGORIZED].map((c) => navButton(c, categoryLabel(c), colorOf(c)))}
                     {windows.length > 0 && <h2 class={styles.sideTitle}>{strings.libraryWindows}</h2>}
                     {windows.map((g) => navButton(windowFilter(g.id), g.name))}
                 </nav>
@@ -507,7 +507,7 @@ export function Library() {
                                             <td>
                                                 <span class={styles.category}>
                                                     <span class={styles.dot} style={{ background: colorOf(category) }} aria-hidden="true" />
-                                                    <span class={styles.cut} title={category}>{category}</span>
+                                                    <span class={styles.cut} title={categoryLabel(category)}>{categoryLabel(category)}</span>
                                                 </span>
                                             </td>
                                             <td class={styles.quiet}>

@@ -1,8 +1,7 @@
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { Icon } from "../Icon";
-import { strings } from "../strings";
+import { categoryLabel, strings } from "../strings";
 import { ALL, ARCHIVED, OUTDATED, type FilterOption } from "./listModel";
-import { UNCATEGORIZED } from "../../domain/CategoryRepository";
 import controls from "../controls.module.css";
 import styles from "./FilterPills.module.css";
 
@@ -25,7 +24,7 @@ export function FilterPills(props: {
         <div ref={row} class={styles.pills} role="group" aria-label={strings.filterLabel}>
             {props.options.map((o) => {
                 const isCategory = o.key !== ALL && o.key !== OUTDATED && o.key !== ARCHIVED;
-                const label = o.key === ALL ? strings.all : o.key === OUTDATED ? strings.outdated : o.key === ARCHIVED ? strings.archived : o.key;
+                const label = o.key === ALL ? strings.all : o.key === OUTDATED ? strings.outdated : o.key === ARCHIVED ? strings.archived : categoryLabel(o.key);
                 return (
                     <button
                         key={o.key}
@@ -38,7 +37,7 @@ export function FilterPills(props: {
                         {isCategory && <span class={controls.dot} style={{ background: props.colorOf(o.key) }} />}
                         {o.key === OUTDATED && <Icon name="moon" size={12} />}
                         {o.key === ARCHIVED && <Icon name="archive" size={12} />}
-                        <span>{o.key === UNCATEGORIZED ? UNCATEGORIZED : label}</span>
+                        <span>{label}</span>
                         <span class={styles.count} aria-hidden="true">
                             {o.count}
                         </span>

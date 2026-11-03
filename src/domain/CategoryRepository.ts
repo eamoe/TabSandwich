@@ -1,9 +1,9 @@
 import { SavedTab } from "../types";
 import { getSettings, setSettings, getTabs, setTabs, setTabsAndSettings } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
+import { UNCATEGORIZED } from "./uncategorized";
 
-/** Reserved sentinel — never stored in Settings.categories, structurally impossible to rename or remove (FR-007). */
-export const UNCATEGORIZED = "Uncategorized";
+export { UNCATEGORIZED };
 
 /** Fixed set compatible with the app's purple/coral design language — picking a color is choosing from this, not a raw color input. */
 export const CATEGORY_COLOR_PALETTE: Record<string, string> = {

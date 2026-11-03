@@ -32,7 +32,7 @@ Then zip the *contents* of `dist/` (so `manifest.json` sits at the root of the z
 
 **Language:** English
 
-**Summary** (132 char max — the Dashboard shows this as "Summary from package," pulled automatically from `manifest.json`'s `description` field — this is 127 chars, nothing to type in manually):
+**Summary** (132 char max — the Dashboard shows this as "Summary from package," pulled automatically from the package: since 4.1 the manifest's `description` is `__MSG_appDescription__`, so it's `_locales/en/messages.json`'s `appDescription`, and each language's own folder gives that language's summary — this is 127 chars, nothing to type in manually):
 ```
 Save a tab or a whole window in one click, organize with color-coded categories. 100% local — nothing leaves your browser.
 ```

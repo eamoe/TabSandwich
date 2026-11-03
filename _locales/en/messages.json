@@ -1,0 +1,10 @@
+{
+    "appDescription": {
+        "message": "Save a tab or a whole window in one click, organize with color-coded categories. 100% local — nothing leaves your browser.",
+        "description": "The one-line summary on the Chrome Web Store and in chrome://extensions. At most 132 characters."
+    },
+    "openCommand": {
+        "message": "Open Tab Sandwich",
+        "description": "The keyboard shortcut's name in chrome://extensions/shortcuts."
+    }
+}

@@ -2,7 +2,7 @@ import { isReminderDue } from "../../domain/reminders";
 import type { SavedTab, Settings, SortOrder, TabGroup } from "../../types";
 import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isOutdated } from "../../util/time";
-import { strings } from "../strings";
+import { locale, strings } from "../strings";
 
 /**
  * The main list's rules, kept free of Preact and the DOM so the logic tests can check them
@@ -87,7 +87,7 @@ export function applyFilter(all: SavedTab[], settings: Settings, filter: string)
     return tabs.filter((t) => getTabCategory(t) === filter);
 }
 
-const byText = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+const byText = new Intl.Collator(locale, { sensitivity: "base", numeric: true });
 
 /**
  * The list in the chosen order. A view only: the stored order (your own, "custom") is never
