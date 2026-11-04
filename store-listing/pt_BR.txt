@@ -1,0 +1,31 @@
+O Tab Sandwich guarda as guias às quais você quer voltar e as encontra quando você precisa. Tudo fica no seu navegador: sem conta, sem servidor, sem rastreamento.
+
+SALVAR TODAS AS MINHAS GUIAS
+Quarenta guias abertas e sem tempo para organizar? Um clique salva todas as páginas da janela em uma categoria, pulando as páginas do navegador e o que já está salvo, e diz exatamente quantas salvou. Feche todas com mais um clique, ou deixe-as abertas. Elas ficam juntas na sua lista como uma janela salva, com um nome como "Pão dourado": reabra-a numa nova janela, renomeie ou desfaça o grupo.
+
+SALVAR ESTA PÁGINA PARA DEPOIS
+Clique no ícone da barra de ferramentas ou pressione Alt+S: o pop-up mostra a página em que você está. Aceite a categoria sugerida, ou escolha outra, e clique em Salvar. Já salvou? O pop-up avisa, e um clique a atualiza. Clique com o botão direito em qualquer link ou página e escolha "Salvar no Tab Sandwich" e uma categoria para salvar sem abrir nada; o link é salvo com as próprias palavras como título. O botão + adiciona um link manualmente.
+
+ENCONTRAR AQUELE LINK DE NOVO
+Pesquise títulos, sites e suas notas enquanto digita, com as letras encontradas destacadas. Digite o nome de uma categoria ou de uma janela salva para ver tudo o que há nela, e pressione Enter para abrir o primeiro resultado. De qualquer lugar, digite ts e um espaço na barra de endereço do Chrome para pesquisar suas guias salvas sem abrir nada. Ordene por mais recentes, mais antigas, título, site, abertas recentemente ou mais abertas, e volte à sua própria ordem quando quiser.
+
+LER DEPOIS, E LER DE VERDADE
+Escolha as categorias em que você salva coisas para ler depois. Quando uma guia espera ali por uma semana (ou o tempo que você quiser), ela ganha uma pequena lua, e o filtro "Aguardando" reúne todas. Quer uma de volta num dia certo? Crie um lembrete, para amanhã ou para a semana que vem: às 9h desse dia, uma notificação a traz de volta. Ative a contagem de aguardando e o ícone da barra de ferramentas mostra quantas guias estão esperando. Todo o resto, como documentação, ferramentas e contas, é mantido e nunca incomoda.
+
+TUDO ORGANIZADO
+Categorias coloridas que aprendem com você: salve outra página do mesmo site ou projeto e o Tab Sandwich sugere a categoria que você usou, calculada no seu dispositivo. Fixe as guias que você mais usa para mantê-las no topo, e adicione uma nota sobre por que salvou algo. Arraste as guias para a sua própria ordem, selecione várias para mover ou arquivar de uma vez, e desfaça qualquer coisa com um clique. Arquive o que já terminou: fora do caminho, nunca perdido, pronto para restaurar. Guias mantidas que você não abre há seis meses? Uma dica discreta oferece arquivá-las.
+
+AO LADO DA PÁGINA, OU NUMA PÁGINA SÓ DELE
+Deixe sua lista aberta no painel lateral do Chrome enquanto navega; um link salvo pelo menu do botão direito aparece ali na hora. Para uma coleção grande, a biblioteca em página inteira mostra tudo numa tabela: categorias e janelas salvas numa barra lateral, ordenação por qualquer coluna, edição de várias guias de uma vez. Ela continua rápida com milhares de guias.
+
+NO SEU IDIOMA
+O Tab Sandwich fala português (Brasil), inglês, espanhol, alemão, francês, russo, japonês e chinês simplificado, seguindo o idioma do Chrome. Os nomes das suas categorias nunca são traduzidos. Viu uma palavra estranha, ou tem uma ideia? "Conte para nós", em Configurações › Sobre, abre um formulário curto.
+
+CLARO, ESCURO E O TECLADO
+Segue o modo claro ou escuro do seu computador, mesmo com ele aberto, ou escolha um nas Configurações. Tudo funciona pelo teclado: setas, Enter para abrir, E para editar, P para fixar, Delete para arquivar, Alt+setas para reordenar, / para pesquisar. O atalho que abre o pop-up é você quem escolhe. Exporte tudo para um arquivo e importe depois.
+
+SEUS DADOS SÃO SEUS
+O Tab Sandwich armazena tudo localmente no seu dispositivo, com as próprias APIs de armazenamento do Chrome. Nada é enviado a um servidor, rastreado ou compartilhado: não existe servidor. A extensão pede apenas as permissões que realmente usa: acesso à guia atual (só quando você clica na extensão ou no menu do botão direito dela), armazenamento local, acesso somente leitura ao cache local de ícones do Chrome para mostrar o ícone de cada guia salva (nenhum dado de ícone é armazenado, e nada é baixado do próprio site da guia), o menu do botão direito (e, quando você salva um link por ele, a leitura das palavras desse único link para o título), o painel lateral e alarmes para acordá-la nos seus lembretes. Salvar uma janela inteira, ou salvar pelo painel lateral, precisa de permissão para ver suas guias abertas; mostrar um lembrete precisa de permissão para notificações. O Chrome pede cada uma só quando você precisa dela pela primeira vez, e todo o resto funciona se você disser não.
+
+NOVIDADES DA 4.1
+O Tab Sandwich agora fala espanhol, português (Brasil), alemão, francês, russo, japonês e chinês simplificado. Ele segue o idioma do Chrome, uma nova instalação começa com categorias nesse idioma, e cada tela foi verificada para que tudo caiba. E em Configurações › Sobre, "Conte para nós" abre um formulário curto para sugerir uma palavra melhor ou uma ideia.

@@ -1,9 +1,9 @@
 import { SavedTab } from "../types";
 import { getSettings, setSettings, getTabs, setTabs, setTabsAndSettings } from "../storage/chromeStorage";
 import { withStorageLock } from "../storage/writeQueue";
+import { UNCATEGORIZED } from "./uncategorized";
 
-/** Reserved sentinel — never stored in Settings.categories, structurally impossible to rename or remove (FR-007). */
-export const UNCATEGORIZED = "Uncategorized";
+export { UNCATEGORIZED };
 
 /** Fixed set compatible with the app's purple/coral design language — picking a color is choosing from this, not a raw color input. */
 export const CATEGORY_COLOR_PALETTE: Record<string, string> = {
@@ -52,22 +52,33 @@ export async function getSelectableCategories(): Promise<string[]> {
 const MAX_CATEGORY_NAME_LENGTH = 15;
 
 /**
+ * Names no category can take, whatever their case: "Uncategorized", and `shownAs`, the words
+ * the screens show it as in Chrome's language (which this module can't know), so no picker
+ * ever lists two of it.
+ */
+function isReservedName(name: string, shownAs: readonly string[]): boolean {
+    return [UNCATEGORIZED, ...shownAs].some((reserved) => reserved.toLocaleLowerCase() === name.toLocaleLowerCase());
+}
+
+/**
  * New categories go to the front — added at the end would land below the fold in a long
  * list, invisible without scrolling. Length is capped here (not just via the input's
- * `maxlength`) so the limit holds regardless of how this is ever called.
+ * `maxlength`) so the limit holds regardless of how this is ever called. False when the name
+ * is empty, reserved (see isReservedName) or already a category's, and nothing was added.
  */
-export async function addCategory(name: string): Promise<void> {
+export async function addCategory(name: string, reserved: readonly string[] = []): Promise<boolean> {
     const trimmed = name.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
-    if (!trimmed || trimmed === UNCATEGORIZED) return;
+    if (!trimmed || isReservedName(trimmed, reserved)) return false;
     return withStorageLock(async () => {
         const settings = await getSettings();
-        if (settings.categories.includes(trimmed)) return;
+        if (settings.categories.includes(trimmed)) return false;
         settings.categories = [trimmed, ...settings.categories];
         settings.categoryColors = {
             ...settings.categoryColors,
             [trimmed]: nextDefaultColorKey(settings.categoryColors),
         };
         await setSettings(settings);
+        return true;
     });
 }
 
@@ -94,7 +105,7 @@ export interface RenameCategoryResult {
  * stable id (see SavedTab.category), so a rename that only touched Settings would silently
  * orphan every tab that used the old name — they'd fall back to displaying as Uncategorized.
  */
-export async function renameCategory(oldName: string, newName: string): Promise<RenameCategoryResult> {
+export async function renameCategory(oldName: string, newName: string, reserved: readonly string[] = []): Promise<RenameCategoryResult> {
     const trimmed = newName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
     if (!trimmed) return { renamed: false, reason: "empty" };
     if (trimmed === oldName) return { renamed: true }; // unchanged — nothing to do, not an error
@@ -104,7 +115,7 @@ export async function renameCategory(oldName: string, newName: string): Promise<
         if (!settings.categories.includes(oldName)) {
             return { renamed: false, reason: "gone" };
         }
-        if (trimmed === UNCATEGORIZED || settings.categories.includes(trimmed)) {
+        if (isReservedName(trimmed, reserved) || settings.categories.includes(trimmed)) {
             return { renamed: false, reason: "taken" };
         }
 

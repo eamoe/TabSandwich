@@ -1,0 +1,8 @@
+{
+    "appDescription": {
+        "message": "タブやウィンドウ全体をワンクリックで保存し、色分けしたカテゴリで整理。すべてローカルで、ブラウザの外には何も送りません。"
+    },
+    "openCommand": {
+        "message": "Tab Sandwich を開く"
+    }
+}

@@ -28,6 +28,7 @@ export const POPUP_URL = `chrome-extension://${EXTENSION_ID}/popup/popup.html`;
 export const LIBRARY_URL = `chrome-extension://${EXTENSION_ID}/library/library.html`;
 export const SIDE_PANEL_URL = `chrome-extension://${EXTENSION_ID}/sidepanel/sidepanel.html`;
 export const WELCOME_URL = `chrome-extension://${EXTENSION_ID}/welcome/welcome.html`;
+export const STAGE_URL = `chrome-extension://${EXTENSION_ID}/stage.html`;
 
 /** A fake website the tests can "visit" with no network: every request to it is answered here. */
 export const TEST_SITE = "https://example.test";
@@ -37,6 +38,13 @@ type Fixtures = {
     keepWelcomePage: boolean;
     /** A test can't answer Chrome's prompt, so these tests start with the optional "notifications" permission already given. */
     notificationsAllowed: boolean;
+    /**
+     * Chrome's language, as Linux spells it ("de", "pt_BR"): what the screens speak. The tests
+     * find controls by their English names, so English unless a test is about another language.
+     * Only Linux Chromium (Docker, CI) takes it from here; on a Mac, Chrome itself (its worker, its
+     * menus) follows macOS's own list, and only the extension's pages follow it, through `locale`.
+     */
+    chromeLanguage: string;
     context: BrowserContext;
     popup: Page;
 };
@@ -44,7 +52,8 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
     keepWelcomePage: [false, { option: true }],
     notificationsAllowed: [false, { option: true }],
-    context: async ({ keepWelcomePage, notificationsAllowed }, use) => {
+    chromeLanguage: ["en", { option: true }],
+    context: async ({ keepWelcomePage, notificationsAllowed, chromeLanguage }, use) => {
         if (!readFileSyncSafe(join(DIST, "manifest.json"))) {
             throw new Error("dist/ is missing — run `pnpm build` before the robot tests.");
         }
@@ -57,10 +66,13 @@ export const test = base.extend<Fixtures>({
         const extDir = mkdtempSync(join(tmpdir(), "tab-sandwich-ext-"));
         cpSync(DIST, extDir, { recursive: true });
         const manifest = JSON.parse(readFileSync(join(extDir, "manifest.json"), "utf8"));
-        // Rendering the Store screenshots (tests/store) shows a real web page in the save card, so
-        // that run alone stands in for activeTab on any site.
-        const hosts = process.env.TS_STORE_SCREENSHOTS ? ["<all_urls>"] : [`${TEST_SITE}/*`];
+        // The Store screenshots and the demo video (tests/store) show a real web page in the save
+        // card, so those runs alone stand in for activeTab on any site.
+        const hosts = process.env.TS_STORE_SCREENSHOTS || process.env.TS_STORE_VIDEO ? ["<all_urls>"] : [`${TEST_SITE}/*`];
         writeFileSync(join(extDir, "manifest.json"), JSON.stringify({ ...manifest, key: TEST_KEY, host_permissions: hosts, permissions: [...manifest.permissions, ...(notificationsAllowed ? ["notifications"] : [])] }, null, 2));
+        // The demo video (tests/store/demo-video.spec.ts) is filmed on a blank page of the extension's
+        // own, which can hold its popup, side panel and library side by side.
+        if (process.env.TS_STORE_VIDEO) writeFileSync(join(extDir, "stage.html"), `<!doctype html><meta charset="utf-8"><title>Stage</title><body style="margin:0"></body>`);
 
         const userDataDir = mkdtempSync(join(tmpdir(), "tab-sandwich-profile-"));
         const context = await chromium.launchPersistentContext(userDataDir, {
@@ -68,6 +80,10 @@ export const test = base.extend<Fixtures>({
             channel: "chromium",
             viewport: { width: 380, height: 580 },
             args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
+            env: { ...process.env, LANGUAGE: chromeLanguage },
+            // Playwright gives pages en-US unless told otherwise, and in a page that's also what
+            // Chrome says its language is, so the two must agree.
+            locale: chromeLanguage === "en" ? "en-US" : chromeLanguage.replace("_", "-"),
         });
         await context.route(`${TEST_SITE}/**`, (route) => {
             const path = new URL(route.request().url()).pathname;

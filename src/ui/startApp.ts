@@ -3,6 +3,7 @@ import { migrateFromLocalStorageIfNeeded } from "../storage/migration";
 import { upgradeStoredData } from "../storage/upgrade";
 import { getLastSeenVersion, getSettings, getTabs, isStorageEmpty, setLastSeenVersion } from "../storage/chromeStorage";
 import { whatsNewToShow } from "../domain/whatsNew";
+import { applyLanguage } from "./pageLanguage";
 import { applyTheme } from "./theme";
 import { showErrorToast } from "./toastStore";
 import { strings } from "./strings";
@@ -10,6 +11,7 @@ import { App, type Surface } from "./main/App";
 
 /** Starts the app on its page: the popup, or the side panel, which is the same app with room to breathe. */
 export function startApp(surface: Surface): void {
+    applyLanguage(strings.appName);
     document.addEventListener("DOMContentLoaded", () => void start(surface));
 }
 

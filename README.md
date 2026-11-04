@@ -8,6 +8,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 ## Features
 
+- **In your language** — English, German, Spanish, French, Portuguese (Brazil), Russian, Japanese and Simplified Chinese, following Chrome's own language (there's no setting to change). A fresh install's starter categories come in that language too; your own names, titles and notes are never translated. Spot a clumsy word? Settings › About › **Tell us** opens a short feedback form, in any language.
 - **A welcome page** — after a fresh install, one page shows how to pin the icon, save a page and open Tab Sandwich from the keyboard.
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
 - **Address-bar search** — type `ts`, a space and a word in Chrome's address bar to jump straight to a saved tab.
@@ -72,7 +73,8 @@ Then load the `dist/` folder (not the repository root) as an unpacked extension 
 - `pnpm test` — logic and component tests (a second or so, no browser needed).
 - `pnpm test:e2e` — robot tests: a real Chromium loads the built `dist/`, clicks through the popup, and runs an accessibility scan. Needs `pnpm exec playwright install chromium` once, and a fresh `pnpm build`.
 - `pnpm visual` — compares every screen, light and dark, with its approved screenshot, inside Playwright's Docker image (Docker must be running). `pnpm visual:update` approves new pictures after an intended visual change.
-- `pnpm store:screenshots` — renders the Chrome Web Store screenshots into `store-assets/` (after `pnpm build`).
+- `pnpm store:screenshots` — renders the Chrome Web Store screenshots, in every language, into `store-assets/<language>/` (after `pnpm build`).
+- `pnpm store:video` — films the Store's short demo video into `store-assets/video/` (after `pnpm build`; uploaded to YouTube, not committed).
 - `pnpm icons` — renders the extension's icons into `images/` from the drawings in `branding/`.
 - `pnpm lint` / `pnpm typecheck` — code checks.
 - `pnpm check` — all of the above, in the same order CI runs them.

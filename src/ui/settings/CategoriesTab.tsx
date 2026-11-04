@@ -15,6 +15,7 @@ import {
 import { clampOutdatedDays, MAX_OUTDATED_DAYS, MIN_OUTDATED_DAYS, setCategoryWaiting, setOutdatedDays } from "../../domain/SettingsRepository";
 import { removeRefusalMessage, renameRefusalMessage, writeErrorMessage } from "../errors";
 import { Icon } from "../Icon";
+import { Slotted } from "../Slotted";
 import { showErrorToast, showUndoToast } from "../toastStore";
 import { strings } from "../strings";
 import type { Library } from "../main/useLibrary";
@@ -76,8 +77,9 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
         e.preventDefault();
         if (!newName.trim()) return;
         try {
-            await addCategory(newName);
-            setNewName(""); // kept on failure: nothing was saved, so there's nothing to clear
+            // Kept on failure: nothing was saved, so there's nothing to clear.
+            if (await addCategory(newName, [strings.uncategorized])) setNewName("");
+            else showErrorToast(strings.renameRefusal.taken);
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
         }
@@ -111,19 +113,21 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
             {/* The days setting, and the legend for every row's moon: on top, so a long list can't hide it. */}
             <div class={styles.waitingDays}>
                 <Icon name="moon" size={14} />
-                <label for="outdated-days">{strings.waitingAfter}</label>
-                <input
-                    id="outdated-days"
-                    class={controls.field}
-                    type="number"
-                    min={MIN_OUTDATED_DAYS}
-                    max={MAX_OUTDATED_DAYS}
-                    aria-describedby="outdated-days-hint"
-                    value={days}
-                    onInput={(e) => setDays(e.currentTarget.value)}
-                    onChange={() => void commitDays()}
-                />
-                <span>{strings.days}</span>
+                {/* One sentence with the field inside, so each language can put the field where it goes. */}
+                <Slotted sentence={strings.waitingAfterDays(Number(days) || 0)}>
+                    <input
+                        id="outdated-days"
+                        class={controls.field}
+                        type="number"
+                        min={MIN_OUTDATED_DAYS}
+                        max={MAX_OUTDATED_DAYS}
+                        aria-label={strings.waitingAfter}
+                        aria-describedby="outdated-days-hint"
+                        value={days}
+                        onInput={(e) => setDays(e.currentTarget.value)}
+                        onChange={() => void commitDays()}
+                    />
+                </Slotted>
             </div>
             <p id="outdated-days-hint" class={styles.waitingHint}>
                 {strings.waitingAfterHint}
@@ -212,9 +216,9 @@ function UncategorizedRow(props: WaitingProps & { tabCount: number; color: strin
         <li class={`${styles.category} ${styles.fixed}`}>
             <span class={styles.grip} aria-hidden="true" />
             <span class={styles.colorDot} style={{ background: props.color }} aria-hidden="true" />
-            <span class={styles.fixedName}>{UNCATEGORIZED}</span>
+            <span class={styles.fixedName}>{strings.uncategorized}</span>
             <span class={styles.count}>{strings.tabCount(props.tabCount)}</span>
-            <WaitingToggle name={UNCATEGORIZED} {...props} />
+            <WaitingToggle name={strings.uncategorized} {...props} />
             <span class={styles.actions} aria-hidden="true" />
         </li>
     );
@@ -309,7 +313,7 @@ function CategoryRow(props: WaitingProps & {
             return;
         }
         try {
-            const result = await renameCategory(name, draft);
+            const result = await renameCategory(name, draft, [strings.uncategorized]);
             if (!result.renamed) {
                 flash(result.reason ? renameRefusalMessage(result.reason) : strings.couldntSave);
                 return;

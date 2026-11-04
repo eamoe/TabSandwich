@@ -27,7 +27,7 @@ be open and writing at once: `withStorageLock` is shared by all of them, and
 each screen refreshes itself when another one changes the library. `pnpm build`
 type-checks with `tsc` (Vite itself
 doesn't), then Vite bundles everything into `dist/` and copies in
-`manifest.json` and `images/`. `dist/` is the complete, loadable extension —
+`manifest.json`, `images/` and `_locales/`. `dist/` is the complete, loadable extension —
 the folder you load unpacked, the one the robot tests run against, and the
 one the release zip is made from.
 
@@ -67,10 +67,10 @@ src/
                             merge (additive, dedupes by URL) vs. replace (full overwrite), saved windows
                             with fresh ids (format 2; format-1 files still import) — pure
     BackupRepository.ts    applies an import under the storage lock and keeps a snapshot for Undo
-    SettingsRepository.ts  theme, sort, what the toolbar icon opens and whether it shows a count, the waiting days and which categories age; clamps the day count to 1–365
+    SettingsRepository.ts  a fresh install's settings, written once with its starter categories in its language (seedStarterSettings); theme, sort, what the toolbar icon opens and whether it shows a count, the waiting days and which categories age; clamps the day count to 1–365
   worker/
     install.ts             installed or updated: settles "What's new" on a fresh install, upgrades stored data,
-                            builds the right-click menu, opens the welcome page (fresh installs only)
+                            writes a fresh install's starter categories in Chrome's language, builds the right-click menu, opens the welcome page (fresh installs only)
     contextMenu.ts         "Save to Tab Sandwich" › your categories, rebuilt when they change, and "Open library" on the
                             toolbar icon's own menu; saves the link or page,
                             titled with the link's own words (readLinkText, run in the page at that moment); a link already saved moves to the category picked
@@ -85,6 +85,7 @@ src/
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
     notifications.ts       the optional "notifications" permission, as Chrome's calls want it
+    feedback.ts            the feedback form's link (Google Forms), with Chrome's language and the version filled in — opened only by the person
     openLibrary.ts         goes to the library's open tab, or opens it, optionally on a search (?q=) or on Waiting (?show=waiting)
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
@@ -100,7 +101,13 @@ src/
     startApp.ts             starts the app on the popup or panel page: fresh install → migrate → upgrade → theme → render
     controls.module.css     buttons, fields, the color dot — shared by several components
     theme.ts                applyTheme — stamps or clears data-theme from the stored ThemeChoice
-    strings.ts              every piece of text the v3.0 screens show or announce (ready for translation)
+    strings.ts              the text in Chrome's language: picks a dictionary from locales/, the locale for dates and
+                             sorting, categoryLabel (only "Uncategorized" is translated; it's stored in English)
+    locales/                one dictionary per language, key for key: en.ts is the source every other one translates
+                             (a count is a whole sentence per plural form; "{}" marks a key cap or field in a sentence)
+    i18n.ts                 which dictionary Chrome's language gets (Chrome's own _locales rule), plural rules, "{}" slots — pure
+    Slotted.tsx             a sentence with a key cap or a field inside it, wherever the language puts it
+    pageLanguage.ts         each page's lang and tab name, which the HTML can only say in English
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
                             when the popup is too short, never clipped by the list
@@ -124,8 +131,8 @@ src/
       OpenMenu.tsx          the popup's Open in menu: side panel, library (in the panel, the header just opens the library)
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button; in the side panel,
                              which can't see the page without the "tabs" permission, the first Save asks for it;
-                             on a page already saved: "Saved N days ago", Show and Update instead of Save
-                             ("In your archive" and Restore for an archived one); "Add a note" before saving; a new page's
+                             on a page already saved: "Saved N days ago · Show" on its line and Update instead of Save
+                             ("In your archive · Restore" for an archived one); "Add a note" before saving; a new page's
                              picker starts on its suggested category (a sparkle until you pick)
       SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
                              "tabs" permission the first time), what was saved and skipped, Close the saved tabs
@@ -155,9 +162,10 @@ src/
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
-      AboutTab.tsx          version, local-only promise, privacy policy and source links
+      AboutTab.tsx          version, local-only promise, "Tell us" (the feedback form: a better word, or an idea), privacy policy and source links
     library/                the full-page library
-      Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn), bulk editing, cleanup tip;
+      Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn; in a narrow window Opened,
+                             then Site, step aside so titles keep room), bulk editing, cleanup tip;
                              the popup's own selection bar; Settings as a centered column beside the sidebar, its add and edit forms in a panel over the
                              table so nothing moves, closed by a click outside or Escape; each at an address of its own (#settings, #add, #edit/…)
       libraryModel.ts       pure: its filters (saved windows too), column sorting, sidebar counts, which rows are in view — logic-tested
@@ -175,6 +183,8 @@ popup/popup.html               just the mount point for the Preact app
 sidepanel/sidepanel.html       the same, for the side panel
 library/library.html           the same, for the full-page library
 welcome/welcome.html           the same, for the welcome page
+_locales/                      the manifest's own words in each language (its summary, the shortcut's name), one folder
+                                per dictionary in src/ui/locales/; the name "Tab Sandwich" is never translated
 manifest.json                  MV3 manifest — permissions kept to activeTab + storage + favicon + contextMenus + scripting + sidePanel + alarms;
                                 "tabs" only as an optional permission, asked for when you first save a whole window or save from the side panel;
                                 "notifications" the same, asked for with the first reminder
@@ -185,16 +195,24 @@ branding/                      the icon's drawings: icon.svg (128 px Store icon,
                                 filling the square like other toolbar icons), mark.svg (no tile, for purple)
 images/                        the icons Chrome shows — rendered from branding/ by `pnpm icons`, never edited by hand
 dist/                          build output (the loadable extension) — gitignored, never commit this
-vite.config.ts                 build: bundles each page and the worker, copies manifest + icons into dist/
+vite.config.ts                 build: bundles each page and the worker, copies manifest + icons + _locales into dist/
 tests/unit/                    logic tests (Vitest, plain Node, in-memory chrome.storage fake) and
                                 component tests (*.test.tsx, simulated DOM via happy-dom)
 tests/e2e/                     robot tests (Playwright): real Chromium loads dist/, clicks through
                                 the popup, and runs an accessibility scan (axe) in light and dark; each test
                                 starts as a fresh install (the fixture closes the welcome page unless asked not to)
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
-                                pixel (playwright.visual.config.ts); baselines in __screenshots__/
-tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
-                                (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
+                                pixel (playwright.visual.config.ts); baselines in __screenshots__/. Also
+                                languages.spec.ts: every screen in each language, with no English left and
+                                everything fitting, English included (Linux Chromium takes Chrome's language
+                                from LANGUAGE, so only these Docker runs can; its "English left" check,
+                                tests/e2e/englishLeft.ts, also guards every Store screenshot)
+tests/store/                   not tests: render the Chrome Web Store screenshots in every language into
+                                store-assets/<language>/ (`pnpm store:screenshots`; samples.ts has each language's words
+                                and sample library), film the demo video into store-assets/video/ (`pnpm store:video`,
+                                never committed), and render the icons into images/ (`pnpm icons`)
+store-listing/                 the Store's detailed description, one file per language (<language>.txt), pasted into
+                                the dashboard (PUBLISHING.md)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),
@@ -267,6 +285,13 @@ animation smoothness, and the manual release pass at the top of
   permission that shows a warning in the required list: an update adding one
   disables the extension until the user accepts it. If a new feature needs a new permission, that's a deliberate,
   visible change — don't add broader permissions "to be safe."
+- **Every word on screen comes from the dictionaries.** Text the user can see or hear
+  (labels, tooltips, toasts, accessible names, notifications, menus) goes in
+  `src/ui/locales/en.ts` and in every other dictionary there, never as a literal in a
+  component. Write a count as a whole sentence per plural form, never `"tab" + "s"`, and a
+  sentence with a key cap or field in it as one string with `{}` (see `Slotted.tsx`), never
+  as pieces glued around it. Names the user gave (categories, saved windows, titles, notes)
+  are never translated; "Uncategorized" is stored in English and shown with `categoryLabel`.
 - **Preact for screens, no state library.** Preact was adopted for the
   v3.0 redesign; don't add another UI or state library. Components keep
   their styles in a sibling `*.module.css` (scoped by the build, so two

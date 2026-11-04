@@ -1,5 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
-import { cpSync } from "node:fs";
+import { cpSync, readdirSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,7 +7,8 @@ const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const OUT_DIR = resolve(ROOT, "dist");
 
 /**
- * Everything Chrome needs besides the bundled popup: the manifest and the icons it points at.
+ * Everything Chrome needs besides the bundled pages: the manifest, the icons it points at and
+ * its _locales.
  * Copied on every build, including each rebuild under `pnpm watch`, so `dist/` is always a
  * complete, loadable extension — and the same folder the release zip is made from.
  */
@@ -16,14 +17,15 @@ function copyExtensionFiles(): Plugin {
         name: "copy-extension-files",
         buildStart() {
             this.addWatchFile(resolve(ROOT, "manifest.json"));
+            for (const folder of readdirSync(resolve(ROOT, "_locales"))) this.addWatchFile(resolve(ROOT, "_locales", folder, "messages.json"));
         },
         writeBundle() {
             cpSync(resolve(ROOT, "manifest.json"), resolve(OUT_DIR, "manifest.json"));
-            cpSync(resolve(ROOT, "images"), resolve(OUT_DIR, "images"), {
-                recursive: true,
-                // Finder litters folders with .DS_Store; it has no place in a shipped extension.
-                filter: (src) => basename(src) !== ".DS_Store",
-            });
+            // Finder litters folders with .DS_Store; it has no place in a shipped extension.
+            const noFinderFiles = (src: string) => basename(src) !== ".DS_Store";
+            cpSync(resolve(ROOT, "images"), resolve(OUT_DIR, "images"), { recursive: true, filter: noFinderFiles });
+            // The manifest's own words (its description, the shortcut's name) in each language.
+            cpSync(resolve(ROOT, "_locales"), resolve(OUT_DIR, "_locales"), { recursive: true, filter: noFinderFiles });
         },
     };
 }

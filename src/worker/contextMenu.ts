@@ -2,7 +2,7 @@ import { UNCATEGORIZED, getSelectableCategories } from "../domain/CategoryReposi
 import { addTab, placeInCategory } from "../domain/TabRepository";
 import { upgradeStoredData } from "../storage/upgrade";
 import { siteName } from "../ui/main/listModel";
-import { strings } from "../ui/strings";
+import { categoryLabel, strings } from "../ui/strings";
 import { isSupportedTabUrl } from "../util/url";
 import { flashBadge } from "./badge";
 
@@ -29,7 +29,7 @@ async function buildMenu(): Promise<void> {
     chrome.contextMenus.create({ id: LIBRARY_ID, title: strings.menuOpenLibrary, contexts: ["action"] });
     chrome.contextMenus.create({ id: PARENT_ID, title: strings.menuSave, contexts: CONTEXTS });
     for (const category of categories) {
-        chrome.contextMenus.create({ id: CATEGORY_ID_PREFIX + category, parentId: PARENT_ID, title: category, contexts: CONTEXTS });
+        chrome.contextMenus.create({ id: CATEGORY_ID_PREFIX + category, parentId: PARENT_ID, title: categoryLabel(category), contexts: CONTEXTS });
     }
 }
 
@@ -77,7 +77,7 @@ export async function saveFromMenu(info: chrome.contextMenus.OnClickData, tab: c
         const wanted = category === UNCATEGORIZED ? undefined : category;
         const { tab: saved, duplicate } = await addTab({ title: await titleFor(info, tab, url), url, category: wanted });
         // Picking a category is the point of this menu: a link already saved goes there, out of the archive too.
-        if (duplicate && !(await placeInCategory(saved.id, wanted))) await flashBadge("alreadySaved", strings.alreadySavedIn(category));
+        if (duplicate && !(await placeInCategory(saved.id, wanted))) await flashBadge("alreadySaved", strings.alreadySavedIn(categoryLabel(category)));
         else await flashBadge("saved");
     } catch {
         await flashBadge("failed");

@@ -29,7 +29,7 @@ import { applyTheme } from "../theme";
 import { hasPendingUndo, showErrorToast, showUndoToast, undoFromToast } from "../toastStore";
 import { Icon } from "../Icon";
 import { heightWithoutToastSpace, Toast, ToastSpace } from "../Toast";
-import { strings } from "../strings";
+import { categoryLabel, strings } from "../strings";
 import { Header } from "./Header";
 import { SaveCard } from "./SaveCard";
 import { ManualForm } from "./ManualForm";
@@ -213,7 +213,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
         // Pinned tabs first in every sort; a saved window (shown only on All) keeps its pinned ones at its own top.
         if (!q && activeFilter === ARCHIVED) return { tabs: filtered, matches: null };
         if (!q) return { tabs: pinnedFirst(filtered, activeFilter === ALL ? new Set(windowOf.keys()) : undefined), matches: null };
-        const matches = searchTabs(filtered, q, (tab) => ({ category: getTabCategory(tab), window: windowOf.get(tab.id) }));
+        const matches = searchTabs(filtered, q, (tab) => ({ category: categoryLabel(getTabCategory(tab)), window: windowOf.get(tab.id) }));
         return { tabs: matches.map((m) => m.tab), matches: new Map<string, SearchMatch>(matches.map((m) => [m.tab.id, m])) };
     }, [library, activeFilter, sort, query, windowOf]);
 
@@ -221,8 +221,8 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
     if (!library) return <Toast />;
 
     const configured = library.settings.categories;
-    const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: c }));
-    const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: c }));
+    const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: categoryLabel(c) }));
+    const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: categoryLabel(c) }));
     // Anything saved at all, archive included: the filter row (and the Archived pill) shows.
     const hasTabs = library.tabs.length > 0;
     const searching = query.trim().length > 0;
@@ -584,7 +584,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
         try {
             const previous = await setCategoryOf(ids, category === UNCATEGORIZED ? undefined : category);
             await reload();
-            showUndoToast(strings.movedTabs(previous.length, category), async () => {
+            showUndoToast(strings.movedTabs(previous.length, categoryLabel(category)), async () => {
                 try {
                     await restoreCategories(previous);
                 } catch (err) {
@@ -808,7 +808,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
                         ) : (
                             <NoMatches
                                 query={query.trim()}
-                                filterLabel={activeFilter === ALL ? null : activeFilter === OUTDATED ? strings.outdated : inArchive ? strings.archived : activeFilter}
+                                filterLabel={activeFilter === ALL ? null : activeFilter === OUTDATED ? strings.outdated : inArchive ? strings.archived : categoryLabel(activeFilter)}
                                 onSearchAll={() => setFilter(ALL)}
                                 onSearchArchive={archiveHasMatch ? () => setFilter(ARCHIVED) : undefined}
                             />

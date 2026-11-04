@@ -1,0 +1,31 @@
+Tab Sandwich guarda las pestañas a las que quieres volver y las encuentra cuando las necesitas. Todo se queda en tu navegador: sin cuenta, sin servidor, sin rastreo.
+
+GUARDAR TODAS MIS PESTAÑAS
+¿Cuarenta pestañas abiertas y sin tiempo para ordenarlas? Un clic guarda todas las páginas de la ventana en una categoría, se salta las páginas del navegador y lo que ya está guardado, y te dice exactamente cuántas ha guardado. Ciérralas todas con otro clic, o déjalas abiertas. Se quedan juntas en tu lista como una ventana guardada con un nombre como «Pan tostado»: vuelve a abrirla en una ventana nueva, cámbiale el nombre o sepárala.
+
+GUARDAR ESTA PÁGINA PARA LUEGO
+Haz clic en el icono de la barra de herramientas o pulsa Alt+S: la ventana emergente muestra la página en la que estás. Acepta la categoría que te sugiere, o elige otra, y haz clic en Guardar. ¿Ya la habías guardado? Te lo dice, y un clic la actualiza. Haz clic derecho en cualquier enlace o página y elige «Guardar en Tab Sandwich» y una categoría para guardarla sin abrir nada; el enlace se guarda con sus propias palabras como título. El botón + añade un enlace a mano.
+
+VOLVER A ENCONTRAR ESE ENLACE
+Busca en títulos, sitios y tus notas mientras escribes, con las letras coincidentes resaltadas. Escribe el nombre de una categoría o de una ventana guardada para ver todo lo que contiene, y pulsa Intro para abrir el primer resultado. Desde cualquier sitio, escribe ts y un espacio en la barra de direcciones de Chrome para buscar en tus pestañas guardadas sin abrir nada. Ordena por más recientes, más antiguas, título, sitio, abiertas hace poco o más abiertas, y vuelve a tu propio orden cuando quieras.
+
+LÉELO MÁS TARDE, Y LÉELO DE VERDAD
+Elige las categorías en las que guardas cosas para leer más tarde. Cuando una pestaña ha esperado allí una semana (o lo que tú quieras), recibe una pequeña luna, y el filtro «En espera» las reúne todas. ¿Quieres que una vuelva un día concreto? Pon un recordatorio, para mañana o la semana que viene: a las 9:00 de ese día, una notificación te la trae. Activa el número en espera y el icono de la barra de herramientas muestra cuántas pestañas esperan. Todo lo demás, como documentación, herramientas y cuentas, se conserva y nunca molesta.
+
+TODO EN ORDEN
+Categorías de colores que aprenden contigo: guarda otra página del mismo sitio o proyecto y Tab Sandwich te sugiere la categoría que usaste, calculada en tu dispositivo. Fija las pestañas que más usas para tenerlas arriba, y añade una nota sobre por qué guardaste algo. Arrastra las pestañas a tu propio orden, selecciona varias para moverlas o archivarlas a la vez, y deshaz cualquier cosa con un clic. Archiva lo que ya no necesitas: fuera de la vista, nunca perdido, listo para restaurar. ¿Pestañas conservadas que no abres desde hace seis meses? Un consejo discreto te ofrece archivarlas.
+
+JUNTO A LA PÁGINA, O EN UNA PÁGINA PROPIA
+Ten tu lista abierta en el panel lateral de Chrome mientras navegas; un enlace que guardas desde el menú contextual aparece allí al instante. Para una colección grande, la biblioteca a página completa lo muestra todo en una tabla: categorías y ventanas guardadas en una barra lateral, orden por cualquier columna, edición de muchas pestañas a la vez. Sigue siendo rápida con miles de pestañas.
+
+EN TU IDIOMA
+Tab Sandwich habla español, inglés, portugués (Brasil), alemán, francés, ruso, japonés y chino simplificado, siguiendo el idioma de Chrome. Los nombres de tus categorías nunca se traducen. ¿Ves una palabra rara o tienes una idea? «Cuéntanoslo», en Ajustes › Acerca de, abre un formulario breve.
+
+CLARO, OSCURO Y EL TECLADO
+Sigue el modo claro u oscuro de tu ordenador, incluso con la ventana abierta, o elige uno en Ajustes. Todo funciona con el teclado: flechas, Intro para abrir, E para editar, P para fijar, Supr para archivar, Alt+flechas para reordenar, / para buscar. El atajo que abre la ventana emergente lo eliges tú. Exporta todo a un archivo e impórtalo más tarde.
+
+TUS DATOS SON TUYOS
+Tab Sandwich guarda todo localmente en tu dispositivo con las propias API de almacenamiento de Chrome. Nada se envía nunca a un servidor, ni se rastrea ni se comparte: no hay servidor. La extensión solo pide los permisos que de verdad usa: acceso a tu pestaña actual (solo cuando haces clic en la extensión o en su menú contextual), almacenamiento local, acceso de solo lectura a la caché local de iconos de Chrome para mostrar el icono de cada pestaña guardada (no se guardan datos de iconos y nunca se descarga nada del propio sitio de la pestaña), el menú contextual (y, cuando guardas un enlace desde él, la lectura de las palabras de ese enlace para su título), el panel lateral y alarmas para despertarla con tus recordatorios. Guardar una ventana entera, o guardar desde el panel lateral, necesita permiso para ver tus pestañas abiertas; mostrar un recordatorio necesita permiso para notificaciones. Chrome pide cada uno solo cuando lo necesitas por primera vez, y todo lo demás funciona si dices que no.
+
+NOVEDADES DE LA 4.1
+Tab Sandwich ya habla español, portugués (Brasil), alemán, francés, ruso, japonés y chino simplificado. Sigue el idioma de Chrome, una instalación nueva empieza con categorías en ese idioma, y se ha comprobado que todo cabe en cada pantalla. Y en Ajustes › Acerca de, «Cuéntanoslo» abre un formulario breve para proponer una palabra mejor o una idea.

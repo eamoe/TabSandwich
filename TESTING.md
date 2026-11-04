@@ -12,7 +12,8 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 
 - **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
 - **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search, filters and sorting, categories, export and import, the keyboard, saving a whole window (with a stand-in for Chrome's permission prompt), saved windows, selecting many — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
-- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`.
+- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`. The same Docker run opens every screen in each of Tab Sandwich's languages, English included (`tests/visual/languages.spec.ts`), and fails on any English left showing and on anything that doesn't fit: text cut off or spilling out of its box, a field's hint or a select's choice wider than its field (measured as a Mac's wider font would draw it, and with three-digit counts), a page wider than its window. Names and sites may be cut with "…" for room; the app's own words never. Its pictures land in `test-results/languages/` for a person to look at.
+- **Every language, key for key** (`tests/unit/locales.test.ts`): each dictionary in `src/ui/locales/` has exactly English's keys, keeps each sentence's `{}` slot, the newest "What's new" note, starter categories that fit, and a Store summary in `_locales/` of at most 132 characters.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
 ## Manual release pass
@@ -34,7 +35,8 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 13. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
 14. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
 15. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-16. Anything new in this release that isn't marked **[auto]** yet.
+16. Chrome in another language (on a Mac, Chrome follows macOS's language list): the right-click menu, the address bar's `ts` hint, a notification and `chrome://extensions` (summary, shortcut name) speak it, and switching back to English renames nothing you named (TC-313, TC-314, TC-316).
+17. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -96,7 +98,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-010 — Duplicate via Save Tab (P1)** **[auto]**
 - Preconditions: one tab already saved.
 - Steps: Revisit that same URL as the active tab → open the popup. Also: save a page, and watch the card right after.
-- Expected: No **Save Tab** button for a page that's already saved: the card says "✓ Saved N days ago" with **Show** and **Update** instead (TC-215), so no second entry can be created. Right after saving, the button shows "Saved!" for a moment, then the card settles into that saved look. (If the page somehow gets saved twice anyway, e.g. from two windows at once, the button reads "Already saved" in orange with a small shake and the existing entry flashes.)
+- Expected: No **Save Tab** button for a page that's already saved: the card says "✓ Saved N days ago · **Show**" and has **Update** instead (TC-215), so no second entry can be created. Right after saving, the button shows "Saved!" for a moment, then the card settles into that saved look. (If the page somehow gets saved twice anyway, e.g. from two windows at once, the button reads "Already saved" in orange with a small shake and the existing entry flashes.)
 
 **TC-011 — Duplicate acknowledgment visible when entry is off-screen (P1)**
 - Preconditions: enough tabs saved that the list scrolls; the duplicate target is scrolled out of view.
@@ -768,7 +770,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-215 — The save card knows a page is already saved (P1)** **[auto]**
 - Preconditions: The page you're on was saved 20 days ago, in Reading.
 - Steps: Open the popup.
-- Expected: Under the page title: "✓ Saved 20 days ago · example.com" (today / yesterday read naturally). The picker shows Reading, labelled "Saved in category", and **Show** and **Update** take the place of Save.
+- Expected: Under the page title: "✓ Saved 20 days ago · **Show** · example.com" (today / yesterday read naturally; a long site is shortened with "…", never Show). The picker shows Reading, labelled "Saved in category", and **Update** takes the place of Save.
 
 **TC-216 — Show finds the saved copy (P2)** **[auto]**
 - Steps: Pick a category pill that hides the saved copy → **Show**.
@@ -936,9 +938,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (for 4.0: 3.3.1's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (for 4.1: 4.0.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
-- Expected: Every tab, window, category, color, theme and sort is as it was. From 3.3.0 to 3.3.1: no "What's new" note (a patch release has none), every ☾ as it was. From 3.2.x: "New in 3.3" shows once. Only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (Behind the scenes the stored data was upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
+- Expected: Every tab, window, category, color, theme and sort is as it was, and so is every ☾. From 4.0.x: "New in 4.1" shows once, in Chrome's language, its last line pointing to Settings › About; your categories keep their names whatever the language (only a fresh install's starter categories come in it). A patch release (4.1.0 to 4.1.1) shows no note. From 3.2.x or earlier, only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (From before 3.3, the stored data is upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
 ## 21. Stay Organized (v3.3)
 
@@ -992,7 +994,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-268 — An archived page on the save card and in the + form (P2)** **[auto]**
 - Steps: Open a page whose saved copy is archived; click **Restore** on the save card. Archive it again and click **Update** instead, then **Undo**. Then type its link into the + form and **Add**.
-- Expected: The card says "In your archive" and offers **Restore** (instead of Show): the tab is back in the list ("Restored", with Undo). **Update** brings it back too, up to date; its Undo puts it back in the archive as it was. The + form says "In your archive, as “…”." with **Restore**.
+- Expected: The card says "In your archive · **Restore**" (instead of Show): the tab is back in the list ("Restored", with Undo). **Update** brings it back too, up to date; its Undo puts it back in the archive as it was. The + form says "In your archive, as “…”." with **Restore**.
 
 **TC-269 — Selecting in the archive (P1)** **[auto]**
 - Steps: On the Archived pill, start selecting; pick two; delete them for good; Undo; then Select all and **Restore**.
@@ -1175,3 +1177,33 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-290 — The menu follows your categories (P1)** **[auto]**
 - Steps: Add, rename, remove or reorder a category in Settings, or import a backup; right-click a link.
 - Expected: The menu lists your categories in your order, Uncategorized last, straight away. It's still there after restarting Chrome.
+
+## 24. Reach (v4.1)
+
+**TC-313 — Tab Sandwich speaks Chrome's language (P1)** **[auto]**
+- Steps: Set Chrome's language (Settings › Languages › Display Chrome in this language, then Relaunch; on a Mac, Chrome follows macOS's Language & Region list) to each of German, Spanish, French, Portuguese (Brazil), Russian, Japanese and Simplified Chinese, then to one Tab Sandwich doesn't have, such as Italian, Portuguese (Portugal) or traditional Chinese.
+- Expected: The popup, the side panel, the library, the welcome page, the right-click menu, the address bar's `ts` hint, the toolbar icon's name, notifications and `chrome://extensions` (the summary and the shortcut's name) all speak that language; Austrian German gets German and Latin American Spanish gets Spanish. A language Tab Sandwich doesn't have gets English everywhere, never a mix. There's no language setting in Tab Sandwich itself. Dates ("4 Nov", "Tue 4 Nov") and alphabetical sorting follow the language too. Which language is picked is logic-tested; every screen in each language, with no English left, is checked in Docker. **Check the right-click menu, the address bar and `chrome://extensions` by hand in one language each release.**
+
+**TC-314 — Your names are never translated (P1)** **[auto]**
+- Steps: In a language other than English, look at your categories, saved windows' names, titles and notes. Filter by Uncategorized, search for its name in that language, sort the library by Category, and right-click a link.
+- Expected: Everything you named stays exactly as you wrote it. Only "Uncategorized" shows in that language (in the pills, pickers, rows, the library's sidebar and table, Settings › Categories and the right-click menu), and searching for that word finds those tabs. Switching Chrome back to English shows "Uncategorized" again, and nothing stored has changed: a backup made in either language reads the same. A new category, or a rename, named like "Uncategorized" in either language (in any case) is refused with "That name is already used by another category." (logic-tested), as is adding a name a category already has.
+
+**TC-316 — A fresh install starts in its own language (P1)** **[auto]**
+- Steps: Install Tab Sandwich on a new profile whose Chrome is in German (or any of its languages). Save a whole window. Then switch Chrome to English and relaunch.
+- Expected: The four starter categories are in German (and Reading's tabs show as Waiting after 7 days, as in English), as is the new saved window's random name. After switching to English they keep their German names: they're yours now, like any you made, and their tabs stay in them. Updating Tab Sandwich never renames anything, even for a library whose settings were never changed. Logic-tested; check one language by hand.
+
+**TC-315 — Counts read naturally (P2)**
+- Steps: In English and in Russian, look at texts with a count of 1, 2, 5 and 21: the search box's hint, "Saved 1 tab", the selection bar, the days field in Settings › Categories.
+- Expected: Each count takes its own form ("1 tab", "2 tabs"; in Russian "1 вкладка", "2 вкладки", "5 вкладок", "21 вкладка"), never a word with "(s)" or a form that doesn't agree. Logic-tested for English and each language's rules.
+
+**TC-317 — Every screen fits in every language (P1)** **[auto]**
+- Steps: In German (the longest), then Russian and French, with a few hundred saved tabs, open the popup and the side panel at its narrowest usual width: the search box, the save card on a page already saved and after saving a whole window, the selection bar with 10 or more selected (in the list and in the archive), the add form, a toast, each Settings tab, a category's remove question, the import choice, the library and its Settings, and the welcome page.
+- Expected: No word of the app is cut off, hidden under something else or spilling out of its box: the search box's whole hint shows, **Move to…** is as wide as its words, and the selection bar's buttons all fit beside the count. Only names you gave and sites are shortened with "…", where there isn't room. Checked in Docker in every language, English included; look at one language by hand on your own computer, whose fonts differ.
+
+**TC-319 — Suggesting a better word, or an idea (P2)** **[auto]**
+- Steps: In German (or any language), open Settings › About and click **Sag es uns** ("Tell us"). Then in English.
+- Expected: The line reads "Ein Wort klingt holprig, oder du hast eine Idee? Sag es uns" (in English, "Spotted a clumsy word, or have an idea? Tell us"), and hovering the link says what it opens. A Google Form opens in a new tab with "Language and version" already filled in as Chrome's language and the version (e.g. `de-DE · 4.1.0`); nothing else is filled in, no sign-in is needed, and nothing is sent until you submit. The link's address is checked automatically; **submit one test answer by hand before each release** and delete it from the form's Responses.
+
+**TC-318 — The library in a narrow window (P2)** **[auto]**
+- Steps: Open the library and make the window narrower: about 1280, 1000, 800, then 700 pixels wide.
+- Expected: Titles always keep room to read. Once the table gets narrow the Opened column steps aside, then the Site column too; below 760 pixels the sidebar moves above the table. Widening the window brings them back. "300 days ago" fits its column in every language. Checked in Docker at 1280, 1024, 800 and 700.

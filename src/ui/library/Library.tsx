@@ -26,7 +26,7 @@ import { ALL, ARCHIVED, CLEANUP_TIP_MIN, OUTDATED, isArchived, isTabAged, siteNa
 import { useLibrary } from "../main/useLibrary";
 import { SettingsScreen } from "../settings/SettingsScreen";
 import { SiteIcon } from "../SiteIcon";
-import { strings } from "../strings";
+import { categoryLabel, strings } from "../strings";
 import { applyTheme } from "../theme";
 import { Toast } from "../Toast";
 import { showErrorToast, showUndoToast } from "../toastStore";
@@ -43,6 +43,14 @@ const COLUMNS: Array<{ key: LibraryColumn; label: string; hint?: string }> = [
     { key: "site", label: strings.columnSite },
     { key: "saved", label: strings.columnSaved },
     { key: "opened", label: strings.columnOpened, hint: strings.columnOpenedHint },
+];
+/**
+ * In a narrow window the title would be squeezed to nothing (the other columns' widths are fixed),
+ * so Opened goes once the table's box is narrower than this, then Site too: each keeps the title 220px.
+ */
+const NARROW: Array<{ column: LibraryColumn; below: number }> = [
+    { column: "opened", below: 956 },
+    { column: "site", below: 820 },
 ];
 
 const whenText = (at: number | undefined) => (at === undefined ? strings.notOpenedYet : strings.daysAgo(daysSince(at)));
@@ -77,6 +85,7 @@ export function Library() {
     const search = useRef<HTMLInputElement>(null);
     const table = useRef<HTMLDivElement>(null);
     const [view, setView] = useState({ top: 0, height: 800 });
+    const [tableWidth, setTableWidth] = useState(Infinity);
 
     useEffect(() => {
         if (library) document.body.dataset.ready = "true";
@@ -86,7 +95,10 @@ export function Library() {
     useLayoutEffect(() => {
         const box = table.current;
         if (!box) return;
-        const measure = () => setView({ top: box.scrollTop, height: box.clientHeight });
+        const measure = () => {
+            setView({ top: box.scrollTop, height: box.clientHeight });
+            setTableWidth(box.clientWidth);
+        };
         const resizes = new ResizeObserver(measure);
         resizes.observe(box);
         return () => resizes.disconnect();
@@ -150,7 +162,7 @@ export function Library() {
         if (!library) return { rows: [] as SavedTab[], matches: new Map<string, SearchMatch>() };
         const filtered = filterLibrary(library.tabs, library.settings, filter);
         const q = query.trim();
-        const found = q ? searchTabs(filtered, q, (t) => ({ category: getTabCategory(t), window: windowOf.get(t.id) ?? "" })) : null;
+        const found = q ? searchTabs(filtered, q, (t) => ({ category: categoryLabel(getTabCategory(t)), window: windowOf.get(t.id) ?? "" })) : null;
         return {
             rows: sortLibrary(found ? found.map((m) => m.tab) : filtered, sort),
             matches: new Map((found ?? []).map((m) => [m.tab.id, m])),
@@ -162,8 +174,8 @@ export function Library() {
     const { rows, matches } = shown;
     const { settings } = library;
     const configured = settings.categories;
-    const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: c }));
-    const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: c }));
+    const editOptions = [...configured, UNCATEGORIZED].map((c) => ({ value: c, label: categoryLabel(c) }));
+    const saveOptions = [UNCATEGORIZED, ...configured].map((c) => ({ value: c, label: categoryLabel(c) }));
     const colorOf = (category: string) => getCategoryColorHex(category, settings.categoryColors);
     const inArchive = filter === ARCHIVED;
     const live = counts.get(ALL) ?? 0;
@@ -173,6 +185,8 @@ export function Library() {
         ? staleKeptTabs(library.tabs, settings, Date.now(), library.openTrackingSince)
         : [];
     const { start, end } = rowsInView(rows.length, ROW_HEIGHT, view.top, view.height);
+    const dropped = new Set(NARROW.filter((n) => tableWidth < n.below).map((n) => n.column));
+    const shows = (column: LibraryColumn) => !dropped.has(column);
 
     const saving = async (write: () => Promise<void>) => {
         try {
@@ -207,7 +221,7 @@ export function Library() {
     const move = (ids: string[], category: string) =>
         undoable(async () => {
             const previous = await setCategoryOf(ids, category === UNCATEGORIZED ? undefined : category);
-            return { message: strings.movedTabs(previous.length, category), undo: () => restoreCategories(previous) };
+            return { message: strings.movedTabs(previous.length, categoryLabel(category)), undo: () => restoreCategories(previous) };
         });
     // The answer has to show where you're looking: the button stays lit, and the row flashes.
     const togglePin = async (tab: SavedTab) => {
@@ -300,7 +314,7 @@ export function Library() {
             ? strings.archived
             : filter.startsWith(WINDOW_PREFIX)
               ? (library.groups.find((g) => windowFilter(g.id) === filter)?.name ?? "")
-              : filter;
+              : categoryLabel(filter);
     const editing = page.kind === "edit" ? library.tabs.find((t) => t.id === page.id) : undefined;
 
     return (
@@ -361,7 +375,7 @@ export function Library() {
                     {navButton(OUTDATED, strings.outdated)}
                     {navButton(ARCHIVED, strings.archived)}
                     <h2 class={styles.sideTitle}>{strings.tabCategories}</h2>
-                    {[...configured, UNCATEGORIZED].map((c) => navButton(c, c, colorOf(c)))}
+                    {[...configured, UNCATEGORIZED].map((c) => navButton(c, categoryLabel(c), colorOf(c)))}
                     {windows.length > 0 && <h2 class={styles.sideTitle}>{strings.libraryWindows}</h2>}
                     {windows.map((g) => navButton(windowFilter(g.id), g.name))}
                 </nav>
@@ -431,9 +445,9 @@ export function Library() {
                                 <col class={styles.colCheck} />
                                 <col />
                                 <col class={styles.colCategory} />
-                                <col class={styles.colSite} />
+                                {shows("site") && <col class={styles.colSite} />}
                                 <col class={styles.colDate} />
-                                <col class={styles.colDate} />
+                                {shows("opened") && <col class={styles.colDate} />}
                                 <col class={styles.colActions} />
                             </colgroup>
                             <thead>
@@ -447,7 +461,7 @@ export function Library() {
                                             onChange={() => setPicked(allPicked ? new Set() : new Set(rows.map((t) => t.id)))}
                                         />
                                     </th>
-                                    {COLUMNS.map((c) => {
+                                    {COLUMNS.filter((c) => shows(c.key)).map((c) => {
                                         const on = sort.column === c.key;
                                         return (
                                             <th key={c.key} scope="col" aria-sort={on ? (sort.ascending ? "ascending" : "descending") : "none"}>
@@ -507,18 +521,22 @@ export function Library() {
                                             <td>
                                                 <span class={styles.category}>
                                                     <span class={styles.dot} style={{ background: colorOf(category) }} aria-hidden="true" />
-                                                    <span class={styles.cut} title={category}>{category}</span>
+                                                    <span class={styles.cut} title={categoryLabel(category)}>{categoryLabel(category)}</span>
                                                 </span>
                                             </td>
-                                            <td class={styles.quiet}>
-                                                <span class={styles.cut}>{siteName(tab.url)}</span>
-                                            </td>
+                                            {shows("site") && (
+                                                <td class={styles.quiet}>
+                                                    <span class={styles.cut}>{siteName(tab.url)}</span>
+                                                </td>
+                                            )}
                                             <td class={styles.quiet}>
                                                 {isTabAged(tab, settings) ? <span class={styles.waiting}>{whenText(tab.savedAt)}</span> : whenText(tab.savedAt)}
                                             </td>
-                                            <td class={styles.quiet} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
-                                                {whenText(tab.lastOpenedAt)}
-                                            </td>
+                                            {shows("opened") && (
+                                                <td class={styles.quiet} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
+                                                    {whenText(tab.lastOpenedAt)}
+                                                </td>
+                                            )}
                                             <td>
                                                 <div class={styles.actions}>
                                                     {isArchived(tab) ? (

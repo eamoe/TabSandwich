@@ -29,7 +29,17 @@ describe("addCategory", () => {
         await addCategory("   ");
         await addCategory("Work");
         await addCategory(UNCATEGORIZED);
+        await addCategory("uncategorized");
         expect(storedSettings().categories).toEqual(["A very long cat", "Work", "Personal", "Reading"]);
+    });
+
+    it("says whether it added one, and refuses what the screens call Uncategorized in their language", async () => {
+        seed([], base);
+        expect(await addCategory("Travel", ["Ohne Kategorie"])).toBe(true);
+        expect(await addCategory("Travel")).toBe(false);
+        expect(await addCategory("ohne kategorie", ["Ohne Kategorie"])).toBe(false);
+        expect(await renameCategory("Work", "OHNE KATEGORIE", ["Ohne Kategorie"])).toEqual({ renamed: false, reason: "taken" });
+        expect(storedSettings().categories).toEqual(["Travel", "Work", "Personal", "Reading"]);
     });
 });
 

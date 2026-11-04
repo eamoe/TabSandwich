@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getLastSeenVersion } from "../../src/storage/chromeStorage";
 import { CURRENT_SCHEMA_VERSION, SCHEMA_VERSION_KEY } from "../../src/storage/upgrade";
 import { WELCOME_PAGE, handleInstalled } from "../../src/worker/install";
+import { strings } from "../../src/ui/strings";
 import { storage } from "./setup";
 import { SETTINGS_KEY, seed } from "./helpers";
 
@@ -19,6 +20,21 @@ describe("handleInstalled", () => {
         expect(await getLastSeenVersion()).toBe("9.9.9");
         expect(storage.data[SCHEMA_VERSION_KEY]).toBe(CURRENT_SCHEMA_VERSION);
         expect(storage.openedTabs).toEqual([welcome]);
+    });
+
+    it("on a fresh install, writes its starter categories in Chrome's language, and builds the menu from them", async () => {
+        await handleInstalled("install");
+        expect(storage.data[SETTINGS_KEY]).toMatchObject({
+            categories: Object.values(strings.starterCategories),
+            waitingCategories: [strings.starterCategories.reading, "Uncategorized"],
+        });
+        expect(storage.menu.map((item) => item.title)).toContain(strings.starterCategories.entertainment);
+    });
+
+    it("never rewrites settings already stored, even on an install", async () => {
+        seed([], { categories: ["Work", "Fun"] });
+        await handleInstalled("install");
+        expect(storage.data[SETTINGS_KEY]).toMatchObject({ categories: ["Work", "Fun"] });
     });
 
     it("sets what the toolbar icon opens, on an update too", async () => {

@@ -126,6 +126,17 @@ test.describe("Settings", () => {
         await expect(popup.getByRole("link", { name: "Privacy policy" })).toHaveAttribute("href", /PRIVACY\.md$/);
     });
 
+    test("TC-319: About asks for a better word or an idea, with the language and version filled in", async ({ popup }) => {
+        await openSettings(popup, "About");
+        const version = await popup.evaluate(() => chrome.runtime.getManifest().version);
+        await expect(popup.getByText("Spotted a clumsy word, or have an idea?")).toBeVisible();
+        const link = popup.getByRole("link", { name: "Tell us" });
+        await expect(link).toHaveAttribute("target", "_blank");
+        const href = new URL((await link.getAttribute("href"))!);
+        expect(href.hostname).toBe("docs.google.com");
+        expect(href.searchParams.get("entry.1844963166")).toBe(`en-US · ${version}`);
+    });
+
     test("TC-197: arrow keys move between the Settings tabs", async ({ popup }) => {
         await openSettings(popup);
         await popup.getByRole("tab", { name: "General" }).focus();

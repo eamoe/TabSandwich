@@ -19,12 +19,12 @@
 .link:hover { text-decoration: underline; text-underline-offset: 2px; }
 .spacer { flex: 1; min-width: 0; }
 .moveWrap { position: relative; display: flex; align-items: center; min-width: 0; flex-shrink: 1; }
-/* Shaped like the filter row's own buttons. */
+/* Shaped like the filter row's own buttons; as wide as its words, and at least 100px. */
 .move {
     appearance: none;
     box-sizing: border-box;
-    width: 100px;
-    max-width: 100%;
+    field-sizing: content;
+    min-width: 100px;
     height: 26px;
     padding: 0 24px 0 10px;
     border: 1px solid var(--line);

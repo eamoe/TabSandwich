@@ -1,0 +1,31 @@
+Tab Sandwich garde les onglets auxquels vous voulez revenir, et les retrouve quand vous en avez besoin. Tout reste dans votre navigateur : pas de compte, pas de serveur, pas de pistage.
+
+ENREGISTRER TOUS MES ONGLETS
+Quarante onglets ouverts et pas le temps de les trier ? Un clic enregistre toutes les pages de la fenêtre dans une catégorie, en ignorant les pages du navigateur et ce qui est déjà enregistré, et vous dit exactement combien il en a enregistré. Fermez-les tous d'un clic de plus, ou gardez-les ouverts. Ils restent groupés dans votre liste sous forme de fenêtre enregistrée, avec un nom comme « Croissant doré » : rouvrez-la dans une nouvelle fenêtre, renommez-la ou dégroupez-la.
+
+GARDER CETTE PAGE POUR PLUS TARD
+Cliquez sur l'icône de la barre d'outils, ou appuyez sur Alt+S : la fenêtre affiche la page que vous lisez. Prenez la catégorie suggérée, ou choisissez-en une autre, et cliquez sur Enregistrer. Déjà enregistrée ? Elle vous le dit, et un clic la met à jour. Faites un clic droit sur un lien ou une page et choisissez « Enregistrer dans Tab Sandwich » et une catégorie pour l'enregistrer sans rien ouvrir ; le lien est enregistré avec ses propres mots pour titre. Le bouton + ajoute un lien à la main.
+
+RETROUVER CE LIEN
+Cherchez dans les titres, les sites et vos notes dès la frappe, avec les lettres trouvées mises en évidence. Tapez le nom d'une catégorie ou d'une fenêtre enregistrée pour voir tout ce qu'elle contient, et appuyez sur Entrée pour ouvrir le premier résultat. De n'importe où, tapez ts et une espace dans la barre d'adresse de Chrome pour chercher dans vos onglets enregistrés sans rien ouvrir. Triez par plus récents, plus anciens, titre, site, ouverts récemment ou les plus ouverts, et revenez à votre propre ordre quand vous voulez.
+
+LIRE PLUS TARD, ET LE FAIRE VRAIMENT
+Choisissez les catégories où vous rangez ce qui est à lire plus tard. Quand un onglet y a attendu une semaine (ou la durée de votre choix), il reçoit une petite lune, et le filtre « En attente » les rassemble tous. Vous voulez en retrouver un un jour précis ? Programmez un rappel, demain ou la semaine prochaine : à 9 h ce jour-là, une notification vous le ramène. Activez le nombre en attente et l'icône de la barre d'outils indique combien d'onglets attendent. Tout le reste, comme la documentation, les outils et les comptes, est conservé et ne vous relance jamais.
+
+RESTER BIEN RANGÉ
+Des catégories en couleur qui apprennent au fil du temps : enregistrez une autre page du même site ou du même projet et Tab Sandwich vous suggère la catégorie déjà utilisée, calculée sur votre appareil. Épinglez les onglets que vous utilisez le plus pour les garder en haut, et ajoutez une note sur la raison d'un enregistrement. Faites glisser les onglets dans votre propre ordre, sélectionnez-en plusieurs pour les déplacer ou les archiver d'un coup, et annulez n'importe quoi d'un clic. Archivez ce dont vous avez fini : rangé, jamais perdu, prêt à être restauré. Des onglets conservés que vous n'avez pas ouverts depuis six mois ? Un conseil discret propose de les archiver.
+
+À CÔTÉ DE LA PAGE, OU SUR UNE PAGE À PART
+Gardez votre liste ouverte dans le panneau latéral de Chrome pendant que vous naviguez ; un lien enregistré depuis le menu contextuel y apparaît aussitôt. Pour une grande collection, la bibliothèque pleine page montre tout dans un tableau : catégories et fenêtres enregistrées dans une barre latérale, tri par n'importe quelle colonne, modification de nombreux onglets à la fois. Elle reste rapide avec des milliers d'onglets.
+
+DANS VOTRE LANGUE
+Tab Sandwich parle français, anglais, espagnol, portugais (Brésil), allemand, russe, japonais et chinois simplifié, en suivant la langue de Chrome. Les noms de vos catégories ne sont jamais traduits. Un mot sonne faux, ou vous avez une idée ? « Dites-le-nous », dans Paramètres › À propos, ouvre un court formulaire.
+
+CLAIR, SOMBRE ET LE CLAVIER
+Suit le mode clair ou sombre de votre ordinateur, même pendant que la fenêtre est ouverte, ou choisissez-en un dans les Paramètres. Tout se fait au clavier : flèches, Entrée pour ouvrir, E pour modifier, P pour épingler, Suppr pour archiver, Alt+flèches pour réordonner, / pour chercher. Le raccourci qui ouvre la fenêtre, c'est vous qui le choisissez. Exportez tout dans un fichier et importez-le plus tard.
+
+VOS DONNÉES RESTENT LES VÔTRES
+Tab Sandwich stocke tout localement sur votre appareil avec les propres API de stockage de Chrome. Rien n'est jamais envoyé à un serveur, pisté ou partagé : il n'y a pas de serveur. L'extension ne demande que les autorisations qu'elle utilise vraiment : l'accès à votre onglet actuel (uniquement quand vous cliquez sur l'extension ou sur son menu contextuel), le stockage local, l'accès en lecture seule au cache local d'icônes de Chrome pour afficher l'icône de chaque onglet enregistré (aucune donnée d'icône n'est stockée, et rien n'est jamais téléchargé depuis le site de l'onglet), le menu contextuel (et, quand vous y enregistrez un lien, la lecture des mots de ce seul lien pour son titre), le panneau latéral, et des alarmes pour la réveiller à l'heure de vos rappels. Enregistrer une fenêtre entière, ou enregistrer depuis le panneau latéral, demande l'autorisation de voir vos onglets ouverts ; afficher un rappel demande l'autorisation des notifications. Chrome ne demande chacune que lorsque vous en avez besoin pour la première fois, et tout le reste fonctionne si vous refusez.
+
+NOUVEAUTÉS DE LA 4.1
+Tab Sandwich parle désormais espagnol, portugais (Brésil), allemand, français, russe, japonais et chinois simplifié. Il suit la langue de Chrome, une nouvelle installation commence avec des catégories nommées dans cette langue, et chaque écran a été vérifié pour que tout y tienne. Et dans Paramètres › À propos, « Dites-le-nous » ouvre un court formulaire pour proposer un meilleur mot ou une idée.

@@ -29,6 +29,13 @@ describe("manifest.json", () => {
         expect(manifest.web_accessible_resources).toEqual([{ resources: ["_favicon/*"], matches: ["<all_urls>"] }]);
     });
 
+    it("takes its summary and the shortcut's name from _locales, in Chrome's language (v4.1); the name stays Tab Sandwich", () => {
+        expect(manifest.default_locale).toBe("en");
+        expect(manifest.description).toBe("__MSG_appDescription__");
+        expect(manifest.commands._execute_action.description).toBe("__MSG_openCommand__");
+        expect(manifest.name).toBe("Tab Sandwich");
+    });
+
     it("never ships a fixed extension key (the Store assigns the real id)", () => {
         expect(manifest.key).toBeUndefined();
     });

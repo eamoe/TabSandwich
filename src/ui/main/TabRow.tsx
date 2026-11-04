@@ -10,7 +10,7 @@ import { daysSince } from "../../util/time";
 import { CategoryPicker, type PickerOption } from "../CategoryPicker";
 import { Icon } from "../Icon";
 import { SiteIcon } from "../SiteIcon";
-import { strings } from "../strings";
+import { categoryLabel, strings } from "../strings";
 import { showNoteToast } from "../toastStore";
 import { siteName } from "./listModel";
 import controls from "../controls.module.css";
@@ -198,14 +198,14 @@ export function TabRow(props: RowProps) {
                         <>
                             <span class={styles.category}>
                                 <span class={controls.dot} style={{ background: props.color }} />
-                                {highlighted(props.category, props.match?.categoryRanges ?? [])}
+                                {highlighted(categoryLabel(props.category), props.match?.categoryRanges ?? [])}
                             </span>
                             <span class={styles.separator} aria-hidden="true">
                                 ·
                             </span>
                         </>
                     ) : (
-                        <span class="visually-hidden">{strings.categoryForScreenReaders(props.category)}</span>
+                        <span class="visually-hidden">{strings.categoryForScreenReaders(categoryLabel(props.category))}</span>
                     )}
                     {props.windowName !== null && (
                         <>

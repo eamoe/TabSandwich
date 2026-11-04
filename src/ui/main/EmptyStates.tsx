@@ -1,5 +1,6 @@
 import { Fragment } from "preact";
 import { Icon } from "../Icon";
+import { Slotted } from "../Slotted";
 import { strings } from "../strings";
 import { SHORTCUTS_PAGE, useShortcut } from "../useShortcut";
 import styles from "./EmptyStates.module.css";
@@ -29,13 +30,14 @@ export function EmptyLibrary(props: { onEditCategories: () => void }) {
                     </span>
                     {shortcut === null ? null : shortcut ? (
                         <span>
-                            {strings.tipShortcut}{" "}
-                            {shortcut.split("+").map((key, i) => (
-                                <Fragment key={key}>
-                                    {i > 0 && "+"}
-                                    <kbd class={styles.kbd}>{key}</kbd>
-                                </Fragment>
-                            ))}
+                            <Slotted sentence={strings.tipShortcut}>
+                                {shortcut.split("+").map((key, i) => (
+                                    <Fragment key={key}>
+                                        {i > 0 && "+"}
+                                        <kbd class={styles.kbd}>{key}</kbd>
+                                    </Fragment>
+                                ))}
+                            </Slotted>
                         </span>
                     ) : (
                         <span>
