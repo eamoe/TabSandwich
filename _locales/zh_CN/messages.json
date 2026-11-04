@@ -1,0 +1,8 @@
+{
+    "appDescription": {
+        "message": "一键保存一个标签页或整个窗口，用彩色类别整理。完全在本地运行，任何内容都不会离开你的浏览器。"
+    },
+    "openCommand": {
+        "message": "打开 Tab Sandwich"
+    }
+}

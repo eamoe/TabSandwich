@@ -12,7 +12,8 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 
 - **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
 - **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search, filters and sorting, categories, export and import, the keyboard, saving a whole window (with a stand-in for Chrome's permission prompt), saved windows, selecting many — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
-- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`.
+- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`. The same Docker run opens every screen in each of Tab Sandwich's languages (`tests/visual/languages.spec.ts`) and fails on any English left showing; its pictures land in `test-results/languages/` for a person to look at.
+- **Every language, key for key** (`tests/unit/locales.test.ts`): each dictionary in `src/ui/locales/` has exactly English's keys, keeps each sentence's `{}` slot, the newest "What's new" note, starter categories that fit, and a Store summary in `_locales/` of at most 132 characters.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
 ## Manual release pass
@@ -34,7 +35,8 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 13. The library in real Chrome: **Open library** from the toolbar icon's right-click menu, and with 1,000 tabs (import a large backup) that scrolling feels smooth (TC-298, TC-299).
 14. The side panel in real Chrome: the Open in menu, Chrome's own prompt on the first Save, allowed and (on another profile) refused (TC-292), and the toolbar icon opening the panel, also after restarting Chrome and with the shortcut (TC-293).
 15. Right-click in real Chrome: a link, a picture link and the page, on an ordinary site, and a link on the Chrome Web Store (TC-287, TC-288); a category added in Settings shows in the menu, and the menu survives restarting Chrome (TC-290).
-16. Anything new in this release that isn't marked **[auto]** yet.
+16. Chrome in another language (on a Mac, Chrome follows macOS's language list): the right-click menu, the address bar's `ts` hint, a notification and `chrome://extensions` (summary, shortcut name) speak it, and switching back to English renames nothing you named (TC-313, TC-314, TC-316).
+17. Anything new in this release that isn't marked **[auto]** yet.
 
 ## Manual setup
 
@@ -1178,11 +1180,11 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 ## 24. Reach (v4.1)
 
-**TC-313 — Tab Sandwich speaks Chrome's language (P1)**
+**TC-313 — Tab Sandwich speaks Chrome's language (P1)** **[auto]**
 - Steps: Set Chrome's language (Settings › Languages › Display Chrome in this language, then Relaunch; on a Mac, Chrome follows macOS's Language & Region list) to each of German, Spanish, French, Portuguese (Brazil), Russian, Japanese and Simplified Chinese, then to one Tab Sandwich doesn't have, such as Italian, Portuguese (Portugal) or traditional Chinese.
-- Expected: The popup, the side panel, the library, the welcome page, the right-click menu, the address bar's `ts` hint, the toolbar icon's name, notifications and `chrome://extensions` (the summary and the shortcut's name) all speak that language; Austrian German gets German and Latin American Spanish gets Spanish. A language Tab Sandwich doesn't have gets English everywhere, never a mix. There's no language setting in Tab Sandwich itself. Dates ("4 Nov", "Tue 4 Nov") and alphabetical sorting follow the language too. Which language is picked is logic-tested.
+- Expected: The popup, the side panel, the library, the welcome page, the right-click menu, the address bar's `ts` hint, the toolbar icon's name, notifications and `chrome://extensions` (the summary and the shortcut's name) all speak that language; Austrian German gets German and Latin American Spanish gets Spanish. A language Tab Sandwich doesn't have gets English everywhere, never a mix. There's no language setting in Tab Sandwich itself. Dates ("4 Nov", "Tue 4 Nov") and alphabetical sorting follow the language too. Which language is picked is logic-tested; every screen in each language, with no English left, is checked in Docker. **Check the right-click menu, the address bar and `chrome://extensions` by hand in one language each release.**
 
-**TC-314 — Your names are never translated (P1)**
+**TC-314 — Your names are never translated (P1)** **[auto]**
 - Steps: In a language other than English, look at your categories, saved windows' names, titles and notes. Filter by Uncategorized, search for its name in that language, sort the library by Category, and right-click a link.
 - Expected: Everything you named stays exactly as you wrote it. Only "Uncategorized" shows in that language (in the pills, pickers, rows, the library's sidebar and table, Settings › Categories and the right-click menu), and searching for that word finds those tabs. Switching Chrome back to English shows "Uncategorized" again, and nothing stored has changed: a backup made in either language reads the same. A new category, or a rename, named like "Uncategorized" in either language (in any case) is refused with "That name is already used by another category." (logic-tested), as is adding a name a category already has.
 

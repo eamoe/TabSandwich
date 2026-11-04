@@ -76,6 +76,9 @@ export const test = base.extend<Fixtures>({
             viewport: { width: 380, height: 580 },
             args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
             env: { ...process.env, LANGUAGE: chromeLanguage },
+            // Playwright gives pages en-US unless told otherwise, and in a page that's also what
+            // Chrome says its language is, so the two must agree.
+            locale: chromeLanguage === "en" ? "en-US" : chromeLanguage.replace("_", "-"),
         });
         await context.route(`${TEST_SITE}/**`, (route) => {
             const path = new URL(route.request().url()).pathname;

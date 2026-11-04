@@ -200,7 +200,9 @@ tests/e2e/                     robot tests (Playwright): real Chromium loads dis
                                 the popup, and runs an accessibility scan (axe) in light and dark; each test
                                 starts as a fresh install (the fixture closes the welcome page unless asked not to)
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
-                                pixel (playwright.visual.config.ts); baselines in __screenshots__/
+                                pixel (playwright.visual.config.ts); baselines in __screenshots__/. Also
+                                languages.spec.ts: every screen in each language, with no English left (Linux
+                                Chromium takes Chrome's language from LANGUAGE, so only these Docker runs can)
 tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
                                 (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI

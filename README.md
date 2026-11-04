@@ -8,6 +8,7 @@ Data is stored locally via `chrome.storage.local` — nothing leaves your browse
 
 ## Features
 
+- **In your language** — English, German, Spanish, French, Portuguese (Brazil), Russian, Japanese and Simplified Chinese, following Chrome's own language (there's no setting to change). A fresh install's starter categories come in that language too; your own names, titles and notes are never translated.
 - **A welcome page** — after a fresh install, one page shows how to pin the icon, save a page and open Tab Sandwich from the keyboard.
 - **Save the current tab** — the popup shows the page you're on; pick a category if you like and click Save.
 - **Address-bar search** — type `ts`, a space and a word in Chrome's address bar to jump straight to a saved tab.

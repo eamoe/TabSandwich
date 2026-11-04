@@ -343,10 +343,10 @@ export const en = {
     steppedOutOf: (title: string, name: string) => `Moved “${title}” out of ${name}`,
     cantMoveSorted: "Tabs can only be moved in your own order. Switch the sort to Your order first.",
     cantMoveSearching: "Clear the search to move tabs.",
-    pinLine: (pinned: boolean) =>
+    pinLine: (pinned: boolean): string =>
         pinned ? "Pinned tabs stay above the others. Press P to unpin it." : "Pinned tabs stay above the others. Press P to pin this one.",
     /** The same, after a drag that couldn't land there. */
-    pinLineDrag: (pinned: boolean) =>
+    pinLineDrag: (pinned: boolean): string =>
         pinned ? "Pinned tabs stay above the others. Unpin it to move it lower." : "Pinned tabs stay above the others. Pin it to move it up there.",
     keyboardKeys: "Keys in the list",
     keyHelp: {
