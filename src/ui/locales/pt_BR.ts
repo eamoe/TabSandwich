@@ -172,10 +172,10 @@ export const pt_BR: Strings = {
     whatsNewTitle: (release: string) => `Novidades da ${release}`,
     dismissWhatsNew: "Dispensar as novidades",
     whatsNewNotes: {
-        "4.0": [
-            "Clique com o botão direito em qualquer link para salvá-lo direto em uma categoria.",
-            "Deixe sua lista aberta em um painel lateral ou veja tudo em uma página inteira.",
-            "Pesquise pela barra de endereço com ts e crie lembretes para qualquer guia.",
+        "4.1": [
+            "O Tab Sandwich agora está em oito idiomas e segue o idioma do Chrome.",
+            "Formulários mais espaçosos e uma biblioteca que cabe em uma janela estreita.",
+            "Alguma palavra soa estranha ou você tem uma ideia? Conte para nós em Configurações › Sobre.",
         ],
     },
     categoryForScreenReaders: (category: string) => `Categoria: ${category}`,

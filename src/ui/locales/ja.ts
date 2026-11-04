@@ -160,10 +160,10 @@ export const ja: Strings = {
     whatsNewTitle: (release: string) => `${release} の新機能`,
     dismissWhatsNew: "新機能のお知らせを閉じる",
     whatsNewNotes: {
-        "4.0": [
-            "リンクを右クリックすると、そのままカテゴリに保存できます。",
-            "リストをサイドパネルに開いたままにしたり、1 ページ全体で見たりできます。",
-            "アドレスバーで ts と入力して検索し、どのタブにもリマインダーを設定できます。",
+        "4.1": [
+            "Tab Sandwich が8つの言語に対応し、Chrome の言語に合わせて表示されます。",
+            "フォームがゆったりし、ライブラリは狭いウィンドウにも収まります。",
+            "おかしな言葉やアイデアがあれば、設定 › 情報 の「お知らせください」から。",
         ],
     },
     categoryForScreenReaders: (category: string) => `カテゴリ: ${category}`,

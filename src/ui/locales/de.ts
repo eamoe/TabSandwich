@@ -170,10 +170,10 @@ export const de: Strings = {
     whatsNewTitle: (release: string) => `Neu in ${release}`,
     dismissWhatsNew: "Neuigkeiten ausblenden",
     whatsNewNotes: {
-        "4.0": [
-            "Klick mit der rechten Maustaste auf einen Link, um ihn direkt in einer Kategorie zu speichern.",
-            "Behalte deine Liste in einer Seitenleiste offen oder sieh sie dir auf einer ganzen Seite an.",
-            "Such in der Adressleiste mit ts und setz Erinnerungen für jeden Tab.",
+        "4.1": [
+            "Tab Sandwich gibt es jetzt in acht Sprachen, passend zur Sprache von Chrome.",
+            "Luftigere Formulare, und die Bibliothek passt auch in ein schmales Fenster.",
+            "Ein Wort klingt holprig, oder du hast eine Idee? Sag es uns, unter Einstellungen › Info.",
         ],
     },
     categoryForScreenReaders: (category: string) => `Kategorie: ${category}`,
