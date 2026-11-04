@@ -122,6 +122,7 @@ Already bundled in the package (`images/icon-128.png`, referenced from the manif
    - Purpose: **"App functionality"** only.
    - Certifications: all three can be checked truthfully — no selling/transferring data, no use for creditworthiness/lending, no use unrelated to core functionality.
    - Data encrypted in transit: mark **not applicable** (nothing is ever transmitted).
+   - Since 4.1, Settings › About has a "Tell us" link to a feedback form on Google Forms. It only opens a web page when someone clicks it, with Chrome's language and the version in its address; the extension itself transmits nothing, so these answers stay as they are. `PRIVACY.md` describes it under "Feedback".
 
 4. **Privacy policy URL:**
    ```

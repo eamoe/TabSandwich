@@ -418,4 +418,7 @@ export const es: Strings = {
     localPromise: "Todo se queda en este navegador. Sin cuenta, sin servidor, sin analíticas. Tus pestañas solo salen del navegador si las exportas.",
     privacyPolicy: "Política de privacidad",
     sourceCode: "Código fuente",
+    feedbackAsk: "¿Alguna palabra suena rara o tienes una idea? {}",
+    feedbackLink: "Cuéntanoslo",
+    feedbackTooltip: "Abre un formulario breve (Google Forms) con tu idioma y la versión de Tab Sandwich ya rellenados. No se envía nada hasta que tú lo envíes.",
 };

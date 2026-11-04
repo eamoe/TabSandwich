@@ -391,4 +391,7 @@ export const zh_CN: Strings = {
     localPromise: "一切都留在这个浏览器中。无需账号，没有服务器，没有数据分析。只有在你导出时，标签页才会离开浏览器。",
     privacyPolicy: "隐私权政策",
     sourceCode: "源代码",
+    feedbackAsk: "发现用词别扭，或者有好点子？{}",
+    feedbackLink: "告诉我们",
+    feedbackTooltip: "打开一个简短的表单（Google 表单），已填好你的语言和 Tab Sandwich 版本。在你提交之前不会发送任何内容。",
 };

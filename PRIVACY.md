@@ -1,6 +1,6 @@
 # Privacy Policy — Tab Sandwich
 
-**Last updated:** 2026-10-31
+**Last updated:** 2026-11-04
 
 Tab Sandwich is a Chrome extension for saving and organizing browser tabs. This policy explains what data the extension handles and what it does with it.
 
@@ -53,6 +53,10 @@ No favicon data is stored at all. To show a saved tab's icon, the popup asks Chr
 ## Export & import
 
 Settings includes an optional Export/Import feature. Export writes everything listed above, including your settings and saved windows, to a `.json` file that downloads to your own device — this is a plain local file save, not a network transmission, and it only happens when you click "Export." Import reads a `.json` file you choose from your own device and lets you either merge it into your existing saved tabs or replace them entirely; nothing is sent anywhere as part of importing either. Both actions are entirely under your control and touch no server.
+
+## Feedback (optional)
+
+Settings › About has a "Tell us" link for suggesting a better word in your language, or an idea. It opens a short form on Google Forms in a new tab, with two things already filled in so a note about a word says which language it's about: Chrome's language (such as `de-AT`) and Tab Sandwich's version number. Nothing else from Tab Sandwich is on it: none of your saved tabs, categories, notes or settings. Like any web page, Google receives that address when the form opens; you can see what's filled in and change or delete it, and nothing you write is sent unless you press Submit. The form doesn't ask for your name or email address. What you send is handled by Google under its own privacy policy and read by Tab Sandwich's author to improve the app. Tab Sandwich itself never opens the form on its own, and sends nothing anywhere.
 
 ## What Tab Sandwich does not do
 

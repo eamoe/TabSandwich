@@ -470,6 +470,10 @@ export const en = {
     localPromise: "Everything stays in this browser. No account, no server, no analytics. Your tabs leave the browser only when you export them.",
     privacyPolicy: "Privacy policy",
     sourceCode: "Source code",
+    /** In About: {} = the link to the feedback form. */
+    feedbackAsk: "Spotted a clumsy word, or have an idea? {}",
+    feedbackLink: "Tell us",
+    feedbackTooltip: "Opens a short form (Google Forms) with your language and Tab Sandwich's version filled in. Nothing is sent until you send it.",
 };
 
 export type Strings = typeof en;

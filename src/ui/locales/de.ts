@@ -415,4 +415,7 @@ export const de: Strings = {
     localPromise: "Alles bleibt in diesem Browser. Kein Konto, kein Server, keine Analyse. Deine Tabs verlassen den Browser nur, wenn du sie exportierst.",
     privacyPolicy: "Datenschutzerklärung",
     sourceCode: "Quellcode",
+    feedbackAsk: "Ein Wort klingt holprig, oder du hast eine Idee? {}",
+    feedbackLink: "Sag es uns",
+    feedbackTooltip: "Öffnet ein kurzes Formular (Google Formulare), in dem deine Sprache und die Version von Tab Sandwich schon eingetragen sind. Gesendet wird erst, wenn du es abschickst.",
 };

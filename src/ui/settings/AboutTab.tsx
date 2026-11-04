@@ -1,3 +1,6 @@
+import { feedbackUrl } from "../../util/feedback";
+import { uiLanguage } from "../i18n";
+import { Slotted } from "../Slotted";
 import { strings } from "../strings";
 import styles from "./Settings.module.css";
 
@@ -10,16 +13,25 @@ function AppIcon() {
 }
 
 export function AboutTab() {
+    const version = chrome.runtime.getManifest().version;
     return (
         <section class={styles.group} aria-label={strings.tabAbout}>
             <div class={styles.aboutTop}>
                 <AppIcon />
                 <div>
                     <p class={styles.label}>{strings.appName}</p>
-                    <p class={styles.hint}>{strings.version(chrome.runtime.getManifest().version)}</p>
+                    <p class={styles.hint}>{strings.version(version)}</p>
                 </div>
             </div>
             <p class={styles.hint}>{strings.localPromise}</p>
+            {/* With no translators of its own, the app asks the people who read it in their language. */}
+            <p class={styles.hint}>
+                <Slotted sentence={strings.feedbackAsk}>
+                    <a class={styles.link} href={feedbackUrl(uiLanguage(), version)} title={strings.feedbackTooltip} target="_blank" rel="noreferrer">
+                        {strings.feedbackLink}
+                    </a>
+                </Slotted>
+            </p>
             <p class={styles.hint}>
                 <a class={styles.link} href={PRIVACY_URL} target="_blank" rel="noreferrer">
                     {strings.privacyPolicy}

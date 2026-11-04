@@ -419,4 +419,7 @@ export const fr: Strings = {
     localPromise: "Tout reste dans ce navigateur. Pas de compte, pas de serveur, pas de statistiques. Vos onglets ne quittent le navigateur que si vous les exportez.",
     privacyPolicy: "Règles de confidentialité",
     sourceCode: "Code source",
+    feedbackAsk: "Un mot sonne faux, ou vous avez une idée\u00a0? {}",
+    feedbackLink: "Dites-le-nous",
+    feedbackTooltip: "Ouvre un court formulaire (Google Forms) où votre langue et la version de Tab Sandwich sont déjà remplies. Rien n'est envoyé tant que vous ne l'envoyez pas.",
 };

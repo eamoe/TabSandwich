@@ -85,6 +85,7 @@ src/
     url.ts                 normalizeUrl, urlsMatch (duplicate detection), isSupportedTabUrl
     time.ts                daysSince, isOutdated
     notifications.ts       the optional "notifications" permission, as Chrome's calls want it
+    feedback.ts            the feedback form's link (Google Forms), with Chrome's language and the version filled in — opened only by the person
     openLibrary.ts         goes to the library's open tab, or opens it, optionally on a search (?q=) or on Waiting (?show=waiting)
     favicon.ts             localFaviconUrl — builds a chrome-extension://…/_favicon/ URL so
                             icons come from Chrome's local favicon cache, never the page's own site
@@ -161,7 +162,7 @@ src/
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
-      AboutTab.tsx          version, local-only promise, privacy policy and source links
+      AboutTab.tsx          version, local-only promise, "Tell us" (the feedback form: a better word, or an idea), privacy policy and source links
     library/                the full-page library
       Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn; in a narrow window Opened,
                              then Site, step aside so titles keep room), bulk editing, cleanup tip;

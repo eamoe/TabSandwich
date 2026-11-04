@@ -418,4 +418,7 @@ export const pt_BR: Strings = {
     localPromise: "Tudo fica neste navegador. Sem conta, sem servidor, sem análises. Suas guias só saem do navegador quando você as exporta.",
     privacyPolicy: "Política de privacidade",
     sourceCode: "Código-fonte",
+    feedbackAsk: "Alguma palavra soa estranha ou você tem uma ideia? {}",
+    feedbackLink: "Conte para nós",
+    feedbackTooltip: "Abre um formulário curto (Google Forms) com seu idioma e a versão do Tab Sandwich já preenchidos. Nada é enviado até você enviar.",
 };

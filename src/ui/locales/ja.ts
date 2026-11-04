@@ -393,4 +393,7 @@ export const ja: Strings = {
     localPromise: "すべてこのブラウザの中だけ。アカウントもサーバーも分析もありません。タブがブラウザの外に出るのは、エクスポートしたときだけです。",
     privacyPolicy: "プライバシー ポリシー",
     sourceCode: "ソースコード",
+    feedbackAsk: "おかしな言葉に気づいたり、アイデアがあったりしたら、{}",
+    feedbackLink: "お知らせください",
+    feedbackTooltip: "短いフォーム（Google フォーム）が開きます。言語と Tab Sandwich のバージョンは入力済みです。送信するまで何も送られません。",
 };
