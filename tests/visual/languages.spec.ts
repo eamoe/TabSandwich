@@ -1,7 +1,8 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { test, expect, LIBRARY_URL, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
 import { answerPermissionPrompt, openSiteTab, seedLibrary, type SeedTab } from "../e2e/helpers";
-import { en, type Strings } from "../../src/ui/locales/en";
+import { englishOn } from "../e2e/englishLeft";
+import type { Strings } from "../../src/ui/locales/en";
 import { dictionaries } from "../../src/ui/strings";
 
 /**
@@ -15,36 +16,6 @@ import { dictionaries } from "../../src/ui/strings";
  *   its field (English is checked too, as the control: it must fit as well).
  * The pictures land in test-results/languages/, for a person to look at; they aren't approved screenshots.
  */
-
-/** English texts long enough to be unmistakable, which the language words differently. */
-function englishLeaks(language: string): RegExp[] {
-    const mine = new Set(texts(dictionaries[language]));
-    // The starter names are also the seeded library's own (English) category names: data, not text.
-    const seeded = new Set(texts(en.starterCategories));
-    return texts(en)
-        .filter((text) => text.length >= 6 && !mine.has(text) && !seeded.has(text) && !text.includes("Tab Sandwich") && !text.startsWith("https://"))
-        // As a whole word or phrase: "Export" isn't a leak inside "Exportieren".
-        .map((text) => new RegExp(`(^|[^\\p{L}])${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^\\p{L}])`, "u"));
-}
-
-function texts(value: unknown): string[] {
-    if (typeof value === "string") return [value];
-    if (!value || typeof value !== "object") return [];
-    return Object.values(value).flatMap(texts);
-}
-
-/** Everything a person can see or a screen reader can say on the page right now. */
-async function wordsOn(page: Page): Promise<string[]> {
-    return page.evaluate(() => {
-        const out: string[] = [];
-        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        while (walker.nextNode()) out.push(walker.currentNode.textContent ?? "");
-        for (const el of document.querySelectorAll("[aria-label], [title], [placeholder]"))
-            for (const name of ["aria-label", "title", "placeholder"]) out.push(el.getAttribute(name) ?? "");
-        for (const option of document.querySelectorAll("option")) out.push(option.textContent ?? "");
-        return out.map((t) => t.trim()).filter(Boolean);
-    });
-}
 
 /**
  * Whatever on the page doesn't fit, each as what to fix: text wider or taller than its box (cut
@@ -156,17 +127,11 @@ for (const language of Object.keys(dictionaries)) {
 
     test.describe(`In ${language}`, () => {
         test.use({ chromeLanguage: language });
-        const leaks = language === "en" ? [] : englishLeaks(language);
 
         /** Pictures this state, and fails it (going on to the next) for any English on it and anything that doesn't fit. */
         const look = async (page: Page, state: string) => {
             await page.screenshot({ path: `test-results/languages/${language}-${state}.png` });
-            const found = await misfits(page, DATA);
-            if (language !== "en") {
-                const words = await wordsOn(page);
-                for (const leak of leaks) if (words.some((w) => leak.test(w))) found.push(`English ${leak.source}`);
-                for (const word of words) if (/\b(saved|search|categor(y|ies)|selected|reminder|settings)\b/i.test(word)) found.push(`English "${word}"`);
-            }
+            const found = [...(await misfits(page, DATA)), ...(await englishOn(page, language))];
             expect.soft(found, `${language}, ${state}`).toEqual([]);
         };
 

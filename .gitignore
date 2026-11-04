@@ -5,3 +5,6 @@ popup/js/
 test-results/
 playwright-report/
 .DS_Store
+
+# The Store demo video (pnpm store:video): uploaded to YouTube, never committed
+store-assets/video/

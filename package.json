@@ -14,6 +14,7 @@
     "visual": "sh scripts/visual-docker.sh",
     "visual:update": "sh scripts/visual-docker.sh --update-snapshots",
     "store:screenshots": "TS_STORE_SCREENSHOTS=1 playwright test -c playwright.store.config.ts store-assets",
+    "store:video": "TS_STORE_VIDEO=1 playwright test -c playwright.store.config.ts demo-video",
     "icons": "TS_RENDER_ICONS=1 playwright test -c playwright.store.config.ts icons"
   },
   "devDependencies": {

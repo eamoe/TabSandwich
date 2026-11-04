@@ -205,9 +205,14 @@ tests/visual/                  approved screenshots: every screen in light and d
                                 pixel (playwright.visual.config.ts); baselines in __screenshots__/. Also
                                 languages.spec.ts: every screen in each language, with no English left and
                                 everything fitting, English included (Linux Chromium takes Chrome's language
-                                from LANGUAGE, so only these Docker runs can)
-tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
-                                (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
+                                from LANGUAGE, so only these Docker runs can; its "English left" check,
+                                tests/e2e/englishLeft.ts, also guards every Store screenshot)
+tests/store/                   not tests: render the Chrome Web Store screenshots in every language into
+                                store-assets/<language>/ (`pnpm store:screenshots`; samples.ts has each language's words
+                                and sample library), film the demo video into store-assets/video/ (`pnpm store:video`,
+                                never committed), and render the icons into images/ (`pnpm icons`)
+store-listing/                 the Store's detailed description, one file per language (<language>.txt), pasted into
+                                the dashboard (PUBLISHING.md)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI
 eslint.config.js               lint rules, incl. "no localStorage outside migration.ts"
 .github/workflows/             checks.yml (all checks) ← ci.yml (every PR / push to main),

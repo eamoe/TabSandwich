@@ -1,0 +1,31 @@
+Tab Sandwich bewahrt die Tabs auf, zu denen du zurückwillst, und findet sie wieder, wenn du sie brauchst. Alles bleibt in deinem Browser: kein Konto, kein Server, kein Tracking.
+
+ALLE MEINE TABS SPEICHERN
+Vierzig Tabs offen und keine Zeit zum Sortieren? Ein Klick speichert jede Seite im Fenster in eine Kategorie, überspringt Browserseiten und alles schon Gespeicherte und sagt dir genau, wie viele es gespeichert hat. Mit einem weiteren Klick schließt du sie alle, oder du lässt sie offen. In deiner Liste bleiben sie als gespeichertes Fenster beisammen, mit einem Namen wie „Duftendes Croissant“: öffne es wieder in einem neuen Fenster, benenne es um oder löse es auf.
+
+DIESE SEITE FÜR SPÄTER SPEICHERN
+Klick auf das Symbol in der Symbolleiste oder drück Alt+S: Das Pop-up zeigt die Seite, auf der du bist. Nimm die vorgeschlagene Kategorie oder wähle eine andere und klick auf Speichern. Schon gespeichert? Das Pop-up sagt es dir, und ein Klick aktualisiert sie. Mit einem Rechtsklick auf einen Link oder eine Seite und „In Tab Sandwich speichern“ samt Kategorie speicherst du, ohne etwas zu öffnen; der Link bekommt seine eigenen Worte als Titel. Mit der Schaltfläche + fügst du einen Link von Hand hinzu.
+
+DEN LINK WIEDERFINDEN
+Durchsuche Titel, Seiten und deine Notizen schon beim Tippen, mit hervorgehobenen Treffern. Tippe den Namen einer Kategorie oder eines gespeicherten Fensters, um alles darin zu sehen, und drück die Eingabetaste, um den ersten Treffer zu öffnen. Von überall: Tippe ts und ein Leerzeichen in Chromes Adressleiste, um deine gespeicherten Tabs zu durchsuchen, ohne etwas zu öffnen. Sortiere nach neu, alt, Titel, Website, zuletzt geöffnet oder am häufigsten geöffnet, und kehre jederzeit zu deiner eigenen Reihenfolge zurück.
+
+SPÄTER LESEN, UND ES WIRKLICH TUN
+Wähle die Kategorien, in die du Dinge zum späteren Lesen speicherst. Hat ein Tab dort eine Woche gewartet (oder so lange, wie du möchtest), bekommt er einen kleinen Mond, und der Filter „Wartend“ sammelt sie alle. Willst du einen an einem bestimmten Tag zurück? Stell eine Erinnerung, morgen oder nächste Woche: Um 9:00 Uhr an dem Tag bringt eine Benachrichtigung ihn zurück. Schalte die Anzahl wartender Tabs ein, und das Symbol in der Symbolleiste zeigt, wie viele warten. Alles andere, etwa Dokus, Werkzeuge und Konten, wird behalten und nervt nie.
+
+ORDNUNG HALTEN
+Farbige Kategorien, die mitlernen: Speichere eine weitere Seite derselben Website oder desselben Projekts, und Tab Sandwich schlägt die Kategorie vor, die du zuletzt genommen hast, berechnet auf deinem Gerät. Hefte die Tabs an, die du am meisten nutzt, damit sie oben bleiben, und notiere dir, warum du etwas gespeichert hast. Zieh Tabs in deine eigene Reihenfolge, wähle mehrere aus, um sie auf einmal zu verschieben oder zu archivieren, und mach alles mit einem Klick rückgängig. Archiviere, womit du fertig bist: aus dem Weg, nie verloren, jederzeit wiederherstellbar. Behaltene Tabs, die du seit sechs Monaten nicht geöffnet hast? Ein dezenter Tipp bietet an, sie zu archivieren.
+
+NEBEN DER SEITE ODER AUF EINER EIGENEN SEITE
+Lass deine Liste beim Surfen in Chromes Seitenleiste offen; ein Link, den du über das Kontextmenü speicherst, erscheint dort sofort. Für eine große Sammlung zeigt die Bibliothek alles in einer Tabelle auf einer ganzen Seite: Kategorien und gespeicherte Fenster in einer Seitenleiste, Sortieren nach jeder Spalte, viele Tabs auf einmal bearbeiten. Sie bleibt auch mit Tausenden Tabs schnell.
+
+IN DEINER SPRACHE
+Tab Sandwich spricht Deutsch, Englisch, Spanisch, Portugiesisch (Brasilien), Französisch, Russisch, Japanisch und vereinfachtes Chinesisch und folgt dabei Chromes Sprache. Deine eigenen Kategorienamen werden nie übersetzt. Ein Wort klingt holprig, oder du hast eine Idee? „Sag es uns“ unter Einstellungen › Info öffnet ein kurzes Formular.
+
+HELL, DUNKEL UND DIE TASTATUR
+Folgt dem hellen oder dunklen Modus deines Computers, auch während es offen ist, oder du wählst einen in den Einstellungen. Alles geht mit der Tastatur: Pfeiltasten, Eingabe zum Öffnen, E zum Bearbeiten, P zum Anheften, Entf zum Archivieren, Alt+Pfeiltasten zum Umsortieren, / zum Suchen. Das Tastenkürzel, das das Pop-up öffnet, kannst du selbst festlegen. Exportiere alles in eine Datei und importiere es später wieder.
+
+DEINE DATEN BLEIBEN DEINE
+Tab Sandwich speichert alles lokal auf deinem Gerät, mit Chromes eigenen Speicherschnittstellen. Nichts wird je an einen Server gesendet, verfolgt oder weitergegeben – es gibt keinen Server. Die Erweiterung fragt nur nach den Berechtigungen, die sie wirklich nutzt: Zugriff auf deinen aktuellen Tab (nur, wenn du auf die Erweiterung oder ihr Kontextmenü klickst), lokaler Speicher, Lesezugriff auf Chromes eigenen lokalen Favicon-Speicher, um das Symbol jedes gespeicherten Tabs zu zeigen (es werden keine Favicon-Daten gespeichert, und nichts wird je von der Website des Tabs geladen), das Kontextmenü (und, wenn du dort einen Link speicherst, das Lesen der Worte dieses einen Links für seinen Titel), die Seitenleiste und Wecker, die sie für deine Erinnerungen aufwecken. Ein ganzes Fenster zu speichern oder aus der Seitenleiste zu speichern, braucht die Erlaubnis, deine offenen Tabs zu sehen; eine Erinnerung anzuzeigen, braucht die Erlaubnis für Benachrichtigungen. Chrome fragt nach jeder erst, wenn du sie zum ersten Mal brauchst, und alles andere funktioniert auch, wenn du Nein sagst.
+
+NEU IN 4.1
+Tab Sandwich spricht jetzt Spanisch, Portugiesisch (Brasilien), Deutsch, Französisch, Russisch, Japanisch und vereinfachtes Chinesisch. Es folgt Chromes Sprache, eine neue Installation beginnt mit Kategorien in dieser Sprache, und jeder Bildschirm wurde darauf geprüft, dass alles hineinpasst. Und unter Einstellungen › Info öffnet „Sag es uns“ ein kurzes Formular für ein besseres Wort oder eine Idee.
