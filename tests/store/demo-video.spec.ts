@@ -12,7 +12,7 @@ import { SAMPLES } from "./samples";
 import { BACKGROUNDS, CHROME, chromeIcon, FONT, ICON, ICON_SMALL, MARK, SHADOW } from "./drawing";
 
 /**
- * Not a test: films the Chrome Web Store's demo video (`pnpm store:video`), some 30 seconds of the
+ * Not a test: films the Chrome Web Store's demo video (`pnpm store:video`), some 36 seconds of the
  * real extension at work, into store-assets/video/demo-<language>.webm (1920×1080, no sound), for
  * uploading to YouTube by hand.
  *

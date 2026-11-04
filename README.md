@@ -74,7 +74,7 @@ Then load the `dist/` folder (not the repository root) as an unpacked extension 
 - `pnpm test:e2e` — robot tests: a real Chromium loads the built `dist/`, clicks through the popup, and runs an accessibility scan. Needs `pnpm exec playwright install chromium` once, and a fresh `pnpm build`.
 - `pnpm visual` — compares every screen, light and dark, with its approved screenshot, inside Playwright's Docker image (Docker must be running). `pnpm visual:update` approves new pictures after an intended visual change.
 - `pnpm store:screenshots` — renders the Chrome Web Store screenshots, in every language, into `store-assets/<language>/` (after `pnpm build`).
-- `pnpm store:video` — films the Store's 30-second demo video into `store-assets/video/` (after `pnpm build`; uploaded to YouTube, not committed).
+- `pnpm store:video` — films the Store's short demo video into `store-assets/video/` (after `pnpm build`; uploaded to YouTube, not committed).
 - `pnpm icons` — renders the extension's icons into `images/` from the drawings in `branding/`.
 - `pnpm lint` / `pnpm typecheck` — code checks.
 - `pnpm check` — all of the above, in the same order CI runs them.
