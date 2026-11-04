@@ -82,9 +82,9 @@ const en: Sample = {
         { title: "Stack Overflow", url: "https://stackoverflow.com/", daysAgo: 1 },
     ],
     extras: [
-        { title: "web.dev: Learn CSS", url: "https://web.dev/learn/css", category: "reading", daysAgo: 34 },
-        { title: "CSS-Tricks: A Complete Guide to Grid", url: "https://css-tricks.com/snippets/css/complete-guide-grid/", category: "reading", daysAgo: 18 },
-        { title: "A List Apart", url: "https://alistapart.com/", category: "reading", daysAgo: 23 },
+        { title: "Cascading Style Sheets - Wikipedia", url: "https://en.wikipedia.org/wiki/Cascading_Style_Sheets", category: "reading", daysAgo: 34 },
+        { title: "Picnic - Wikipedia", url: "https://en.wikipedia.org/wiki/Picnic", category: "reading", daysAgo: 18 },
+        { title: "Hamburger - Wikipedia", url: "https://en.wikipedia.org/wiki/Hamburger", category: "reading", daysAgo: 23 },
         { title: "Google Flights", url: "https://www.google.com/travel/flights", category: "travel", daysAgo: 40, archivedDaysAgo: 6 },
         { title: "The Verge", url: "https://www.theverge.com/", category: "reading", daysAgo: 30, archivedDaysAgo: 2 },
     ],
