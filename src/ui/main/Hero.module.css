@@ -96,10 +96,15 @@
 .pageTitle { margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pageSite { margin: 1px 0 0; font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .actionRow { display: flex; gap: 8px; align-items: center; }
-/* "Add a note" sits on the site's line, as quiet as a link; the note opens on its own row above Save. */
+/* "Add a note" sits on the site's line, as quiet as a link (as do Show and Restore on a page already
+   saved); the note opens on its own row above Save. */
 .addNote { border: 0; padding: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
 .addNote:hover { text-decoration: underline; text-underline-offset: 2px; }
 .noteRow { display: flex; }
+/* Adding a link: the category on a row of its own, so a long name (in any language) shows whole;
+   Cancel and Add below it, at the end. */
+.form [data-form-actions] { flex-wrap: wrap; justify-content: flex-end; gap: 6px 8px; }
+.form [data-form-actions] > :first-child { flex: 1 0 100%; }
 .noteRow input { flex: 1; min-width: 0; }
 
 .save {
@@ -132,6 +137,10 @@
 /* Plain inline text, so it shares the line's baseline with the site name (as a flex box it took the
    icon's bottom edge as its baseline and sat higher); the icon is nudged down onto the letters. */
 .savedNote { color: var(--accent); font-weight: 600; }
+/* Its words always whole; only the site at the end gives way, with "…", when the line runs out of room. */
+.savedLine { display: flex; align-items: baseline; }
+.savedLine > * { flex-shrink: 0; white-space: pre; }
+.savedLine > .savedSite { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .savedNote svg { margin: -2px 3px -2px 0; vertical-align: -2px; } /* the negative margins keep the line its usual height */
 .duplicate, .duplicate:hover { background: var(--dup); color: var(--on-dup); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); animation: shake 0.35s ease; }
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }

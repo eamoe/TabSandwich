@@ -143,7 +143,9 @@
 .editing { height: auto; display: block; padding: 8px; background: var(--surface) !important; box-shadow: var(--row-lift); transform: none; }
 .editing:hover { transform: none; }
 .editForm { display: flex; flex-direction: column; gap: 6px; }
-.editActions { display: flex; align-items: center; gap: 6px; }
+/* The category on a row of its own, so a long name (in any language) shows whole; Cancel and Save below it, at the end. */
+.editActions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
+.editActions > :first-child { flex: 1 0 100%; }
 .reminderField { display: flex; flex-shrink: 0; }
 
 /* A saved window: a row drawn as a small stack of cards, which opens to show its tabs. */

@@ -44,6 +44,14 @@ const COLUMNS: Array<{ key: LibraryColumn; label: string; hint?: string }> = [
     { key: "saved", label: strings.columnSaved },
     { key: "opened", label: strings.columnOpened, hint: strings.columnOpenedHint },
 ];
+/**
+ * In a narrow window the title would be squeezed to nothing (the other columns' widths are fixed),
+ * so Opened goes once the table's box is narrower than this, then Site too: each keeps the title 220px.
+ */
+const NARROW: Array<{ column: LibraryColumn; below: number }> = [
+    { column: "opened", below: 956 },
+    { column: "site", below: 820 },
+];
 
 const whenText = (at: number | undefined) => (at === undefined ? strings.notOpenedYet : strings.daysAgo(daysSince(at)));
 
@@ -77,6 +85,7 @@ export function Library() {
     const search = useRef<HTMLInputElement>(null);
     const table = useRef<HTMLDivElement>(null);
     const [view, setView] = useState({ top: 0, height: 800 });
+    const [tableWidth, setTableWidth] = useState(Infinity);
 
     useEffect(() => {
         if (library) document.body.dataset.ready = "true";
@@ -86,7 +95,10 @@ export function Library() {
     useLayoutEffect(() => {
         const box = table.current;
         if (!box) return;
-        const measure = () => setView({ top: box.scrollTop, height: box.clientHeight });
+        const measure = () => {
+            setView({ top: box.scrollTop, height: box.clientHeight });
+            setTableWidth(box.clientWidth);
+        };
         const resizes = new ResizeObserver(measure);
         resizes.observe(box);
         return () => resizes.disconnect();
@@ -173,6 +185,8 @@ export function Library() {
         ? staleKeptTabs(library.tabs, settings, Date.now(), library.openTrackingSince)
         : [];
     const { start, end } = rowsInView(rows.length, ROW_HEIGHT, view.top, view.height);
+    const dropped = new Set(NARROW.filter((n) => tableWidth < n.below).map((n) => n.column));
+    const shows = (column: LibraryColumn) => !dropped.has(column);
 
     const saving = async (write: () => Promise<void>) => {
         try {
@@ -431,9 +445,9 @@ export function Library() {
                                 <col class={styles.colCheck} />
                                 <col />
                                 <col class={styles.colCategory} />
-                                <col class={styles.colSite} />
+                                {shows("site") && <col class={styles.colSite} />}
                                 <col class={styles.colDate} />
-                                <col class={styles.colDate} />
+                                {shows("opened") && <col class={styles.colDate} />}
                                 <col class={styles.colActions} />
                             </colgroup>
                             <thead>
@@ -447,7 +461,7 @@ export function Library() {
                                             onChange={() => setPicked(allPicked ? new Set() : new Set(rows.map((t) => t.id)))}
                                         />
                                     </th>
-                                    {COLUMNS.map((c) => {
+                                    {COLUMNS.filter((c) => shows(c.key)).map((c) => {
                                         const on = sort.column === c.key;
                                         return (
                                             <th key={c.key} scope="col" aria-sort={on ? (sort.ascending ? "ascending" : "descending") : "none"}>
@@ -510,15 +524,19 @@ export function Library() {
                                                     <span class={styles.cut} title={categoryLabel(category)}>{categoryLabel(category)}</span>
                                                 </span>
                                             </td>
-                                            <td class={styles.quiet}>
-                                                <span class={styles.cut}>{siteName(tab.url)}</span>
-                                            </td>
+                                            {shows("site") && (
+                                                <td class={styles.quiet}>
+                                                    <span class={styles.cut}>{siteName(tab.url)}</span>
+                                                </td>
+                                            )}
                                             <td class={styles.quiet}>
                                                 {isTabAged(tab, settings) ? <span class={styles.waiting}>{whenText(tab.savedAt)}</span> : whenText(tab.savedAt)}
                                             </td>
-                                            <td class={styles.quiet} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
-                                                {whenText(tab.lastOpenedAt)}
-                                            </td>
+                                            {shows("opened") && (
+                                                <td class={styles.quiet} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
+                                                    {whenText(tab.lastOpenedAt)}
+                                                </td>
+                                            )}
                                             <td>
                                                 <div class={styles.actions}>
                                                     {isArchived(tab) ? (

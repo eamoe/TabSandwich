@@ -12,7 +12,7 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 
 - **Logic tests** (`tests/unit/`, `pnpm test`): storage, duplicate detection, search, the main list's filter rules, categories, backup files, the theme setting, data upgrades, legacy migration, manifest permissions; plus component tests for the shared building blocks.
 - **Robot tests** (`tests/e2e/`, `pnpm test:e2e`): a real Chromium loads the built `dist/` and clicks through the popup — saving, editing, deleting and undo, search, filters and sorting, categories, export and import, the keyboard, saving a whole window (with a stand-in for Chrome's permission prompt), saved windows, selecting many — then runs an accessibility scan of each screen, once in light and once in dark mode, color contrast included (`KNOWN_GAPS` in `tests/e2e/accessibility.spec.ts` is empty).
-- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`. The same Docker run opens every screen in each of Tab Sandwich's languages (`tests/visual/languages.spec.ts`) and fails on any English left showing; its pictures land in `test-results/languages/` for a person to look at.
+- **Approved screenshots** (`tests/visual/`, `pnpm visual`): every screen and key state, in light and dark, compared pixel for pixel with its approved picture, in Playwright's Docker image (CI's `visual` job). Any visual change fails with expected / actual / diff side by side; approve an intended one with `pnpm visual:update`. The same Docker run opens every screen in each of Tab Sandwich's languages, English included (`tests/visual/languages.spec.ts`), and fails on any English left showing and on anything that doesn't fit: text cut off or spilling out of its box, a field's hint or a select's choice wider than its field (measured as a Mac's wider font would draw it, and with three-digit counts), a page wider than its window. Names and sites may be cut with "…" for room; the app's own words never. Its pictures land in `test-results/languages/` for a person to look at.
 - **Every language, key for key** (`tests/unit/locales.test.ts`): each dictionary in `src/ui/locales/` has exactly English's keys, keeps each sentence's `{}` slot, the newest "What's new" note, starter categories that fit, and a Store summary in `_locales/` of at most 132 characters.
 - In tests, "Save Tab" saves a page of a fake site (`https://example.test`) served by the test itself; the test copy of the extension is granted access to that fake site in place of the `activeTab` grant a real toolbar click gives. That's why opening the popup from the real toolbar stays in the manual pass.
 
@@ -98,7 +98,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-010 — Duplicate via Save Tab (P1)** **[auto]**
 - Preconditions: one tab already saved.
 - Steps: Revisit that same URL as the active tab → open the popup. Also: save a page, and watch the card right after.
-- Expected: No **Save Tab** button for a page that's already saved: the card says "✓ Saved N days ago" with **Show** and **Update** instead (TC-215), so no second entry can be created. Right after saving, the button shows "Saved!" for a moment, then the card settles into that saved look. (If the page somehow gets saved twice anyway, e.g. from two windows at once, the button reads "Already saved" in orange with a small shake and the existing entry flashes.)
+- Expected: No **Save Tab** button for a page that's already saved: the card says "✓ Saved N days ago · **Show**" and has **Update** instead (TC-215), so no second entry can be created. Right after saving, the button shows "Saved!" for a moment, then the card settles into that saved look. (If the page somehow gets saved twice anyway, e.g. from two windows at once, the button reads "Already saved" in orange with a small shake and the existing entry flashes.)
 
 **TC-011 — Duplicate acknowledgment visible when entry is off-screen (P1)**
 - Preconditions: enough tabs saved that the list scrolls; the duplicate target is scrolled out of view.
@@ -770,7 +770,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-215 — The save card knows a page is already saved (P1)** **[auto]**
 - Preconditions: The page you're on was saved 20 days ago, in Reading.
 - Steps: Open the popup.
-- Expected: Under the page title: "✓ Saved 20 days ago · example.com" (today / yesterday read naturally). The picker shows Reading, labelled "Saved in category", and **Show** and **Update** take the place of Save.
+- Expected: Under the page title: "✓ Saved 20 days ago · **Show** · example.com" (today / yesterday read naturally; a long site is shortened with "…", never Show). The picker shows Reading, labelled "Saved in category", and **Update** takes the place of Save.
 
 **TC-216 — Show finds the saved copy (P2)** **[auto]**
 - Steps: Pick a category pill that hides the saved copy → **Show**.
@@ -994,7 +994,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-268 — An archived page on the save card and in the + form (P2)** **[auto]**
 - Steps: Open a page whose saved copy is archived; click **Restore** on the save card. Archive it again and click **Update** instead, then **Undo**. Then type its link into the + form and **Add**.
-- Expected: The card says "In your archive" and offers **Restore** (instead of Show): the tab is back in the list ("Restored", with Undo). **Update** brings it back too, up to date; its Undo puts it back in the archive as it was. The + form says "In your archive, as “…”." with **Restore**.
+- Expected: The card says "In your archive · **Restore**" (instead of Show): the tab is back in the list ("Restored", with Undo). **Update** brings it back too, up to date; its Undo puts it back in the archive as it was. The + form says "In your archive, as “…”." with **Restore**.
 
 **TC-269 — Selecting in the archive (P1)** **[auto]**
 - Steps: On the Archived pill, start selecting; pick two; delete them for good; Undo; then Select all and **Restore**.
@@ -1195,3 +1195,11 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-315 — Counts read naturally (P2)**
 - Steps: In English and in Russian, look at texts with a count of 1, 2, 5 and 21: the search box's hint, "Saved 1 tab", the selection bar, the days field in Settings › Categories.
 - Expected: Each count takes its own form ("1 tab", "2 tabs"; in Russian "1 вкладка", "2 вкладки", "5 вкладок", "21 вкладка"), never a word with "(s)" or a form that doesn't agree. Logic-tested for English and each language's rules.
+
+**TC-317 — Every screen fits in every language (P1)** **[auto]**
+- Steps: In German (the longest), then Russian and French, with a few hundred saved tabs, open the popup and the side panel at its narrowest usual width: the search box, the save card on a page already saved and after saving a whole window, the selection bar with 10 or more selected (in the list and in the archive), the add form, a toast, each Settings tab, a category's remove question, the import choice, the library and its Settings, and the welcome page.
+- Expected: No word of the app is cut off, hidden under something else or spilling out of its box: the search box's whole hint shows, **Move to…** is as wide as its words, and the selection bar's buttons all fit beside the count. Only names you gave and sites are shortened with "…", where there isn't room. Checked in Docker in every language, English included; look at one language by hand on your own computer, whose fonts differ.
+
+**TC-318 — The library in a narrow window (P2)** **[auto]**
+- Steps: Open the library and make the window narrower: about 1280, 1000, 800, then 700 pixels wide.
+- Expected: Titles always keep room to read. Once the table gets narrow the Opened column steps aside, then the Site column too; below 760 pixels the sidebar moves above the table. Widening the window brings them back. "300 days ago" fits its column in every language. Checked in Docker at 1280, 1024, 800 and 700.

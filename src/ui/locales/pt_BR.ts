@@ -27,8 +27,8 @@ export const pt_BR: Strings = {
     uncategorized: "Sem categoria",
     starterCategories: { work: "Trabalho", personal: "Pessoal", reading: "Leitura", entertainment: "Entretenimento" },
     searchLabel: "Pesquisar nas guias salvas",
-    searchPlaceholder: (count: number) => n(count, { one: `Pesquisar em ${count} guia salva`, other: `Pesquisar em ${count} guias salvas` }),
-    searchArchivePlaceholder: (count: number) => n(count, { one: `Pesquisar em ${count} guia arquivada`, other: `Pesquisar em ${count} guias arquivadas` }),
+    searchPlaceholder: (count: number) => n(count, { one: `Pesquisar em ${count} guia`, other: `Pesquisar em ${count} guias` }),
+    searchArchivePlaceholder: (_count: number) => "Pesquisar no arquivo",
     clearSearch: "Limpar pesquisa",
     matches: (count: number) => (count === 0 ? "Nenhuma guia encontrada" : n(count, { one: `${count} guia encontrada`, other: `${count} guias encontradas` })),
     addLinkManually: "Adicionar link manualmente",
@@ -37,7 +37,7 @@ export const pt_BR: Strings = {
     openSidePanel: "Abrir o painel lateral",
     sidePanelFailed: "O Chrome não conseguiu abrir o painel lateral.",
     panelPageTitle: "A página em que você está",
-    panelPageHint: "O Chrome pergunta uma vez antes de salvar pela primeira vez.",
+    panelPageHint: "O Chrome pergunta uma vez, antes de salvar.",
     panelDenied: "O Tab Sandwich precisa disso para ver a página, então nada foi salvo.",
 
     openSettings: "Abrir configurações",
@@ -205,7 +205,7 @@ export const pt_BR: Strings = {
     selectTabs: "Selecionar guias",
     selectTooltip: "Selecione várias guias para movê-las ou excluí-las juntas",
     selectedCount: (count: number) => (count === 0 ? "Nenhuma selecionada" : n(count, { one: `${count} selecionada`, other: `${count} selecionadas` })),
-    selectAll: "Selecionar todas",
+    selectAll: "Todas",
     selectAllTooltip: "Selecionar todas as guias mostradas, incluindo as das janelas salvas",
     moveTo: "Mover para…",
     moveToLabel: "Mover as guias selecionadas para uma categoria",
@@ -265,7 +265,7 @@ export const pt_BR: Strings = {
     reminderTomorrow: "Lembrar amanhã",
     reminderNextWeek: (at: number) => `Lembrar na semana que vem, ${reminderDate(at)}`,
     reminderKept: (at: number) => `Lembrete: ${reminderDate(at)}`,
-    reminderShort: (at: number, now: number) => ({ due: "Pendente", today: "Hoje", tomorrow: "Amanhã", later: reminderDate(at) })[reminderDay(at, now)],
+    reminderShort: (at: number, now: number) => ({ due: "Pendente", today: "Hoje", tomorrow: "Amanhã", later: new Date(at).toLocaleDateString(tag, { day: "numeric", month: "short" }) })[reminderDay(at, now)],
     reminderWhen: (at: number) => `Lembrete: ${reminderDate(at)}, 9:00`,
     reminderMessage: (site: string) => `Seu lembrete do Tab Sandwich · ${site}`,
     remindersTitle: (count: number) => n(count, { one: `${count} guia salva para rever`, other: `${count} guias salvas para rever` }),
@@ -370,9 +370,9 @@ export const pt_BR: Strings = {
     },
     removeConfirmTitle: (name: string) => `Remover ${name}?`,
     removeConfirmDetail: (count: number, archived: number) => {
-        if (archived === 0) return n(count, { one: "Sua guia passa para Sem categoria", other: `Suas ${count} guias passam para Sem categoria` });
-        if (archived === count) return n(count, { one: "Sua guia arquivada passa para Sem categoria", other: `Suas ${count} guias arquivadas passam para Sem categoria` });
-        return `${count} guias (${archived} arquivadas) passam para Sem categoria`;
+        if (archived === 0) return n(count, { one: `${count} guia → Sem categoria`, other: `${count} guias → Sem categoria` });
+        if (archived === count) return n(count, { one: `${count} guia arquivada → Sem categoria`, other: `${count} guias arquivadas → Sem categoria` });
+        return `${count} guias (${archived} arquivadas) → Sem categoria`;
     },
     removeConfirm: "Remover",
     removedCategoryToast: (name: string) => `${name} removida`,

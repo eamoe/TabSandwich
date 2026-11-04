@@ -70,6 +70,28 @@ test.describe("The library", () => {
         await expect(popup.getByText("No saved tabs match")).toBeVisible();
     });
 
+    test("TC-318: in a narrower window Opened steps aside, then Site, so titles keep room; they come back", async ({ popup }) => {
+        const header = (name: string) => table(popup).getByRole("columnheader", { name, exact: true });
+        const titleWidth = () => table(popup).getByRole("columnheader", { name: "Title" }).evaluate((el) => el.getBoundingClientRect().width);
+        await expect(header("Opened")).toBeVisible();
+        await expect(header("Site")).toBeVisible();
+
+        await popup.setViewportSize({ width: 1150, height: 800 });
+        await expect(header("Opened")).toHaveCount(0);
+        await expect(header("Site")).toBeVisible();
+        expect(await titleWidth()).toBeGreaterThanOrEqual(220);
+
+        await popup.setViewportSize({ width: 1000, height: 800 });
+        await expect(header("Site")).toHaveCount(0);
+        await expect(rowOf(popup, "Alpha").getByRole("cell")).toHaveCount(5);
+        expect(await titleWidth()).toBeGreaterThanOrEqual(220);
+
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await expect(header("Opened")).toBeVisible();
+        await expect(header("Site")).toBeVisible();
+        await expect(rowOf(popup, "Alpha").getByRole("cell")).toHaveCount(7);
+    });
+
     test("TC-297: picking several moves or archives them in one step, with Undo", async ({ popup }) => {
         await rowOf(popup, "Alpha").getByRole("checkbox").click();
         // Shift picks everything up to here.

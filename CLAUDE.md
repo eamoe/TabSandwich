@@ -130,8 +130,8 @@ src/
       OpenMenu.tsx          the popup's Open in menu: side panel, library (in the panel, the header just opens the library)
       SaveCard.tsx          the page on its own row; category picker + Save below; feedback on the button; in the side panel,
                              which can't see the page without the "tabs" permission, the first Save asks for it;
-                             on a page already saved: "Saved N days ago", Show and Update instead of Save
-                             ("In your archive" and Restore for an archived one); "Add a note" before saving; a new page's
+                             on a page already saved: "Saved N days ago · Show" on its line and Update instead of Save
+                             ("In your archive · Restore" for an archived one); "Add a note" before saving; a new page's
                              picker starts on its suggested category (a sparkle until you pick)
       SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
                              "tabs" permission the first time), what was saved and skipped, Close the saved tabs
@@ -163,7 +163,8 @@ src/
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
       AboutTab.tsx          version, local-only promise, privacy policy and source links
     library/                the full-page library
-      Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn), bulk editing, cleanup tip;
+      Library.tsx           top bar, sidebar, sortable table (only the rows in view are drawn; in a narrow window Opened,
+                             then Site, step aside so titles keep room), bulk editing, cleanup tip;
                              the popup's own selection bar; Settings as a centered column beside the sidebar, its add and edit forms in a panel over the
                              table so nothing moves, closed by a click outside or Escape; each at an address of its own (#settings, #add, #edit/…)
       libraryModel.ts       pure: its filters (saved windows too), column sorting, sidebar counts, which rows are in view — logic-tested
@@ -201,8 +202,9 @@ tests/e2e/                     robot tests (Playwright): real Chromium loads dis
                                 starts as a fresh install (the fixture closes the welcome page unless asked not to)
 tests/visual/                  approved screenshots: every screen in light and dark, compared pixel for
                                 pixel (playwright.visual.config.ts); baselines in __screenshots__/. Also
-                                languages.spec.ts: every screen in each language, with no English left (Linux
-                                Chromium takes Chrome's language from LANGUAGE, so only these Docker runs can)
+                                languages.spec.ts: every screen in each language, with no English left and
+                                everything fitting, English included (Linux Chromium takes Chrome's language
+                                from LANGUAGE, so only these Docker runs can)
 tests/store/                   not tests: render the Chrome Web Store screenshots into store-assets/
                                 (`pnpm store:screenshots`) and the icons into images/ (`pnpm icons`)
 scripts/visual-docker.sh       runs the screenshot comparisons in Playwright's Docker image, like CI

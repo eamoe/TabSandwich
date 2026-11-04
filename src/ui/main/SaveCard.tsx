@@ -159,13 +159,24 @@ export function SaveCard(props: {
                 <div class={styles.pageText}>
                     <p class={styles.pageTitle}>{unseen ? strings.panelPageTitle : tab ? tab.title || tab.url : ""}</p>
                     {showSaved ? (
-                        <p class={styles.pageSite}>
+                        <p class={`${styles.pageSite} ${styles.savedLine}`}>
                             <span class={styles.savedNote}>
                                 <Icon name={savedCopy.archivedAt ? "archive" : "check"} size={12} />
                                 {savedCopy.archivedAt ? strings.inYourArchive : strings.savedAgo(daysSince(savedCopy.savedAt))}
                             </span>
-                            {" · "}
-                            {siteName(tab!.url!)}
+                            <span class={styles.dot}>{" · "}</span>
+                            {/* Before the site, so a long address can never push it out of sight. */}
+                            {savedCopy.archivedAt ? (
+                                <button type="button" class={styles.addNote} title={strings.restoreSavedTooltip} onClick={() => props.onRestore(savedCopy.id)}>
+                                    {strings.restore}
+                                </button>
+                            ) : (
+                                <button type="button" class={styles.addNote} title={strings.showTooltip} onClick={() => props.onShow(savedCopy.id)}>
+                                    {strings.show}
+                                </button>
+                            )}
+                            <span class={styles.dot}>{" · "}</span>
+                            <span class={styles.savedSite}>{siteName(tab!.url!)}</span>
                         </p>
                     ) : (
                         <p class={styles.pageSite}>
@@ -223,27 +234,16 @@ export function SaveCard(props: {
                         suggested={!pickedHere && suggestion !== undefined && chosen === suggestion}
                     />
                     {showSaved ? (
-                        <>
-                            {savedCopy.archivedAt ? (
-                                <button type="button" class={controls.btn} title={strings.restoreSavedTooltip} onClick={() => props.onRestore(savedCopy.id)}>
-                                    {strings.restore}
-                                </button>
-                            ) : (
-                                <button type="button" class={controls.btn} title={strings.showTooltip} onClick={() => props.onShow(savedCopy.id)}>
-                                    {strings.show}
-                                </button>
-                            )}
-                            <button
-                                type="button"
-                                class={`${styles.save} ${styles.update} ${status === "updated" ? styles.saved : ""}`}
-                                title={strings.updateTooltip}
-                                disabled={busy}
-                                onClick={update}
-                            >
-                                {status === "updated" && <Icon name="check" size={14} />}
-                                {status === "updated" ? strings.updatedButton : strings.update}
-                            </button>
-                        </>
+                        <button
+                            type="button"
+                            class={`${styles.save} ${styles.update} ${status === "updated" ? styles.saved : ""}`}
+                            title={strings.updateTooltip}
+                            disabled={busy}
+                            onClick={update}
+                        >
+                            {status === "updated" && <Icon name="check" size={14} />}
+                            {status === "updated" ? strings.updatedButton : strings.update}
+                        </button>
                     ) : (
                         saveButton
                     )}

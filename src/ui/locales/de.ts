@@ -25,8 +25,8 @@ export const de: Strings = {
     uncategorized: "Ohne Kategorie",
     starterCategories: { work: "Arbeit", personal: "Privat", reading: "Lesen", entertainment: "Unterhaltung" },
     searchLabel: "Gespeicherte Tabs durchsuchen",
-    searchPlaceholder: (count: number) => n(count, { one: `${count} gespeicherten Tab durchsuchen`, other: `${count} gespeicherte Tabs durchsuchen` }),
-    searchArchivePlaceholder: (count: number) => n(count, { one: `${count} archivierten Tab durchsuchen`, other: `${count} archivierte Tabs durchsuchen` }),
+    searchPlaceholder: (count: number) => n(count, { one: `${count} Tab durchsuchen`, other: `${count} Tabs durchsuchen` }),
+    searchArchivePlaceholder: (_count: number) => "Archiv durchsuchen",
     clearSearch: "Suche löschen",
     matches: (count: number) => (count === 0 ? "Keine passenden Tabs" : n(count, { one: `${count} passender Tab`, other: `${count} passende Tabs` })),
     addLinkManually: "Link von Hand hinzufügen",
@@ -203,9 +203,9 @@ export const de: Strings = {
     selectTabs: "Tabs auswählen",
     selectTooltip: "Mehrere Tabs auswählen, um sie zusammen zu verschieben oder zu löschen",
     selectedCount: (count: number) => (count === 0 ? "Keiner ausgewählt" : `${count} ausgewählt`),
-    selectAll: "Alle auswählen",
+    selectAll: "Alle",
     selectAllTooltip: "Jeden gezeigten Tab auswählen, auch die Tabs in gespeicherten Fenstern",
-    moveTo: "Verschieben nach…",
+    moveTo: "Verschieben…",
     moveToLabel: "Die ausgewählten Tabs in eine Kategorie verschieben",
     deleteSelectedLabel: (count: number) => n(count, { one: `${count} ausgewählten Tab endgültig löschen`, other: `${count} ausgewählte Tabs endgültig löschen` }),
     archiveSelectedLabel: (count: number) => n(count, { one: `${count} ausgewählten Tab archivieren`, other: `${count} ausgewählte Tabs archivieren` }),
@@ -367,10 +367,9 @@ export const de: Strings = {
     },
     removeConfirmTitle: (name: string) => `${name} entfernen?`,
     removeConfirmDetail: (count: number, archived: number) => {
-        if (archived === 0) return n(count, { one: "Sein Tab kommt zu „Ohne Kategorie“", other: `Seine ${count} Tabs kommen zu „Ohne Kategorie“` });
-        if (archived === count)
-            return n(count, { one: "Sein archivierter Tab kommt zu „Ohne Kategorie“", other: `Seine ${count} archivierten Tabs kommen zu „Ohne Kategorie“` });
-        return `${count} Tabs (${archived} archiviert) kommen zu „Ohne Kategorie“`;
+        if (archived === 0) return n(count, { one: `${count} Tab → „Ohne Kategorie“`, other: `${count} Tabs → „Ohne Kategorie“` });
+        if (archived === count) return n(count, { one: `${count} archivierter Tab → „Ohne Kategorie“`, other: `${count} archivierte Tabs → „Ohne Kategorie“` });
+        return `${count} Tabs (${archived} archiviert) → „Ohne Kategorie“`;
     },
     removeConfirm: "Entfernen",
     removedCategoryToast: (name: string) => `${name} entfernt`,

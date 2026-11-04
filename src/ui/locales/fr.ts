@@ -28,8 +28,8 @@ export const fr: Strings = {
     uncategorized: "Sans catégorie",
     starterCategories: { work: "Travail", personal: "Personnel", reading: "Lecture", entertainment: "Divertissement" },
     searchLabel: "Rechercher dans les onglets enregistrés",
-    searchPlaceholder: (count: number) => n(count, { one: `Rechercher dans ${count} onglet enregistré`, other: `Rechercher dans ${count} onglets enregistrés` }),
-    searchArchivePlaceholder: (count: number) => n(count, { one: `Rechercher dans ${count} onglet archivé`, other: `Rechercher dans ${count} onglets archivés` }),
+    searchPlaceholder: (_count: number) => "Chercher un onglet",
+    searchArchivePlaceholder: (_count: number) => "Chercher dans l'archive",
     clearSearch: "Effacer la recherche",
     matches: (count: number) => (count === 0 ? "Aucun onglet correspondant" : n(count, { one: `${count} onglet correspondant`, other: `${count} onglets correspondants` })),
     addLinkManually: "Ajouter un lien à la main",
@@ -38,7 +38,7 @@ export const fr: Strings = {
     openSidePanel: "Ouvrir le panneau latéral",
     sidePanelFailed: "Chrome n'a pas pu ouvrir le panneau latéral.",
     panelPageTitle: "La page où vous êtes",
-    panelPageHint: "Chrome vous le demande une fois, avant le premier enregistrement.",
+    panelPageHint: "Chrome vous le demandera une fois.",
     panelDenied: "Tab Sandwich en a besoin pour voir la page\u00a0: rien n'a été enregistré.",
 
     openSettings: "Ouvrir les paramètres",
@@ -206,9 +206,9 @@ export const fr: Strings = {
     selectTabs: "Sélectionner des onglets",
     selectTooltip: "Sélectionnez plusieurs onglets pour les déplacer ou les supprimer ensemble",
     selectedCount: (count: number) => (count === 0 ? "Aucun sélectionné" : n(count, { one: `${count} sélectionné`, other: `${count} sélectionnés` })),
-    selectAll: "Tout sélectionner",
+    selectAll: "Tout",
     selectAllTooltip: "Sélectionner chaque onglet affiché, y compris ceux des fenêtres enregistrées",
-    moveTo: "Déplacer vers…",
+    moveTo: "Déplacer…",
     moveToLabel: "Déplacer les onglets sélectionnés vers une catégorie",
     deleteSelectedLabel: (count: number) => n(count, { one: `Supprimer définitivement ${count} onglet sélectionné`, other: `Supprimer définitivement ${count} onglets sélectionnés` }),
     archiveSelectedLabel: (count: number) => n(count, { one: `Archiver ${count} onglet sélectionné`, other: `Archiver ${count} onglets sélectionnés` }),
@@ -371,10 +371,9 @@ export const fr: Strings = {
     },
     removeConfirmTitle: (name: string) => `Retirer ${name}\u00a0?`,
     removeConfirmDetail: (count: number, archived: number) => {
-        if (archived === 0) return n(count, { one: "Son onglet passe dans Sans catégorie", other: `Ses ${count}\u00a0onglets passent dans Sans catégorie` });
-        if (archived === count)
-            return n(count, { one: "Son onglet archivé passe dans Sans catégorie", other: `Ses ${count}\u00a0onglets archivés passent dans Sans catégorie` });
-        return `${count}\u00a0onglets (dont ${archived} archivés) passent dans Sans catégorie`;
+        if (archived === 0) return n(count, { one: `${count}\u00a0onglet → Sans catégorie`, other: `${count}\u00a0onglets → Sans catégorie` });
+        if (archived === count) return n(count, { one: `${count}\u00a0onglet archivé → Sans catégorie`, other: `${count}\u00a0onglets archivés → Sans catégorie` });
+        return `${count}\u00a0onglets (dont ${archived} archivés) → Sans catégorie`;
     },
     removeConfirm: "Retirer",
     removedCategoryToast: (name: string) => `${name} retirée`,

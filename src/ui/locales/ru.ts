@@ -32,8 +32,8 @@ export const ru: Strings = {
     uncategorized: "Без категории",
     starterCategories: { work: "Работа", personal: "Личное", reading: "Чтение", entertainment: "Развлечения" },
     searchLabel: "Поиск по сохранённым вкладкам",
-    searchPlaceholder: (count: number) => r(count, `Поиск: ${count} сохранённая вкладка`, `Поиск: ${count} сохранённые вкладки`, `Поиск: ${count} сохранённых вкладок`),
-    searchArchivePlaceholder: (count: number) => r(count, `Поиск: ${count} вкладка в архиве`, `Поиск: ${count} вкладки в архиве`, `Поиск: ${count} вкладок в архиве`),
+    searchPlaceholder: (count: number) => r(count, `Поиск по ${count} вкладке`, `Поиск по ${count} вкладкам`, `Поиск по ${count} вкладкам`),
+    searchArchivePlaceholder: (_count: number) => "Поиск по архиву",
     clearSearch: "Очистить поиск",
     matches: (count: number) => (count === 0 ? "Подходящих вкладок нет" : r(count, `${count} подходящая вкладка`, `${count} подходящие вкладки`, `${count} подходящих вкладок`)),
     addLinkManually: "Добавить ссылку вручную",
@@ -42,7 +42,7 @@ export const ru: Strings = {
     openSidePanel: "Открыть боковую панель",
     sidePanelFailed: "Chrome не удалось открыть боковую панель.",
     panelPageTitle: "Страница, на которой вы сейчас",
-    panelPageHint: "Chrome спросит один раз, перед первым сохранением.",
+    panelPageHint: "Chrome спросит один раз перед сохранением.",
     panelDenied: "Без этого Tab Sandwich не видит страницу, поэтому ничего не сохранено.",
 
     openSettings: "Открыть настройки",
@@ -86,7 +86,7 @@ export const ru: Strings = {
 
     addLinkTitle: "Добавить ссылку вручную",
     urlLabel: "URL",
-    urlPlaceholder: "Вставьте ссылку, например https://example.com",
+    urlPlaceholder: "Ссылка, например https://example.com",
     titleOptionalLabel: "Название (необязательно)",
     categoryOptionalLabel: "Категория (необязательно)",
     add: "Добавить",
@@ -210,9 +210,9 @@ export const ru: Strings = {
     selectTabs: "Выбрать вкладки",
     selectTooltip: "Выберите несколько вкладок, чтобы переместить или удалить их разом",
     selectedCount: (count: number) => (count === 0 ? "Ничего не выбрано" : `Выбрано: ${count}`),
-    selectAll: "Выбрать все",
+    selectAll: "Все",
     selectAllTooltip: "Выбрать все показанные вкладки, в том числе в сохранённых окнах",
-    moveTo: "Переместить в…",
+    moveTo: "Переместить…",
     moveToLabel: "Переместить выбранные вкладки в категорию",
     deleteSelectedLabel: (count: number) => r(count, `Удалить навсегда ${count} выбранную вкладку`, `Удалить навсегда ${count} выбранные вкладки`, `Удалить навсегда ${count} выбранных вкладок`),
     archiveSelectedLabel: (count: number) => r(count, `В архив: ${count} выбранная вкладка`, `В архив: ${count} выбранные вкладки`, `В архив: ${count} выбранных вкладок`),
@@ -374,10 +374,9 @@ export const ru: Strings = {
     },
     removeConfirmTitle: (name: string) => `Удалить ${name}?`,
     removeConfirmDetail: (count: number, archived: number) => {
-        if (archived === 0) return r(count, `Её вкладка перейдёт в «Без категории»`, `Её ${count} вкладки перейдут в «Без категории»`, `Её ${count} вкладок перейдут в «Без категории»`);
-        if (archived === count)
-            return r(count, `Её вкладка из архива перейдёт в «Без категории»`, `Её ${count} вкладки из архива перейдут в «Без категории»`, `Её ${count} вкладок из архива перейдут в «Без категории»`);
-        return `${tabs(count)} (в архиве: ${archived}) перейдут в «Без категории»`;
+        if (archived === 0) return `${tabs(count)} → «Без категории»`;
+        if (archived === count) return `${tabs(count)} из архива → «Без категории»`;
+        return `${tabs(count)} (в архиве: ${archived}) → «Без категории»`;
     },
     removeConfirm: "Удалить",
     removedCategoryToast: (name: string) => `Категория ${name} удалена`,
