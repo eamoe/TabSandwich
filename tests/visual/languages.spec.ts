@@ -95,12 +95,25 @@ async function misfits(page: Page, data: string[]): Promise<string[]> {
     }, data);
 }
 
+/**
+ * Days to the next Wednesday from 20 September on: a reminder date as wide as its label gets
+ * (two-digit day, a long month, a long weekday), and the same label whichever day the run is.
+ */
+function daysToWideDate(): number {
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    const today = day.getTime();
+    day.setDate(day.getDate() + 2);
+    while (!(day.getMonth() === 8 && day.getDate() >= 20 && day.getDay() === 3)) day.setDate(day.getDate() + 1);
+    return Math.round((day.getTime() - today) / 86_400_000);
+}
+
 /** Neutral names, so a title can never look like English the app forgot to translate. */
 const LIBRARY: SeedTab[] = [
     { title: "Alpha 2026", url: "https://alpha.example.com/a", category: "Work", pinned: true },
     { title: "Bravo 2026", url: "https://bravo.example.com/b", category: "Work", daysAgo: 3, note: "Zulu 2026" },
     { title: "Charlie 2026", url: "https://charlie.example.com/c", category: "Reading", daysAgo: 12 },
-    { title: "Delta 2026", url: "https://delta.example.com/d", daysAgo: 9, remindInDays: 2 },
+    { title: "Delta 2026", url: "https://delta.example.com/d", daysAgo: 9, remindInDays: daysToWideDate() },
     { title: "Echo 2026", url: "https://echo.example.com/e", groupId: "w" },
     { title: "Foxtrot 2026", url: "https://foxtrot.example.com/f", groupId: "w" },
     { title: "Golf 2026", url: "https://golf.example.com/g", archivedDaysAgo: 1 },
