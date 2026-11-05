@@ -187,4 +187,15 @@ test.describe("Choosing several tabs", () => {
         await expect(popup.getByLabel("Move the selected tabs to a category")).toBeDisabled();
         await expect(bar(popup).getByRole("button", { name: /^Archive/ })).toBeDisabled();
     });
+
+    test("TC-320: Select all steps aside once everything shown is picked, and comes back when one isn't", async ({ popup }) => {
+        await seed(popup);
+        await start(popup);
+        const selectAll = bar(popup).getByRole("button", { name: "Select all" });
+        await selectAll.click();
+        await expect(bar(popup)).toContainText("5 selected");
+        await expect(selectAll).toHaveCount(0);
+        await box(popup, "Alpha").click();
+        await expect(selectAll).toBeVisible();
+    });
 });

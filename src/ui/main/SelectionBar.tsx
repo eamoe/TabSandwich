@@ -34,6 +34,8 @@ export function SelectButton(props: { active: boolean; onToggle: () => void }) {
  */
 export function SelectionBar(props: {
     count: number;
+    /** Everything shown is picked already, so Select all would do nothing: it steps aside. */
+    allSelected: boolean;
     inArchive: boolean;
     moveOptions: PickerOption[];
     onSelectAll: () => void;
@@ -51,9 +53,11 @@ export function SelectionBar(props: {
                 <p class={styles.count} role="status" aria-live="polite">
                     {strings.selectedCount(props.count)}
                 </p>
-                <button type="button" class={styles.link} title={strings.selectAllTooltip} onClick={props.onSelectAll}>
-                    {strings.selectAll}
-                </button>
+                {!props.allSelected && (
+                    <button type="button" class={styles.link} title={strings.selectAllTooltip} onClick={props.onSelectAll}>
+                        {strings.selectAll}
+                    </button>
+                )}
                 <span class={styles.spacer} />
                 {props.inArchive ? (
                     <>

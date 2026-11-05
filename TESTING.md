@@ -1207,3 +1207,13 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-318 — The library in a narrow window (P2)** **[auto]**
 - Steps: Open the library and make the window narrower: about 1280, 1000, 800, then 700 pixels wide.
 - Expected: Titles always keep room to read. Once the table gets narrow the Opened column steps aside, then the Site column too; below 760 pixels the sidebar moves above the table. Widening the window brings them back. "300 days ago" fits its column in every language. Checked in Docker at 1280, 1024, 800 and 700.
+
+## 25. Polish (v4.1.1)
+
+**TC-320 — Select all steps aside once everything is picked (P2)** **[auto]**
+- Steps: In the library, tick one row, then the box in the table's heading. In the popup, start selecting, click **Select all**, then untick one tab.
+- Expected: Once every tab shown is picked, **Select all** disappears from the selection bar, in the library and in the popup alike; nothing else in the bar moves. Unpicking one brings it back.
+
+**TC-321 — Waiting dates line up in the library (P2)** **[auto]**
+- Steps: Open the library, sorted by Saved, with some tabs waiting and some not.
+- Expected: In the Saved column, the words of a waiting tab's tinted date ("30 days ago") start exactly where a plain date's do; only the tint reaches a little further left.

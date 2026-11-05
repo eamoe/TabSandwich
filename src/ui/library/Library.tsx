@@ -402,6 +402,7 @@ export function Library() {
                         <div class={styles.bar}>
                             <SelectionBar
                                 count={pickedIds.length}
+                                allSelected={allPicked}
                                 inArchive={inArchive}
                                 moveOptions={editOptions}
                                 onSelectAll={() => setPicked(new Set(rows.map((t) => t.id)))}
@@ -529,11 +530,11 @@ export function Library() {
                                                     <span class={styles.cut}>{siteName(tab.url)}</span>
                                                 </td>
                                             )}
-                                            <td class={styles.quiet}>
+                                            <td class={`${styles.quiet} ${styles.when}`}>
                                                 {isTabAged(tab, settings) ? <span class={styles.waiting}>{whenText(tab.savedAt)}</span> : whenText(tab.savedAt)}
                                             </td>
                                             {shows("opened") && (
-                                                <td class={styles.quiet} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
+                                                <td class={`${styles.quiet} ${styles.when}`} title={tab.openCount ? strings.openedTimes(tab.openCount) : undefined}>
                                                     {whenText(tab.lastOpenedAt)}
                                                 </td>
                                             )}
