@@ -13,7 +13,7 @@ import { BACKGROUNDS, CHROME, chromeIcon, FONT, ICON, ICON_SMALL, MARK, SHADOW }
 
 /**
  * Not a test: films the Chrome Web Store's demo video (`pnpm store:video`), some 36 seconds of the
- * real extension at work, into store-assets/video/demo-<language>.webm (1920×1080, no sound), for
+ * real extension at work, into store-assets/video/demo-<language>.webm (2560×1440, no sound), for
  * uploading to YouTube by hand.
  *
  * It's filmed on one page of the extension's own (the fixture's stage.html), which holds the
@@ -23,7 +23,7 @@ import { BACKGROUNDS, CHROME, chromeIcon, FONT, ICON, ICON_SMALL, MARK, SHADOW }
  * and the right-click save is played: the drawn menu's pick writes the link into the library, as
  * the real one would. What the drawn address bar suggests is the extension's own (suggestionsFor).
  * Every other click is a real one, on the real screens. Chrome's own frames of the page are
- * caught as they're painted, then laid out at an even 30 a second and encoded with the ffmpeg
+ * caught as they're painted, then laid out at an even 60 a second and encoded with the ffmpeg
  * Playwright installs for its own videos (`pnpm exec playwright install ffmpeg` if it's missing).
  */
 
@@ -54,8 +54,10 @@ const RIGHT_CLICK_LINK = "Toasted bread";
 const ADDRESS_BAR_SEARCH = "lisbon";
 
 const STAGE = { width: 1280, height: 720 };
-const SCALE = 1.5;
-const FPS = 30;
+// 1440p at 60 a second: YouTube makes its sharper (VP9) versions at every size only for a video
+// uploaded at least that big, and starts a smaller one at 240p in the Store's player.
+const SCALE = 2;
+const FPS = 60;
 const WINDOW = { left: 80, top: 112, width: 1120 };
 const TAB_STRIP = 38;
 const TOOLBAR = 42;
@@ -490,7 +492,7 @@ class Film {
 async function encode(ffmpeg: string, frames: Frame[], end: number, out: string): Promise<void> {
     const start = frames[0]!.time;
     const proc = spawn(ffmpeg, ["-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-c:v", "mjpeg", "-i", "pipe:0",
-        "-y", "-an", "-c:v", "vp8", "-b:v", "12M", "-crf", "4", "-qmin", "0", "-qmax", "24", "-deadline", "good", "-cpu-used", "1", "-threads", "4", out], { stdio: ["pipe", "inherit", "inherit"] });
+        "-y", "-an", "-c:v", "vp8", "-b:v", "24M", "-crf", "4", "-qmin", "0", "-qmax", "24", "-deadline", "good", "-cpu-used", "1", "-threads", "4", out], { stdio: ["pipe", "inherit", "inherit"] });
     const done = new Promise<void>((resolve, reject) => proc.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited with ${code}`)))));
     let next = 0;
     for (let i = 0; start + i / FPS <= end; i++) {
