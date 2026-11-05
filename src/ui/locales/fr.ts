@@ -266,7 +266,7 @@ export const fr: Strings = {
     reminderTomorrow: "Me le rappeler demain",
     reminderNextWeek: (at: number) => `Me le rappeler la semaine prochaine, ${reminderDate(at)}`,
     reminderKept: (at: number) => `Rappel\u00a0: ${reminderDate(at)}`,
-    reminderShort: (at: number, now: number) => ({ due: "À voir", today: "Aujourd'hui", tomorrow: "Demain", later: reminderDate(at) })[reminderDay(at, now)],
+    reminderShort: (at: number, now: number) => ({ due: "À voir", today: "Aujourd'hui", tomorrow: "Demain", later: new Date(at).toLocaleDateString(tag, { day: "numeric", month: "short" }) })[reminderDay(at, now)],
     reminderWhen: (at: number) => `Rappel\u00a0: ${reminderDate(at)}, 9:00`,
     reminderMessage: (site: string) => `Votre rappel de Tab Sandwich · ${site}`,
     remindersTitle: (count: number) => n(count, { one: `${count} onglet enregistré à revoir`, other: `${count} onglets enregistrés à revoir` }),

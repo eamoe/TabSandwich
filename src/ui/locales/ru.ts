@@ -269,7 +269,7 @@ export const ru: Strings = {
     reminderTomorrow: "Напомнить завтра",
     reminderNextWeek: (at: number) => `Напомнить через неделю, ${reminderDate(at)}`,
     reminderKept: (at: number) => `Напоминание: ${reminderDate(at)}`,
-    reminderShort: (at: number, now: number) => ({ due: "Пора", today: "Сегодня", tomorrow: "Завтра", later: reminderDate(at) })[reminderDay(at, now)],
+    reminderShort: (at: number, now: number) => ({ due: "Пора", today: "Сегодня", tomorrow: "Завтра", later: new Date(at).toLocaleDateString(tag, { day: "numeric", month: "short" }) })[reminderDay(at, now)],
     reminderWhen: (at: number) => `Напоминание: ${reminderDate(at)}, 9:00`,
     reminderMessage: (site: string) => `Ваше напоминание от Tab Sandwich · ${site}`,
     remindersTitle: (count: number) => r(count, `К ${count} сохранённой вкладке пора вернуться`, `К ${count} сохранённым вкладкам пора вернуться`, `К ${count} сохранённым вкладкам пора вернуться`),
