@@ -1,0 +1,5 @@
+# Progress
+
+- **Current release and stage:** 4.1.1, a polish release, on the branch `v4.1.1-polish` (not pushed). Done and committed: Select all steps aside once everything is picked, and the library's waiting dates line up (TC-320, TC-321); the feedback form's "Submit another response" link stays off (TC-319); drag and drop lands where you aim, scrolls a long list and slides a dropped tab into place (TC-050, TC-322, TC-323); Settings › Categories drops above or below, with the same line (TC-159). Also in this release, already on `main` from #11: a row's reminder date without the weekday in German, French and Russian. Left: the release stage (version 4.1.1, `release-notes/v4.1.1.md`, one pull request with before/after pictures).
+- **Waiting on (whom, what):** the owner: any more issues for 4.1.1, or word that the list is complete; whenever convenient, a native check of the Russian translations and `store-listing/ru.txt`.
+- **Next step:** once the list is complete, the release stage. After 4.1.1 ships, v4.2 Smooth drag (drag and drop of the app's own, in place of the browser's; see the roadmap).

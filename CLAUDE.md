@@ -2,6 +2,11 @@
 
 Guidance for Claude Code (or any AI collaborator) working in this repo.
 
+**Playbook:** eamoe/development-playbook@v0.2.0 · **Modules:** A (UI), B (stored data), C (Chrome Web Store listing) · **Deviations:**
+- CORE-6.10: the roadmap ("Tab Sandwich Roadmap 2026–27") lives in Claude Docs, not in this repo; it's still the plan of record (CORE-3.1) and is updated before scope changes in code (the owner's choice, decided 2026-10-04).
+
+Where things stand (current release and stage, what's waiting on whom, the next step): `PROGRESS.md`, updated in each commit.
+
 ## What this is
 
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
@@ -316,10 +321,12 @@ animation smoothness, and the manual release pass at the top of
   distributed, not a locally-built copy, except when explicitly noted
   otherwise (e.g. `PUBLISHING.md` has a documented one-off exception for
   the first Store submission).
-- **Git**: the repo owner runs `git commit` / `git push origin main`
-  themselves — when asked for a commit, provide the message text, don't
-  run the command. Tagging and pushing a release tag (`git tag -a vX.Y.Z`,
-  `git push origin vX.Y.Z`) is fine to run directly once asked to do so.
+- **Git**: one branch per release. On it, commit each stage once the owner
+  has approved it (with its tests, docs and notes in the same commit); push
+  the branch and open the pull request only when asked. Never push to
+  `main`: the owner merges. Tagging and pushing a release tag
+  (`git tag -a vX.Y.Z`, `git push origin vX.Y.Z`) is fine to run directly
+  once asked to do so.
 - **Docs are part of the change, not a follow-up.** A change isn't done
   until every doc it affects agrees with the code: `README.md` (features,
   dev workflow), this file's `src/` breakdown, `TESTING.md` (new cases for
