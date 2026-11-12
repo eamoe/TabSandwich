@@ -97,7 +97,10 @@ test.describe("Pinned tabs", () => {
         await popup.mouse.move(echo.x + 150, echo.y + 6, { steps: 8 });
         await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Bravo", "Alpha", "▾ Research", "Gamma", "Delta"]);
         await popup.mouse.up();
-        await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Pin it to move it up there." })).toBeVisible();
+        const note = popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Pin it to move it up there." });
+        await expect(note).toBeVisible();
+        // Read whole (TC-327): on two lines if need be, not cut off after one.
+        expect(await note.locator("span").first().evaluate((m) => m.scrollHeight <= m.clientHeight + 1 && m.getClientRects().length > 0)).toBe(true);
         await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Bravo", "Alpha", "▾ Research", "Gamma", "Delta"]);
     });
 

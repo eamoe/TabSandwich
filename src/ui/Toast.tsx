@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { subscribeToast, undoFromToast, type ToastState } from "./toastStore";
 import { strings } from "./strings";
 import styles from "./Toast.module.css";
@@ -19,8 +19,13 @@ export function Toast(props: { compact?: boolean }) {
     }, [state]);
 
     const shown = state ?? lastMessage;
+    // A message on two lines makes the toast taller: the room left for it (ToastSpace) grows to match.
+    const box = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+        if (box.current) document.documentElement.style.setProperty("--toast-height", `${box.current.offsetHeight}px`);
+    }, [shown?.message, shown?.kind]);
     return (
-        <div class={[styles.toast, props.compact ? styles.compact : "", state ? styles.visible : ""].join(" ")} role="status" aria-live="polite" inert={!state}>
+        <div ref={box} class={[styles.toast, props.compact ? styles.compact : "", state ? styles.visible : ""].join(" ")} role="status" aria-live="polite" inert={!state}>
             <span class={styles.message}>{shown?.message ?? ""}</span>
             {shown?.kind === "undo" && (
                 <button type="button" class={styles.undo} onClick={undoFromToast}>

@@ -1242,3 +1242,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: 200 saved tabs (a backup file is the quickest way).
 - Steps: In the popup, the side panel and Settings › Categories, drag the first row to near the end, holding it at the bottom edge while the list scrolls; in light and dark.
 - Expected: The copy follows the pointer without lagging and the rows slide without stutter: a steady 60 frames a second (measured for the release with a frame recorder during a scripted drag). It lands exactly where its place showed.
+
+**TC-327 — A longer note reads whole (P2)** **[auto]**
+- Steps: In the popup, drag an unpinned tab up over a pinned one and let go (the note "Pinned tabs stay above the others. Pin it to move it up there."); in German or Russian too.
+- Expected: The note shows in full on up to two lines, with Undo (when there is one) still beside it; the list's last row isn't covered while it shows. Only a note longer than two lines ends in "…".
+
