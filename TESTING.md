@@ -21,7 +21,7 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 Run on the build being released (`dist/`, or the release zip unpacked), about 10 minutes:
 
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
-2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace, not racing (TC-322), and that a dropped tab slides into place (TC-323); confirm drag is off while searching (TC-119).
+2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159): the row lifts and follows the pointer, the others slide apart smoothly, and Escape puts it back (TC-324); drag one into an open saved window and watch it light up (TC-325); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace (TC-322); confirm drag is off while searching (TC-119).
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
@@ -232,7 +232,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
 - Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position: once onto a row's upper half, once onto the last row's lower half.
-- Expected: While dragging, the tab being carried fades in its place, and a line in the gap shows where it will land: above the row under the pointer's upper half, below it on the lower half. The line stays put while the pointer crosses from one row into the next, and letting go on the line itself, in the gap, lands the tab there. Over the tab's own row, or off the list (on the header or the filters), there's no line, and letting go moves nothing. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
+- Expected: Once the pointer moves a few pixels, the row is picked up: a copy of it, a little larger and with a deeper shadow, follows the pointer, and where the row was is an empty, dashed place. Before you let go, the other rows slide apart to make that place where the tab will land: above the row under the pointer's upper half, below it on its lower half. The place stays put while the pointer crosses from one row into the next, the gap between them included, and letting go anywhere lands the tab exactly where the place shows; the copy settles into it. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
 - Preconditions: tabs across 2+ categories, filtered to one category.
@@ -973,7 +973,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-263 — Moving stops at the pinned line (P2)** **[auto]**
 - Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
-- Expected: Alt+↑ doesn't move it, and a message at the bottom says "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; let go anywhere else and the tab goes back, with a message saying why ("Unpin it to move it lower", or "Pin it to move it up there"); a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
+- Expected: Alt+↑ doesn't move it, and a message at the bottom says "Pinned tabs stay above the others. Press P to pin this one."; dragged up over the pinned tabs, the place the tab will land goes no higher than just below the last pinned one, never above or among them; let go there and it lands just below the line, with a message saying why ("Pin it to move it up there"; a pinned tab dragged down stops at the line the same way, "Unpin it to move it lower"). Pinning only ever changes with the pin or P.
 
 **TC-264 — Archived tabs are out of the list (P1)** **[auto]**
 - Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
@@ -1221,8 +1221,24 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-322 — A long list scrolls while you drag (P1)** **[auto]**
 - Preconditions: More saved tabs than fit in the popup (or the side panel).
 - Steps: Drag the first tab down and hold it near the list's bottom edge; then move it back toward the middle and let go. Do the same upward, holding it near the top edge or over the filter row.
-- Expected: Near an edge the list scrolls, faster the nearer the edge, at full speed past it, and stops as soon as the tab is back away from it. The tab lands where the line shows, however far down or up that is. Scrolling is part of the drag, not decoration, so it happens with the reduce-motion setting too. Checked automatically on its own scrolling; **check by hand in real Chrome** that it doesn't also run Chrome's own (it would race).
+- Expected: Near an edge the list scrolls, faster the nearer the edge, at full speed past it, and stops as soon as the tab is back away from it. The tab lands where the room was made, however far down or up that is. Scrolling is part of the drag, not decoration, so it happens with the reduce-motion setting too.
 
-**TC-323 — A dropped tab slides into place (P2)** **[auto]**
-- Steps: Drag a tab a few rows up, and let go. Then turn on the system's reduce-motion setting and do it again.
-- Expected: The tab slides from where it was to its new place, and the rows it passed slide over by one, instead of everything jumping. With reduce motion, it just moves.
+**TC-323 — The rows slide aside as a tab passes (P2)** **[auto]**
+- Steps: Drag a tab a few rows up, slowly, and let go. Then turn on the system's reduce-motion setting and do it again.
+- Expected: Each row the tab passes slides over by one to make room, instead of jumping; once let go, the tab settles into the room made and nothing moves again. Only the rows in view slide, however long the list. With reduce motion, the rows just move (the copy in hand still follows the pointer).
+
+## 26. Smooth Drag (v4.2)
+
+**TC-324 — Putting a dragged tab back (P1)** **[auto]**
+- Steps: Pick up a tab and carry it a few rows; press Escape. Pick it up again and carry it out of the popup sideways, then let go. Pick a tab up by its title and let go over another row's title.
+- Expected: Escape puts it back where it was, the rows sliding back with it, and the search box doesn't take focus. Out of the window sideways it goes back too, and letting go there moves nothing. A drag never opens a tab, wherever it ends; a plain click on a title still does.
+
+**TC-325 — A saved window lights up as a tab goes in (P2)** **[auto]**
+- Preconditions: an open saved window, and a loose tab.
+- Steps: Drag the loose tab over the window's tabs, then on past the window, and let go; Undo. Drag one of the window's tabs out above its row.
+- Expected: While the tab's place is inside the window, its row and the rail beside its tabs light up in the accent color, and its tab count already includes it; past the window it goes back to plain. Letting go inside says "Moved into Research" with Undo, outside "Moved out of Research". A closed window takes no tabs: the place goes above or below it.
+
+**TC-326 — Dragging stays smooth in a long list (P2)**
+- Preconditions: 200 saved tabs (a backup file is the quickest way).
+- Steps: In the popup, the side panel and Settings › Categories, drag the first row to near the end, holding it at the bottom edge while the list scrolls; in light and dark.
+- Expected: The copy follows the pointer without lagging and the rows slide without stutter: a steady 60 frames a second (measured for the release with a frame recorder during a scripted drag). It lands exactly where its place showed.

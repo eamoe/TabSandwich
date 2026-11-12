@@ -24,21 +24,20 @@
 .rise { animation: rise 0.32s cubic-bezier(0.3, 1.3, 0.5, 1) backwards; }
 .drop { animation: drop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1); }
 .leaving { animation: leave 0.24s ease-in forwards; pointer-events: none; }
-.dragging { opacity: 0.45; }
-/* Where a dragged tab would land: a line in the gap above or below the row it's over. */
-.dropBefore::before, .dropAfter::before {
-    content: "";
-    position: absolute;
-    left: 6px;
-    right: 6px;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--accent);
-    pointer-events: none;
-    z-index: 3;
+/* A dragged tab's row, while it's in hand: the empty place it will land in. */
+.slot {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    box-shadow: none;
+    outline: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+    outline-offset: -1.5px;
+    transition: none;
 }
-.dropBefore::before { top: calc(var(--row-gap) / -2 - 2px); }
-.dropAfter::before { bottom: calc(var(--row-gap) / -2 - 2px); }
+.slot > * { visibility: hidden; }
+/* Its copy in hand, following the pointer (usePointerDrag scales it up a little). */
+.lifted {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc) var(--row-edge), transparent), var(--row-drag);
+    cursor: grabbing;
+}
 @keyframes rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes drop { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes leave { to { opacity: 0; transform: translateX(28px) scale(0.97); height: 0; margin-bottom: calc(var(--row-gap) * -1); } }
@@ -200,12 +199,17 @@
 .groupIcons > span { margin-left: -3px; }
 .groupMenuBtn { flex-shrink: 0; }
 
+/* A dragged tab will go into this window: its row and its rail light up. */
+.receiving > .groupHead { box-shadow: inset 0 0 0 1.5px var(--accent), var(--row-shadow); }
+.receiving > .members { border-left-color: var(--accent); }
+
 /* The window's tabs, while it's open: indented under it, along a rail. */
 .members {
     list-style: none;
     margin: 0 0 4px 14px;
     padding: 0 0 0 10px;
     border-left: 2px solid var(--line);
+    transition: border-color 0.15s ease;
     display: flex;
     flex-direction: column;
     gap: var(--row-gap);

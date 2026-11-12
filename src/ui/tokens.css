@@ -60,6 +60,8 @@
     --row-edge: 30%;
     --row-shadow: 0 1px 0 rgba(42,36,71,.08);
     --row-lift: 0 4px 12px rgba(42,36,71,.14);
+    /* A row picked up and dragged: held well above the list. */
+    --row-drag: 0 12px 28px rgba(42,36,71,.22), 0 2px 6px rgba(42,36,71,.12);
     --save-edge: #D9981C;
     --accent-edge: #3F3792;
 
@@ -112,6 +114,7 @@
         --row-edge: 38%;
         --row-shadow: 0 1px 0 rgba(0,0,0,.35);
         --row-lift: 0 4px 14px rgba(0,0,0,.45);
+        --row-drag: 0 14px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
         --save-edge: #A9741A;
         --accent-edge: #7A70DC;
     }
@@ -159,6 +162,7 @@
     --row-edge: 38%;
     --row-shadow: 0 1px 0 rgba(0,0,0,.35);
     --row-lift: 0 4px 14px rgba(0,0,0,.45);
+    --row-drag: 0 14px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
     --save-edge: #A9741A;
     --accent-edge: #7A70DC;
 }

@@ -54,7 +54,7 @@ src/
                             so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
+                           move into or out of a saved window (tabsWithPlaced: the order a drop writes, pure, so a drag can show it first), move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
     CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
@@ -112,6 +112,12 @@ src/
                              (a count is a whole sentence per plural form; "{}" marks a key cap or field in a sentence)
     i18n.ts                 which dictionary Chrome's language gets (Chrome's own _locales rule), plural rules, "{}" slots — pure
     Slotted.tsx             a sentence with a key cap or a field inside it, wherever the language puts it
+    usePointerDrag.ts       dragging a row to a new place with the mouse or a pen (the app's own, not the browser's drag and drop):
+                             picked up after a few pixels, a copy follows the pointer, the rows slide apart to show where it
+                             lands (the owner shows the list in that order), the list scrolls at its edges, Escape puts it back;
+                             rows measured once per change, moved only by transforms. The tab list and Settings › Categories use it
+    dragModel.ts            its pure rules: which row and half the pointer is over (no dead space between rows), edge-scroll
+                             speed, when a press becomes a drag — logic-tested
     pageLanguage.ts         each page's lang and tab name, which the HTML can only say in English
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
@@ -151,13 +157,14 @@ src/
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
                              "everything's in the archive", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows (buttons Edit · Archive · Pin on hover or keyboard focus,
-                             Pin last so it takes the pin mark's place); edit form; drag to reorder (a drop lands where the line
-                             shows, in the gap too; the list scrolls at its edges; moved rows slide into place); entrance motion;
+                             Pin last so it takes the pin mark's place); edit form; drag to reorder (usePointerDrag: while a tab is
+                             in hand the list shows it where it will land, in the order placeTab writes; a saved window lights up
+                             when it will go in); entrance motion;
                              the list's keys (arrows, Enter, E, P to pin, Delete, Alt+arrows to move, → ← for windows, Space to pick
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
-                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), how fast a drag scrolls the list (edgeScrollSpeed), where a move or drop takes a tab: into or out of a window,
+                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
     settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main

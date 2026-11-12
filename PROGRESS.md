@@ -1,5 +1,5 @@
 # Progress
 
-- **Current release and stage:** 4.1.1, a polish release, on the branch `v4.1.1-polish`: every fix is committed, and the release stage is done too (version 4.1.1, `release-notes/v4.1.1.md`, TC-256 from 4.1.0, PUBLISHING's 4.1.1 update step). The Store keeps its description, screenshots and video: only the package changes. Also in this release, already on `main` from #11: a row's reminder date without the weekday in German, French and Russian.
-- **Waiting on (whom, what):** the owner: the OK to push the branch and open the release pull request; then review and merge it, and ask for the `v4.1.1` tag. After the tag: upload the release zip to the Chrome Web Store, submit it, and say when it's live.
-- **Next step:** after 4.1.1 is live, v4.2 Smooth drag (drag and drop of the app's own, in place of the browser's; see the roadmap), on the owner's go.
+- **Current release and stage:** 4.2 Smooth drag, on the branch `v4.2-smooth-drag` (4.1.1 is live on the Chrome Web Store since 12 Nov 2026). Stages: 1 the shared drag engine, 2 the tab list in the popup and the side panel, 3 Settings › Categories, 4 release 4.2.0. Stages 1 and 2 are committed (`usePointerDrag`, `dragModel`, `tabsWithPlaced`; the tab list on it), after the owner's hand check in real Chrome. `release-notes/v4.2.0.md` is started; the version is still 4.1.1 (bumped at the release stage).
+- **Waiting on (whom, what):** nothing.
+- **Next step:** notes at the bottom wrap to two lines; a touch drag starts after a 250 ms hold; then stage 3, Settings › Categories on the same engine; then stage 4 (version 4.2.0, a "What's new" note in all eight languages, the frame rate with 200 tabs measured for the pull request).

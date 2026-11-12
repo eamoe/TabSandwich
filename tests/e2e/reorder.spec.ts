@@ -1,31 +1,41 @@
 import { test, expect, SIDE_PANEL_URL, waitUntilReady } from "./fixtures";
 import type { Page } from "@playwright/test";
-import { row, rowTitles, seedLibrary, storedTabs, tabList } from "./helpers";
+import { row, rowTitles, seedLibrary, storedTabs } from "./helpers";
 
 /**
- * Notes each row that starts sliding from somewhere else: its title, and how far below its new
- * place it starts; and which ones slide above the others (`lifted`).
+ * Notes each row that starts sliding from somewhere else: its title, how far below its new place
+ * it starts, and when (rows that start together share a time).
  */
 const recordSlides = (popup: Page) =>
     popup.evaluate(() => {
-        const w = window as unknown as { slides: [string, number][]; lifted: string[] };
+        const w = window as unknown as { slides: [string, number, number][] };
         w.slides = [];
-        w.lifted = [];
         const animate = Element.prototype.animate;
         Element.prototype.animate = function (keyframes, options) {
             const from = Array.isArray(keyframes) ? String((keyframes[0] as Keyframe | undefined)?.transform ?? "") : "";
             const by = /translateY\((-?[\d.]+)px\)/.exec(from);
             const title = this.querySelector("[data-row-title]")?.textContent ?? "";
-            if (by && this.matches("li[data-tab-id]")) w.slides.push([title, Number(by[1])]);
-            const slide = animate.call(this, keyframes, options);
-            queueMicrotask(() => {
-                if (this instanceof HTMLElement && this.style.zIndex) w.lifted.push(title);
-            });
-            return slide;
+            if (by && this.matches("li[data-tab-id]")) w.slides.push([title, Number(by[1]), performance.now()]);
+            return animate.call(this, keyframes, options);
         };
     });
-/** The insertion line, which is only drawn (no role or name to find it by). */
-const lineShown = (popup: Page) => tabList(popup).evaluate((list) => !!list.querySelector('[class*="dropBefore"], [class*="dropAfter"]'));
+const slides = (popup: Page) => popup.evaluate(() => (window as unknown as { slides: [string, number, number][] }).slides);
+/** The copy of the dragged row that follows the pointer: only drawn (hidden from assistive tech, so no role to find it by). */
+const copyBox = (popup: Page) =>
+    popup.evaluate(() => {
+        const copy = document.body.querySelector(":scope > li[aria-hidden]");
+        if (!copy) return null;
+        const box = copy.getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom };
+    });
+
+/** Presses on a row (where its drag handle shows on hover) and drags it to (x, y), still held. */
+async function pickUp(popup: Page, title: string, to: { x: number; y: number }, steps = 6) {
+    const box = (await row(popup, title).boundingBox())!;
+    await popup.mouse.move(box.x + 22, box.y + 23);
+    await popup.mouse.down();
+    await popup.mouse.move(to.x, to.y, { steps });
+}
 
 test.describe("Drag to reorder", () => {
     test.beforeEach(async ({ popup }) => {
@@ -52,91 +62,132 @@ test.describe("Drag to reorder", () => {
         await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title)).toEqual(["Bravo", "Alpha", "Charlie"]);
     });
 
-    test("TC-050: let go on the line itself, in the gap between two rows, and the tab lands there", async ({ popup }) => {
+    test("TC-050: before letting go, the rows make room where it will land; let go in the gap between two rows, and it lands there", async ({ popup }) => {
         const alpha = (await row(popup, "Alpha").boundingBox())!;
         const bravo = (await row(popup, "Bravo").boundingBox())!;
-        const grip = (await row(popup, "Charlie").boundingBox())!;
-        await popup.mouse.move(grip.x + 22, grip.y + 23);
-        await popup.mouse.down();
-        await popup.mouse.move(alpha.x + 150, alpha.y + alpha.height - 6, { steps: 6 });
+        await pickUp(popup, "Charlie", { x: alpha.x + 150, y: alpha.y + alpha.height - 6 });
         await popup.mouse.move(alpha.x + 150, (alpha.y + alpha.height + bravo.y) / 2, { steps: 2 });
-        await expect.poll(() => lineShown(popup)).toBe(true);
+        // Its place in the list (an empty one, while it's in hand) is already between them.
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Charlie", "Bravo"]);
+        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
         await popup.mouse.up();
         await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Charlie", "Bravo"]);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Charlie", "Bravo"]);
     });
 
-    test("TC-050: the line stays put while the pointer crosses from one row into the next", async ({ popup }) => {
+    test("TC-050: the place it will land stays put while the pointer crosses from one row into the next", async ({ popup }) => {
         const alpha = (await row(popup, "Alpha").boundingBox())!;
+        await pickUp(popup, "Charlie", { x: alpha.x + 150, y: alpha.y + alpha.height - 8 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Charlie", "Bravo"]);
+        // From Alpha's lower half, across the gap, into the room made under it: one place all the way.
+        const shown: string[] = [];
         const bravo = (await row(popup, "Bravo").boundingBox())!;
-        const grip = (await row(popup, "Charlie").boundingBox())!;
-        await popup.mouse.move(grip.x + 22, grip.y + 23);
-        await popup.mouse.down();
-        await popup.mouse.move(alpha.x + 150, alpha.y + alpha.height - 8, { steps: 6 });
-        await expect.poll(() => lineShown(popup)).toBe(true);
-        // From Alpha's lower half, across the gap, into Bravo's upper half: one place, one line, all the way.
-        const shown: boolean[] = [];
-        for (let y = alpha.y + alpha.height - 8; y <= bravo.y + 8; y += 2) {
+        for (let y = alpha.y + alpha.height - 8; y <= bravo.y - 8; y += 3) {
             await popup.mouse.move(alpha.x + 150, y);
-            shown.push(await lineShown(popup));
+            shown.push((await rowTitles(popup)).join(" "));
         }
         await popup.mouse.up();
-        expect(shown.every(Boolean)).toBe(true);
+        expect(new Set(shown)).toEqual(new Set(["Alpha Charlie Bravo"]));
     });
 
-    test("TC-050: the tab being dragged fades while it's carried, and comes back when let go", async ({ popup }) => {
-        const charlie = row(popup, "Charlie");
-        const grip = (await charlie.boundingBox())!;
-        await popup.mouse.move(grip.x + 22, grip.y + 23);
-        await popup.mouse.down();
-        await popup.mouse.move(grip.x + 150, grip.y - 30, { steps: 6 });
-        await expect.poll(() => charlie.evaluate((li) => Number(getComputedStyle(li).opacity))).toBeLessThan(0.6);
+    test("TC-050: the row is picked up and follows the pointer, then settles into its place", async ({ popup }) => {
+        const charlie = (await row(popup, "Charlie").boundingBox())!;
+        await pickUp(popup, "Charlie", { x: charlie.x + 150, y: charlie.y - 30 });
+        // Its copy, lifted, is where the pointer holds it; the row itself is the empty place.
+        await expect.poll(async () => (await copyBox(popup))?.top).toBeLessThan(charlie.y - 20);
+        const copy = (await copyBox(popup))!;
+        expect(copy.top).toBeLessThan(charlie.y - 30 + 23 - 10 + 2);
+        await popup.mouse.move(charlie.x + 150, charlie.y - 10, { steps: 3 });
+        await expect.poll(async () => (await copyBox(popup))!.top).toBeGreaterThan(copy.top + 10);
         await popup.mouse.up();
-        await expect.poll(() => charlie.evaluate((li) => Number(getComputedStyle(li).opacity))).toBe(1);
+        await expect.poll(() => copyBox(popup)).toBeNull();
+        await expect(row(popup, "Charlie").getByRole("button", { name: "Charlie", exact: true })).toBeVisible();
     });
 
-    test("TC-050: dragged off the list, the line goes, and letting go there moves nothing", async ({ popup }) => {
+    test("TC-324: Escape puts it back, and so does leaving the window sideways", async ({ popup }) => {
         const alpha = (await row(popup, "Alpha").boundingBox())!;
-        const grip = (await row(popup, "Charlie").boundingBox())!;
-        await popup.mouse.move(grip.x + 22, grip.y + 23);
-        await popup.mouse.down();
-        await popup.mouse.move(alpha.x + 150, alpha.y + 6, { steps: 6 });
-        await expect.poll(() => lineShown(popup)).toBe(true);
-        const search = (await popup.getByRole("textbox", { name: "Search saved tabs" }).boundingBox())!;
-        await popup.mouse.move(search.x + 40, search.y + search.height / 2, { steps: 6 });
-        await expect.poll(() => lineShown(popup)).toBe(false);
-        await popup.mouse.up();
+        await pickUp(popup, "Charlie", { x: alpha.x + 150, y: alpha.y + 6 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["Charlie", "Alpha", "Bravo"]);
+        await popup.keyboard.press("Escape");
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Bravo", "Charlie"]);
+        await expect.poll(() => copyBox(popup)).toBeNull();
+        // Escape went to the drag: the search box didn't take focus for it.
+        await expect(popup.getByRole("textbox", { name: "Search saved tabs" })).not.toBeFocused();
+        await popup.mouse.up();
+        expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
+
+        await pickUp(popup, "Charlie", { x: alpha.x + 150, y: alpha.y + 6 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["Charlie", "Alpha", "Bravo"]);
+        await popup.mouse.move(-20, alpha.y + 6, { steps: 4 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "Bravo", "Charlie"]);
+        await popup.mouse.up();
+        await expect.poll(() => copyBox(popup)).toBeNull();
         expect((await storedTabs(popup)).map((t) => t.title)).toEqual(["Alpha", "Bravo", "Charlie"]);
     });
 
-    test("TC-323: a dropped tab slides into its new place, and so do the rows it passed", async ({ popup }) => {
-        await recordSlides(popup);
-        await row(popup, "Charlie").dragTo(row(popup, "Alpha"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 6 } });
+    test("TC-324: let go outside the window, where the popup never hears it, and the next press still drags", async ({ popup }) => {
+        const alpha = (await row(popup, "Alpha").boundingBox())!;
+        await pickUp(popup, "Charlie", { x: alpha.x + 150, y: alpha.y + 6 });
         await expect.poll(() => rowTitles(popup)).toEqual(["Charlie", "Alpha", "Bravo"]);
-        // Charlie comes up from two rows down; Alpha and Bravo each move down by one.
-        const slides = await popup.evaluate(() => (window as unknown as { slides: [string, number][] }).slides);
-        expect(slides.map(([title]) => title).sort()).toEqual(["Alpha", "Bravo", "Charlie"]);
-        const by = Object.fromEntries(slides);
-        expect(by.Charlie).toBeGreaterThan(0);
-        expect(by.Alpha).toBeLessThan(0);
-        expect(Math.abs(by.Charlie! + by.Alpha! + by.Bravo!)).toBeLessThan(1);
-        // Charlie passes over Alpha and Bravo, not under them.
-        expect(await popup.evaluate(() => (window as unknown as { lifted: string[] }).lifted)).toEqual(["Charlie"]);
+        // Back in the window with the button already up: the next move says so (as Chrome reports it).
+        await popup.evaluate(() => window.dispatchEvent(new PointerEvent("pointermove", { pointerId: 1, pointerType: "mouse", buttons: 0, clientX: 150, clientY: 300 })));
+        await expect.poll(() => copyBox(popup)).toBeNull();
+        await popup.mouse.up();
+        await row(popup, "Alpha").dragTo(row(popup, "Bravo"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 40 } });
+        await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title).indexOf("Alpha")).toBeGreaterThan(0);
     });
 
-    test("TC-323: with the system's reduce-motion setting, a dropped tab just moves", async ({ popup }) => {
+    test("TC-324: a drag that ends on a title doesn't open it; a click still does", async ({ popup }) => {
+        const tabs = () => popup.evaluate(async () => (await chrome.tabs.query({})).length);
+        const before = await tabs();
+        const alpha = (await row(popup, "Alpha").boundingBox())!;
+        // Picked up by its title and let go over the title of the row it now sits above.
+        const title = (await row(popup, "Bravo").getByRole("button", { name: "Bravo", exact: true }).boundingBox())!;
+        await popup.mouse.move(title.x + 30, title.y + 8);
+        await popup.mouse.down();
+        await popup.mouse.move(alpha.x + 30, alpha.y + 8, { steps: 4 });
+        await popup.mouse.up();
+        await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title)).toEqual(["Bravo", "Alpha", "Charlie"]);
+        await popup.waitForTimeout(300);
+        expect(await tabs()).toBe(before);
+        await row(popup, "Bravo").getByRole("button", { name: "Bravo", exact: true }).click();
+        await expect.poll(tabs).toBe(before + 1);
+    });
+
+    test("TC-323: the rows it passes slide aside to make room, and it slides into place", async ({ popup }) => {
+        await recordSlides(popup);
+        const alpha = (await row(popup, "Alpha").boundingBox())!;
+        // In one move, straight to Alpha's upper half: one change of place.
+        await pickUp(popup, "Charlie", { x: alpha.x + 150, y: alpha.y + 6 }, 1);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Charlie", "Alpha", "Bravo"]);
+        // Its place comes up from two rows down; Alpha and Bravo each move down by one.
+        await expect.poll(async () => (await slides(popup)).map(([title]) => title).sort()).toEqual(["Alpha", "Bravo", "Charlie"]);
+        const by = Object.fromEntries((await slides(popup)).map(([title, from]) => [title, from]));
+        expect(by.Charlie).toBeGreaterThan(0);
+        expect(by.Alpha).toBeLessThan(0);
+        // (To a pixel: the row under the pointer may still be lifting off its hover as it's picked up.)
+        expect(Math.abs(by.Charlie! + by.Alpha! + by.Bravo!)).toBeLessThanOrEqual(1);
+        await popup.mouse.up();
+        await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title)).toEqual(["Charlie", "Alpha", "Bravo"]);
+        // Landing where it was shown, nothing moves again.
+        await popup.waitForTimeout(300);
+        expect(await slides(popup)).toHaveLength(3);
+    });
+
+    test("TC-323: with the system's reduce-motion setting, the rows just move", async ({ popup }) => {
         await popup.emulateMedia({ reducedMotion: "reduce" });
         await recordSlides(popup);
         await row(popup, "Charlie").dragTo(row(popup, "Alpha"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 6 } });
         await expect.poll(() => rowTitles(popup)).toEqual(["Charlie", "Alpha", "Bravo"]);
-        expect(await popup.evaluate(() => (window as unknown as { slides: unknown[] }).slides)).toEqual([]);
+        await expect.poll(() => copyBox(popup)).toBeNull();
+        expect(await slides(popup)).toEqual([]);
     });
 
     test("TC-119: rows can't be dragged while searching", async ({ popup }) => {
         await popup.getByRole("textbox", { name: "Search saved tabs" }).fill("a");
-        await expect(row(popup, "Alpha")).not.toHaveAttribute("draggable", "true");
+        await expect(row(popup, "Alpha")).not.toHaveAttribute("data-draggable", "true");
         await popup.getByRole("button", { name: "Clear search" }).click();
-        await expect(row(popup, "Alpha")).toHaveAttribute("draggable", "true");
+        await expect(row(popup, "Alpha")).toHaveAttribute("data-draggable", "true");
     });
 });
 
@@ -167,18 +218,29 @@ test.describe("Drag to reorder, in a long list", () => {
                 await popup.waitForTimeout(100);
             }
             expect(await scrolled(popup)).toBeGreaterThan(200);
-            // Back into the list, away from the edge: it stops, and the tab lands where the line shows.
+            // Back into the list, away from the edge: it stops, and the tab lands where the room was made.
             await popup.mouse.move(grip.x + 150, main.y + main.height / 2, { steps: 4 });
             const stoppedAt = await scrolled(popup);
             await popup.waitForTimeout(300);
             expect(await scrolled(popup)).toBe(stoppedAt);
             await popup.mouse.up();
             await expect.poll(async () => (await storedTabs(popup)).findIndex((t) => t.title === "Tab 01")).toBeGreaterThan(10);
-            // Every tab it passed moved up one, but only those in sight slid (TC-323).
-            const passed = (await storedTabs(popup)).findIndex((t) => t.title === "Tab 01");
-            const slid = await popup.evaluate(() => (window as unknown as { slides: unknown[] }).slides.length);
-            expect(slid).toBeGreaterThan(0);
-            expect(slid).toBeLessThan(passed);
+            // Picked up again, and the list scrolled by the wheel while it's held: its place moves with the list.
+            await popup.locator("#main-view").evaluate((main) => (main.scrollTop = 0));
+            const tab02 = (await row(popup, "Tab 02").boundingBox())!;
+            await popup.mouse.move(tab02.x + 22, tab02.y + 23);
+            await popup.mouse.down();
+            await popup.mouse.move(tab02.x + 150, tab02.y + 60, { steps: 4 });
+            const placeBefore = (await rowTitles(popup)).indexOf("Tab 02");
+            await popup.mouse.wheel(0, 400);
+            await expect.poll(async () => (await rowTitles(popup)).indexOf("Tab 02")).toBeGreaterThan(placeBefore + 4);
+            await popup.keyboard.press("Escape");
+            await popup.mouse.up();
+            // Each time it moved on, only the rows in sight slid aside (TC-323), never the whole list.
+            const at = new Map<number, number>();
+            for (const [, , when] of await slides(popup)) at.set(when, (at.get(when) ?? 0) + 1);
+            expect(at.size).toBeGreaterThan(0);
+            expect(Math.max(...at.values())).toBeLessThan(TITLES.length / 2);
         });
     }
 });

@@ -4,6 +4,7 @@ import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import { isOutdated } from "../../util/time";
 import type { Picker } from "../i18n";
 import { locale, strings } from "../strings";
+import type { DropSide } from "../dragModel";
 
 /**
  * The main list's rules, kept free of Preact and the DOM so the logic tests can check them
@@ -214,7 +215,7 @@ export interface Move {
 }
 
 /** Which half of a row a dragged tab is over: it lands above the row, or below it. */
-export type DropSide = "before" | "after";
+export type { DropSide };
 
 /**
  * Alt+arrows. A tab in a window moves within it, and steps out of it past its first or last
@@ -335,21 +336,4 @@ export function staleKeptTabs(tabs: SavedTab[], settings: Settings, now: number,
             !settings.waitingCategories.includes(getTabCategory(t)) &&
             Math.max(t.lastOpenedAt ?? 0, t.savedAt, trackingSince) <= cutoff
     );
-}
-
-/** How near the list's top or bottom edge a dragged tab starts it scrolling, and how fast at most. */
-export const EDGE_SCROLL_ZONE = 48;
-export const EDGE_SCROLL_MAX = 16;
-
-/**
- * How far the list scrolls this frame while a tab is dragged with the pointer at `y`, the list
- * showing from `top` to `bottom`: nothing away from the edges, faster the nearer the pointer gets
- * (and at full speed past them), up as a negative number, down as a positive one.
- */
-export function edgeScrollSpeed(y: number, top: number, bottom: number): number {
-    const zone = Math.min(EDGE_SCROLL_ZONE, (bottom - top) / 3);
-    const into = (depth: number) => Math.ceil(EDGE_SCROLL_MAX * Math.min(1, depth / zone));
-    if (y < top + zone) return -into(top + zone - y);
-    if (y > bottom - zone) return into(y - (bottom - zone));
-    return 0;
 }
