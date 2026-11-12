@@ -2,6 +2,11 @@
 
 Guidance for Claude Code (or any AI collaborator) working in this repo.
 
+**Playbook:** eamoe/development-playbook@v0.2.0 · **Modules:** A (UI), B (stored data), C (Chrome Web Store listing) · **Deviations:**
+- CORE-6.10: the roadmap ("Tab Sandwich Roadmap 2026–27") lives in Claude Docs, not in this repo; it's still the plan of record (CORE-3.1) and is updated before scope changes in code (the owner's choice, decided 2026-10-04).
+
+Where things stand (current release and stage, what's waiting on whom, the next step): `PROGRESS.md`, updated in each commit.
+
 ## What this is
 
 Tab Sandwich — a Chrome Manifest V3 extension for saving, organizing, and
@@ -146,12 +151,13 @@ src/
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
                              "everything's in the archive", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows (buttons Edit · Archive · Pin on hover or keyboard focus,
-                             Pin last so it takes the pin mark's place); edit form; drag to reorder; entrance motion;
+                             Pin last so it takes the pin mark's place); edit form; drag to reorder (a drop lands where the line
+                             shows, in the gap too; the list scrolls at its edges; moved rows slide into place); entrance motion;
                              the list's keys (arrows, Enter, E, P to pin, Delete, Alt+arrows to move, → ← for windows, Space to pick
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
-                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
+                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), how fast a drag scrolls the list (edgeScrollSpeed), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
     settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
@@ -315,10 +321,12 @@ animation smoothness, and the manual release pass at the top of
   distributed, not a locally-built copy, except when explicitly noted
   otherwise (e.g. `PUBLISHING.md` has a documented one-off exception for
   the first Store submission).
-- **Git**: the repo owner runs `git commit` / `git push origin main`
-  themselves — when asked for a commit, provide the message text, don't
-  run the command. Tagging and pushing a release tag (`git tag -a vX.Y.Z`,
-  `git push origin vX.Y.Z`) is fine to run directly once asked to do so.
+- **Git**: one branch per release. On it, commit each stage once the owner
+  has approved it (with its tests, docs and notes in the same commit); push
+  the branch and open the pull request only when asked. Never push to
+  `main`: the owner merges. Tagging and pushing a release tag
+  (`git tag -a vX.Y.Z`, `git push origin vX.Y.Z`) is fine to run directly
+  once asked to do so.
 - **Docs are part of the change, not a follow-up.** A change isn't done
   until every doc it affects agrees with the code: `README.md` (features,
   dev workflow), this file's `src/` breakdown, `TESTING.md` (new cases for

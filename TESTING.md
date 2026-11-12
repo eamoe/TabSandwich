@@ -21,13 +21,13 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 Run on the build being released (`dist/`, or the release zip unpacked), about 10 minutes:
 
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
-2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); confirm drag is off while searching (TC-119).
+2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace, not racing (TC-322), and that a dropped tab slides into place (TC-323); confirm drag is off while searching (TC-119).
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored; 4.0 upgrades nothing either, only adding what's new, like reminders, and the update must not disable the extension, since its new permissions show no warning).
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored; 4.0 upgrades nothing either, only adding what's new, like reminders, and the update must not disable the extension, since its new permissions show no warning; 4.1.1 changes nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
 10. The toolbar badge on the real icon, in light and dark Chrome: readable on the purple tile, and the count coming back after a right-click save's ✓ (TC-310, TC-312).
 11. Reminders in real Chrome: set one for tomorrow, allow Chrome's prompt, and on another profile refuse it. So as not to wait a day, set `remindAt` a minute ahead from the worker's console (DevTools from `chrome://extensions`), then check the notification comes once and clicking it opens the tab (TC-304 – TC-306). On a Mac, allow Google Chrome in System Settings › Notifications first, with Focus off, or nothing will appear.
@@ -232,7 +232,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
 - Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position: once onto a row's upper half, once onto the last row's lower half.
-- Expected: While dragging, a line in the gap shows where the tab will land: above the row under the pointer's upper half, below it on the lower half. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
+- Expected: While dragging, the tab being carried fades in its place, and a line in the gap shows where it will land: above the row under the pointer's upper half, below it on the lower half. The line stays put while the pointer crosses from one row into the next, and letting go on the line itself, in the gap, lands the tab there. Over the tab's own row, or off the list (on the header or the filters), there's no line, and letting go moves nothing. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
 - Preconditions: tabs across 2+ categories, filtered to one category.
@@ -543,7 +543,7 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 **TC-159 — Drag-and-drop also reorders categories (P2)** **[auto]**
 - Preconditions: 3+ configured categories.
 - Steps: Drag a category by its handle (⋮⋮) to a different position in the list (not just an adjacent swap).
-- Expected: It moves to sit exactly where dropped; order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
+- Expected: While dragging, a line on the border above or below the row under the pointer (its upper or lower half, as in the tab list) shows where the category will land, and it sits exactly there when dropped, whichever way it came; order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
 
 **TC-160 — A category mid-rename is not draggable (P3)**
 - Steps: Click a category's name so the rename field shows → attempt to drag that row.
@@ -938,7 +938,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (for 4.1: 4.0.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (for 4.1.1: 4.1.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
 - Expected: Every tab, window, category, color, theme and sort is as it was, and so is every ☾. From 4.0.x: "New in 4.1" shows once, in Chrome's language, its last line pointing to Settings › About; your categories keep their names whatever the language (only a fresh install's starter categories come in it). A patch release (4.1.0 to 4.1.1) shows no note. From 3.2.x or earlier, only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (From before 3.3, the stored data is upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
@@ -1202,8 +1202,27 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-319 — Suggesting a better word, or an idea (P2)** **[auto]**
 - Steps: In German (or any language), open Settings › About and click **Sag es uns** ("Tell us"). Then in English.
-- Expected: The line reads "Ein Wort klingt holprig, oder du hast eine Idee? Sag es uns" (in English, "Spotted a clumsy word, or have an idea? Tell us"), and hovering the link says what it opens. A Google Form opens in a new tab with "Language and version" already filled in as Chrome's language and the version (e.g. `de-DE · 4.1.0`); nothing else is filled in, no sign-in is needed, and nothing is sent until you submit. The link's address is checked automatically; **submit one test answer by hand before each release** and delete it from the form's Responses.
+- Expected: The line reads "Ein Wort klingt holprig, oder du hast eine Idee? Sag es uns" (in English, "Spotted a clumsy word, or have an idea? Tell us"), and hovering the link says what it opens. A Google Form opens in a new tab with "Language and version" already filled in as Chrome's language and the version (e.g. `de-DE · 4.1.0`); nothing else is filled in, no sign-in is needed, and nothing is sent until you submit. The link's address is checked automatically; **submit one test answer by hand before each release** and delete it from the form's Responses. The page after sending offers no "Submit another response" link: Google's link opens the form blank, without the language and version, so another answer goes through **Tell us** again (the form's Settings › Presentation › Show link to submit another response stays off).
 
 **TC-318 — The library in a narrow window (P2)** **[auto]**
 - Steps: Open the library and make the window narrower: about 1280, 1000, 800, then 700 pixels wide.
 - Expected: Titles always keep room to read. Once the table gets narrow the Opened column steps aside, then the Site column too; below 760 pixels the sidebar moves above the table. Widening the window brings them back. "300 days ago" fits its column in every language. Checked in Docker at 1280, 1024, 800 and 700.
+
+## 25. Polish (v4.1.1)
+
+**TC-320 — Select all steps aside once everything is picked (P2)** **[auto]**
+- Steps: In the library, tick one row, then the box in the table's heading. In the popup, start selecting, click **Select all**, then untick one tab.
+- Expected: Once every tab shown is picked, **Select all** disappears from the selection bar, in the library and in the popup alike; nothing else in the bar moves. Unpicking one brings it back.
+
+**TC-321 — Waiting dates line up in the library (P2)** **[auto]**
+- Steps: Open the library, sorted by Saved, with some tabs waiting and some not.
+- Expected: In the Saved column, the words of a waiting tab's tinted date ("30 days ago") start exactly where a plain date's do; only the tint reaches a little further left.
+
+**TC-322 — A long list scrolls while you drag (P1)** **[auto]**
+- Preconditions: More saved tabs than fit in the popup (or the side panel).
+- Steps: Drag the first tab down and hold it near the list's bottom edge; then move it back toward the middle and let go. Do the same upward, holding it near the top edge or over the filter row.
+- Expected: Near an edge the list scrolls, faster the nearer the edge, at full speed past it, and stops as soon as the tab is back away from it. The tab lands where the line shows, however far down or up that is. Scrolling is part of the drag, not decoration, so it happens with the reduce-motion setting too. Checked automatically on its own scrolling; **check by hand in real Chrome** that it doesn't also run Chrome's own (it would race).
+
+**TC-323 — A dropped tab slides into place (P2)** **[auto]**
+- Steps: Drag a tab a few rows up, and let go. Then turn on the system's reduce-motion setting and do it again.
+- Expected: The tab slides from where it was to its new place, and the rows it passed slide over by one, instead of everything jumping. With reduce motion, it just moves.

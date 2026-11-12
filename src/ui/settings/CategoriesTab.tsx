@@ -43,7 +43,33 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
     const [newName, setNewName] = useState("");
     const [paletteFor, setPaletteFor] = useState<string | null>(null);
     const [dragName, setDragName] = useState<string | null>(null);
-    const [dragOver, setDragOver] = useState<string | null>(null);
+    // Where a dragged category would land: the line above or below the row under the pointer, kept
+    // while the pointer is anywhere on the list (crossing a row's parts or the line between two),
+    // so letting go lands where it shows.
+    const [dropAt, setDropAt] = useState<{ name: string; side: "before" | "after" } | null>(null);
+    const landing = useRef<{ name: string; side: "before" | "after" } | null>(null);
+    const land = (at: { name: string; side: "before" | "after" } | null) => {
+        landing.current = at;
+        setDropAt((shown) => (shown?.name === at?.name && shown?.side === at?.side ? shown : at));
+    };
+    const endDrag = () => {
+        setDragName(null);
+        land(null);
+    };
+    // Dragged off the list: no line, and letting go moves nothing. (Entering counts too: over a
+    // text field Chrome sends no dragover.)
+    useEffect(() => {
+        if (!dragName) return;
+        const offList = (e: DragEvent) => {
+            if (!listRef.current?.contains(e.target as Node)) land(null);
+        };
+        document.addEventListener("dragenter", offList);
+        document.addEventListener("dragover", offList);
+        return () => {
+            document.removeEventListener("dragenter", offList);
+            document.removeEventListener("dragover", offList);
+        };
+    }, [dragName]);
     const [days, setDays] = useState(String(settings.outdatedDays));
     // Every load resets the field to what's stored, so a change that failed to save doesn't linger.
     useEffect(() => setDays(String(library.settings.outdatedDays)), [library]);
@@ -132,7 +158,27 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
             <p id="outdated-days-hint" class={styles.waitingHint}>
                 {strings.waitingAfterHint}
             </p>
-            <ul ref={listRef} class={styles.categories} aria-label={strings.configuredCategories}>
+            <ul
+                ref={listRef}
+                class={styles.categories}
+                aria-label={strings.configuredCategories}
+                onDragOver={(e) => {
+                    if (!dragName || !landing.current) return;
+                    e.preventDefault();
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    const dragged = dragName;
+                    const to = landing.current;
+                    endDrag();
+                    if (dragged && to) {
+                        void reorderCategories(dragged, to.name, to.side)
+                            .catch((err) => showErrorToast(writeErrorMessage(err)))
+                            .finally(reload);
+                    }
+                }}
+            >
                 {settings.categories.map((name, index) => (
                     <CategoryRow
                         key={name}
@@ -147,32 +193,20 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                         paletteOpen={paletteFor === name}
                         onTogglePalette={(open) => setPaletteFor(open ? name : null)}
                         dragging={dragName === name}
-                        dragOver={dragOver === name}
+                        dropSide={dropAt?.name === name ? dropAt.side : null}
                         drag={{
                             onDragStart: (e) => {
                                 setDragName(name);
                                 if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
                             },
-                            onDragEnd: () => {
-                                setDragName(null);
-                                setDragOver(null);
-                            },
+                            onDragEnd: endDrag,
                             onDragOver: (e) => {
-                                if (!dragName || dragName === name) return;
+                                if (!dragName) return;
+                                // Over its own row there's nowhere to go: no line, and no drop.
+                                if (dragName === name) return land(null);
+                                const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                land({ name, side: e.clientY < box.top + box.height / 2 ? "before" : "after" });
                                 e.preventDefault();
-                                setDragOver(name);
-                            },
-                            onDragLeave: () => setDragOver((n) => (n === name ? null : n)),
-                            onDrop: (e) => {
-                                e.preventDefault();
-                                const dragged = dragName;
-                                setDragName(null);
-                                setDragOver(null);
-                                if (dragged && dragged !== name) {
-                                    void reorderCategories(dragged, name)
-                                        .catch((err) => showErrorToast(writeErrorMessage(err)))
-                                        .finally(reload);
-                                }
                             },
                         }}
                         reload={reload}
@@ -237,13 +271,12 @@ function CategoryRow(props: WaitingProps & {
     paletteOpen: boolean;
     onTogglePalette: (open: boolean) => void;
     dragging: boolean;
-    dragOver: boolean;
+    /** A category is dragged over this row: the line shows where it would land, above or below. */
+    dropSide: "before" | "after" | null;
     drag: {
         onDragStart: (e: DragEvent) => void;
         onDragEnd: () => void;
         onDragOver: (e: DragEvent) => void;
-        onDragLeave: () => void;
-        onDrop: (e: DragEvent) => void;
     };
     reload: () => Promise<void>;
 }) {
@@ -392,7 +425,7 @@ function CategoryRow(props: WaitingProps & {
         );
     }
 
-    const classes = [styles.category, props.dragging ? styles.dragging : "", props.dragOver ? styles.dragOver : ""].join(" ");
+    const classes = [styles.category, props.dragging ? styles.dragging : "", props.dropSide === "before" ? styles.dropBefore : props.dropSide === "after" ? styles.dropAfter : ""].join(" ");
     return (
         <li ref={rowRef} class={classes} draggable={!renaming} {...(renaming ? {} : props.drag)}>
             <span class={styles.grip} aria-hidden="true">

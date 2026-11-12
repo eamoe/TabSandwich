@@ -108,6 +108,31 @@ test.describe("The library", () => {
         await expect.poll(() => titles(popup)).toEqual(["Alpha", "Delta", "Charlie", "Bravo"]);
     });
 
+    test("TC-320: once the heading's box picks every row, Select all steps aside", async ({ popup }) => {
+        const bar = popup.getByRole("navigation", { name: /select/i });
+        await rowOf(popup, "Alpha").getByRole("checkbox").click();
+        await expect(bar.getByRole("button", { name: "Select all" })).toBeVisible();
+        await table(popup).getByRole("checkbox", { name: "Select all shown" }).click();
+        await expect(bar).toContainText("4 selected");
+        await expect(bar.getByRole("button", { name: "Select all" })).toHaveCount(0);
+    });
+
+    test("TC-321: a waiting tab's date starts where a plain one does", async ({ popup }) => {
+        // The Saved column: where its words start, and whether they sit in a badge.
+        const saved = (title: string) => rowOf(popup, title).getByRole("cell").nth(4).evaluate((cell) => {
+            const words = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT).nextNode()!;
+            const range = document.createRange();
+            range.selectNodeContents(words);
+            const font = getComputedStyle(words.parentElement!);
+            return { text: words.textContent, left: range.getBoundingClientRect().left, badge: words.parentElement !== cell, font: `${font.fontSize} ${font.fontWeight}` };
+        });
+        const waiting = await saved("Bravo");
+        const plain = await saved("Alpha");
+        expect([waiting.text, waiting.badge, plain.text, plain.badge]).toEqual(["30 days ago", true, "Yesterday", false]);
+        expect(Math.abs(waiting.left - plain.left)).toBeLessThan(0.5);
+        expect(waiting.font).toBe(plain.font);
+    });
+
     test("TC-297: a row's own buttons edit, pin, archive; the archive restores and deletes for good", async ({ popup }) => {
         await rowOf(popup, "Alpha").hover();
         await popup.getByRole("button", { name: "Edit Alpha" }).click();

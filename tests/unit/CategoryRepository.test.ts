@@ -158,8 +158,31 @@ describe("ordering and colors", () => {
 
     it("drag-reorders a category onto another's position", async () => {
         seed([], base);
-        await reorderCategories("Reading", "Work");
+        await reorderCategories("Reading", "Work", "before");
         expect(storedSettings().categories).toEqual(["Reading", "Work", "Personal"]);
+    });
+
+    it("drops a category just above or just below the one it's let go on, whichever way it travelled", async () => {
+        seed([], base);
+        await reorderCategories("Work", "Personal", "after");
+        expect(storedSettings().categories).toEqual(["Personal", "Work", "Reading"]);
+        await reorderCategories("Reading", "Personal", "after");
+        expect(storedSettings().categories).toEqual(["Personal", "Reading", "Work"]);
+        await reorderCategories("Personal", "Work", "before");
+        expect(storedSettings().categories).toEqual(["Reading", "Personal", "Work"]);
+    });
+
+    it("can put a category last, below the last one", async () => {
+        seed([], base);
+        await reorderCategories("Work", "Reading", "after");
+        expect(storedSettings().categories).toEqual(["Personal", "Reading", "Work"]);
+    });
+
+    it("leaves the order alone for a name that isn't there", async () => {
+        seed([], base);
+        await reorderCategories("Travel", "Work", "before");
+        await reorderCategories("Work", "Travel", "after");
+        expect(storedSettings().categories).toEqual(["Work", "Personal", "Reading"]);
     });
 
     it("only accepts colors from the palette", async () => {

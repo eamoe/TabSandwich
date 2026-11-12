@@ -155,18 +155,18 @@ export async function moveCategory(name: string, direction: MoveDirection): Prom
     });
 }
 
-/** Moves draggedName to sit where targetName currently is — drag-and-drop's counterpart to moveCategory's adjacent-only swap. */
-export async function reorderCategories(draggedName: string, targetName: string): Promise<void> {
+/**
+ * Moves draggedName to just above or just below targetName (`side`), where drag-and-drop's line
+ * showed it — the counterpart to moveCategory's adjacent-only swap.
+ */
+export async function reorderCategories(draggedName: string, targetName: string, side: "before" | "after"): Promise<void> {
     if (draggedName === targetName) return;
     return withStorageLock(async () => {
         const settings = await getSettings();
-        const fromIndex = settings.categories.indexOf(draggedName);
-        const toIndex = settings.categories.indexOf(targetName);
-        if (fromIndex === -1 || toIndex === -1) return;
+        if (!settings.categories.includes(draggedName) || !settings.categories.includes(targetName)) return;
 
-        const categories = [...settings.categories];
-        const [moved] = categories.splice(fromIndex, 1);
-        categories.splice(toIndex, 0, moved);
+        const categories = settings.categories.filter((name) => name !== draggedName);
+        categories.splice(categories.indexOf(targetName) + (side === "after" ? 1 : 0), 0, draggedName);
         settings.categories = categories;
         await setSettings(settings);
     });

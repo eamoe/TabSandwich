@@ -102,11 +102,24 @@ test.describe("Categories in Settings", () => {
         expect(await manualEntryCategories(popup)).toEqual(["Uncategorized", "Personal", "Work", "Reading", "Entertainment"]);
     });
 
-    test("TC-159: dragging a category by its handle moves it there", async ({ popup }) => {
+    test("TC-159: dragging a category by its handle onto a row's upper half puts it above that row", async ({ popup }) => {
         await categoryList(popup).getByRole("listitem").filter({ hasText: "Entertainment" }).dragTo(
             categoryList(popup).getByRole("listitem").filter({ hasText: "Work" }),
-            { sourcePosition: { x: 10, y: 22 } }
+            { sourcePosition: { x: 10, y: 22 }, targetPosition: { x: 120, y: 8 } }
         );
         await expect.poll(async () => (await storedSettings(popup)).categories).toEqual(["Entertainment", "Work", "Personal", "Reading"]);
+    });
+
+    test("TC-159: onto a row's lower half it goes below, whichever way it came, and the line shows where first", async ({ popup }) => {
+        const rowOf = (name: string) => categoryList(popup).getByRole("listitem").filter({ hasText: name });
+        const work = (await rowOf("Work").boundingBox())!;
+        const personal = (await rowOf("Personal").boundingBox())!;
+        await popup.mouse.move(work.x + 10, work.y + 22);
+        await popup.mouse.down();
+        await popup.mouse.move(personal.x + 120, personal.y + personal.height - 8, { steps: 6 });
+        // The line, on Personal's lower edge (it's only drawn: no role or name to find it by).
+        await expect.poll(() => rowOf("Personal").evaluate((li) => /dropAfter/.test(li.className))).toBe(true);
+        await popup.mouse.up();
+        await expect.poll(async () => (await storedSettings(popup)).categories).toEqual(["Personal", "Work", "Reading", "Entertainment"]);
     });
 });

@@ -100,7 +100,10 @@
 .category { position: relative; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 2px; border-bottom: 1px solid var(--line); }
 .category:last-child { border-bottom: 0; }
 .category.dragging { opacity: 0.45; }
-.category.dragOver { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 8px; }
+/* Where a dragged category would land: a line on the border above or below the row it's over, as in the tab list. */
+.category.dropBefore::before, .category.dropAfter::before { content: ""; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--accent); pointer-events: none; z-index: 2; }
+.category.dropBefore::before { top: -2px; }
+.category.dropAfter::before { bottom: -2px; }
 .grip { color: var(--ink-3); cursor: grab; display: flex; }
 .colorDot { width: 18px; height: 18px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; flex-shrink: 0; box-shadow: inset 0 0 0 1px var(--ring); }
 .colorDot:hover, .colorDot[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--ring), 0 0 0 3px var(--surface-2); }

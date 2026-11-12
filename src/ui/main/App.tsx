@@ -738,6 +738,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
             {hasTabs && selecting && (
                 <SelectionBar
                     count={pickedIds.length}
+                    allSelected={visible.tabs.length > 0 && visible.tabs.every((t) => picked.has(t.id))}
                     inArchive={inArchive}
                     moveOptions={saveOptions}
                     onSelectAll={() => setPicked(new Set(visible.tabs.map((t) => t.id)))}
