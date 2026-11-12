@@ -146,12 +146,13 @@ src/
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
                              "everything's in the archive", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows (buttons Edit · Archive · Pin on hover or keyboard focus,
-                             Pin last so it takes the pin mark's place); edit form; drag to reorder; entrance motion;
+                             Pin last so it takes the pin mark's place); edit form; drag to reorder (a drop lands where the line
+                             shows, in the gap too; the list scrolls at its edges; moved rows slide into place); entrance motion;
                              the list's keys (arrows, Enter, E, P to pin, Delete, Alt+arrows to move, → ← for windows, Space to pick
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
-                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
+                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), how fast a drag scrolls the list (edgeScrollSpeed), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
     settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main

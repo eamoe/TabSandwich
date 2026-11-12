@@ -20,7 +20,8 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc) var(--row-edge), transparent), var(--row-lift);
     z-index: 1;
 }
-.rise { animation: rise 0.32s cubic-bezier(0.3, 1.3, 0.5, 1) both; }
+/* Backwards only: kept past its end, the entrance would hold the row at full opacity, so a dragged one never faded. */
+.rise { animation: rise 0.32s cubic-bezier(0.3, 1.3, 0.5, 1) backwards; }
 .drop { animation: drop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1); }
 .leaving { animation: leave 0.24s ease-in forwards; pointer-events: none; }
 .dragging { opacity: 0.45; }

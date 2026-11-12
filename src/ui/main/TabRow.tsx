@@ -76,8 +76,6 @@ export interface RowProps {
         onDragStart: (e: DragEvent) => void;
         onDragEnd: () => void;
         onDragOver: (e: DragEvent) => void;
-        onDragLeave: () => void;
-        onDrop: (e: DragEvent) => void;
     };
 }
 

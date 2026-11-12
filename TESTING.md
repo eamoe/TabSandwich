@@ -21,7 +21,7 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 Run on the build being released (`dist/`, or the release zip unpacked), about 10 minutes:
 
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
-2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); confirm drag is off while searching (TC-119).
+2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace, not racing (TC-322), and that a dropped tab slides into place (TC-323); confirm drag is off while searching (TC-119).
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
@@ -232,7 +232,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
 - Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position: once onto a row's upper half, once onto the last row's lower half.
-- Expected: While dragging, a line in the gap shows where the tab will land: above the row under the pointer's upper half, below it on the lower half. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
+- Expected: While dragging, the tab being carried fades in its place, and a line in the gap shows where it will land: above the row under the pointer's upper half, below it on the lower half. The line stays put while the pointer crosses from one row into the next, and letting go on the line itself, in the gap, lands the tab there. Over the tab's own row, or off the list (on the header or the filters), there's no line, and letting go moves nothing. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
 - Preconditions: tabs across 2+ categories, filtered to one category.
@@ -1217,3 +1217,12 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-321 — Waiting dates line up in the library (P2)** **[auto]**
 - Steps: Open the library, sorted by Saved, with some tabs waiting and some not.
 - Expected: In the Saved column, the words of a waiting tab's tinted date ("30 days ago") start exactly where a plain date's do; only the tint reaches a little further left.
+
+**TC-322 — A long list scrolls while you drag (P1)** **[auto]**
+- Preconditions: More saved tabs than fit in the popup (or the side panel).
+- Steps: Drag the first tab down and hold it near the list's bottom edge; then move it back toward the middle and let go. Do the same upward, holding it near the top edge or over the filter row.
+- Expected: Near an edge the list scrolls, faster the nearer the edge, at full speed past it, and stops as soon as the tab is back away from it. The tab lands where the line shows, however far down or up that is. Scrolling is part of the drag, not decoration, so it happens with the reduce-motion setting too. Checked automatically on its own scrolling; **check by hand in real Chrome** that it doesn't also run Chrome's own (it would race).
+
+**TC-323 — A dropped tab slides into place (P2)** **[auto]**
+- Steps: Drag a tab a few rows up, and let go. Then turn on the system's reduce-motion setting and do it again.
+- Expected: The tab slides from where it was to its new place, and the rows it passed slide over by one, instead of everything jumping. With reduce motion, it just moves.

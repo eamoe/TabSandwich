@@ -34,7 +34,7 @@ export function GroupRow(props: {
     flashSeq: number | null;
     /** A tab is being dragged over this row: the line shows where it would land (see dropTarget). */
     dropSide: "before" | "after" | null;
-    dragHandlers: { onDragOver: (e: DragEvent) => void; onDragLeave: () => void; onDrop: (e: DragEvent) => void };
+    dragHandlers: { onDragOver: (e: DragEvent) => void };
     entrance: "rise" | "drop" | "none";
     entranceDelayMs: number;
     /** Choosing several tabs: the row selects all its tabs; a chevron beside it opens and closes it. */
@@ -105,8 +105,6 @@ export function GroupRow(props: {
                 class={`${styles.groupHead} ${entranceClass} ${expanded ? styles.groupOpen : ""} ${props.dropSide === "before" ? styles.dropBefore : props.dropSide === "after" ? styles.dropAfter : ""} ${menuOpen ? styles.menuOpen : ""}`}
                 style={{ animationDelay: entrance === "rise" ? `${props.entranceDelayMs}ms` : undefined }}
                 onDragOver={props.dragHandlers.onDragOver}
-                onDragLeave={props.dragHandlers.onDragLeave}
-                onDrop={props.dragHandlers.onDrop}
             >
                 {renaming ? (
                     <RenameForm
