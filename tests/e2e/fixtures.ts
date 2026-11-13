@@ -48,9 +48,9 @@ type Fixtures = {
     /**
      * Chromium repaints a changed area either alone or with the rest of its tile, and which one it
      * picks varies from run to run. Edges that the repainted area cuts through can come out a pixel
-     * different. A screenshot test where something opens over another row's edges (the color
-     * strip's shadow over the row above) turns this on so Chromium always repaints the whole tile.
-     * It's off for every other test, whose approved pictures were taken with Chromium's default.
+     * different. A screenshot test whose picture changed that way now and then turns this on, so
+     * Chromium always repaints the whole tile (the color strip's and the keyboard-focus one do). It's
+     * off for every other test, whose approved pictures were taken with Chromium's default.
      */
     wholeTileRepaints: boolean;
     context: BrowserContext;

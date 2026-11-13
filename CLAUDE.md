@@ -276,8 +276,9 @@ that is off by a pixel only now and then can be something other than motion:
 Chromium sometimes repaints just the changed part of a tile, and edges that
 part cuts through come out slightly different. Giving that one test
 `test.use({ wholeTileRepaints: true })` (`tests/e2e/fixtures.ts`; the color
-strip's test has it) makes it repeatable. That can also change the test's own
-picture by a few edge pixels (it did for 8 other screens), and then it's a
+strip's and the keyboard-focus tests have it) makes it repeatable, without a
+mask. That can also change the test's own picture by a few edge pixels (it did
+for 8 other screens), and then it's a
 re-approval like any other, with before/after shown. Never raise
 `maxDiffPixels`.
 
