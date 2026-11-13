@@ -51,6 +51,10 @@
     --card-shadow: 0 2px 4px rgba(42,36,71,.08),0 10px 24px rgba(42,36,71,.14);
     --chip-mix: 18%;
     --fav-mix: 24%;
+    /* A site's icon, once Chrome has one: on a plain white tile with a hairline, so it never clashes with the
+       row's category tint (a site with no icon keeps its tinted letter tile). In dark, the tinted tile reads fine. */
+    --fav-icon-mix: 0%;
+    --fav-icon-edge: inset 0 0 0 1px var(--line);
     /* One-color site icons that would vanish on this theme's tile are flipped (src/util/iconInk.ts); in dark
        the flip is brightened too, so a mid-gray one (Chrome's globe) comes out light, not mid-gray again. */
     --fav-dark-ink: none;
@@ -60,6 +64,8 @@
     --row-edge: 30%;
     --row-shadow: 0 1px 0 rgba(42,36,71,.08);
     --row-lift: 0 4px 12px rgba(42,36,71,.14);
+    /* A row picked up and dragged: held well above the list. */
+    --row-drag: 0 12px 28px rgba(42,36,71,.22), 0 2px 6px rgba(42,36,71,.12);
     --save-edge: #D9981C;
     --accent-edge: #3F3792;
 
@@ -105,6 +111,8 @@
         --card-shadow: 0 2px 4px rgba(0,0,0,.3),0 10px 24px rgba(0,0,0,.35);
         --chip-mix: 28%;
         --fav-mix: 34%;
+        --fav-icon-mix: 34%;
+        --fav-icon-edge: 0 0 transparent;
         --fav-dark-ink: invert(0.9) brightness(1.3);
         --fav-light-ink: none;
         --ground: #110F18;
@@ -112,6 +120,7 @@
         --row-edge: 38%;
         --row-shadow: 0 1px 0 rgba(0,0,0,.35);
         --row-lift: 0 4px 14px rgba(0,0,0,.45);
+        --row-drag: 0 14px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
         --save-edge: #A9741A;
         --accent-edge: #7A70DC;
     }
@@ -152,6 +161,8 @@
     --card-shadow: 0 2px 4px rgba(0,0,0,.3),0 10px 24px rgba(0,0,0,.35);
     --chip-mix: 28%;
     --fav-mix: 34%;
+    --fav-icon-mix: 34%;
+    --fav-icon-edge: 0 0 transparent;
     --fav-dark-ink: invert(0.9) brightness(1.3);
     --fav-light-ink: none;
     --ground: #110F18;
@@ -159,6 +170,7 @@
     --row-edge: 38%;
     --row-shadow: 0 1px 0 rgba(0,0,0,.35);
     --row-lift: 0 4px 14px rgba(0,0,0,.45);
+    --row-drag: 0 14px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
     --save-edge: #A9741A;
     --accent-edge: #7A70DC;
 }

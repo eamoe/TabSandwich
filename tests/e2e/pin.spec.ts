@@ -80,7 +80,7 @@ test.describe("Pinned tabs", () => {
         await expect(windowRow(popup, "Research")).toBeVisible();
     });
 
-    test("TC-263: a drag across that line goes back, and says why", async ({ popup }) => {
+    test("TC-263: a drag stops at that line, and says why", async ({ popup }) => {
         await seed(popup);
         await popup.getByRole("button", { name: "Pin Echo" }).click();
         await expect.poll(async () => (await rowTitles(popup))[0]).toBe("Echo");
@@ -89,9 +89,19 @@ test.describe("Pinned tabs", () => {
         await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Unpin it to move it lower." })).toBeVisible();
         await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
 
-        await rowOf("Bravo").dragTo(rowOf("Echo"), { sourcePosition: { x: 22, y: 23 }, targetPosition: { x: 150, y: 6 } });
-        await expect(popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Pin it to move it up there." })).toBeVisible();
-        await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Alpha", "Bravo", "▾ Research", "Gamma", "Delta"]);
+        // Held over the pinned tab, Bravo's place goes no higher than just below it; let go, it lands there.
+        const bravo = (await rowOf("Bravo").boundingBox())!;
+        const echo = (await rowOf("Echo").boundingBox())!;
+        await popup.mouse.move(bravo.x + 22, bravo.y + 23);
+        await popup.mouse.down();
+        await popup.mouse.move(echo.x + 150, echo.y + 6, { steps: 8 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Bravo", "Alpha", "▾ Research", "Gamma", "Delta"]);
+        await popup.mouse.up();
+        const note = popup.getByRole("status").filter({ hasText: "Pinned tabs stay above the others. Pin it to move it up there." });
+        await expect(note).toBeVisible();
+        // Read whole (TC-327): on two lines if need be, not cut off after one.
+        expect(await note.locator("span").first().evaluate((m) => m.scrollHeight <= m.clientHeight + 1 && m.getClientRects().length > 0)).toBe(true);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Echo", "Bravo", "Alpha", "▾ Research", "Gamma", "Delta"]);
     });
 
     test("TC-279: Unpin sits where the pin mark was, and a mouse click doesn't leave the row looking hovered", async ({ popup }) => {

@@ -170,10 +170,10 @@ export const de: Strings = {
     whatsNewTitle: (release: string) => `Neu in ${release}`,
     dismissWhatsNew: "Neuigkeiten ausblenden",
     whatsNewNotes: {
-        "4.1": [
-            "Tab Sandwich gibt es jetzt in acht Sprachen, passend zur Sprache von Chrome.",
-            "Luftigere Formulare, und die Bibliothek passt auch in ein schmales Fenster.",
-            "Ein Wort klingt holprig, oder du hast eine Idee? Sag es uns, unter Einstellungen › Info.",
+        "4.2": [
+            "Einen Tab zu verschieben fühlt sich an wie Aufheben: Die Liste macht Platz, wo er landet.",
+            "Esc legt ihn zurück. Auf einem Touchscreen hältst du eine Zeile kurz gedrückt, um sie aufzunehmen.",
+            "Im hellen Modus liegen Website-Symbole auf einer schlichten weißen Kachel.",
         ],
     },
     categoryForScreenReaders: (category: string) => `Kategorie: ${category}`,

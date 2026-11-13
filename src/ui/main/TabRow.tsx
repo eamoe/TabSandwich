@@ -41,15 +41,15 @@ export interface RowProps {
     entrance: "rise" | "drop" | "none";
     entranceDelayMs: number;
     flashSeq: number | null;
+    /** It can be picked up and dragged to a new place in the list (TabList does the dragging). */
     draggable: boolean;
     /**
      * The row the keyboard is on. Only its buttons are in the Tab order, so Tab moves past the
      * list in one step and the arrow keys move between rows (see TabList).
      */
     current: boolean;
+    /** It's in hand: this row is the empty place it will land in, its copy following the pointer. */
     dragging: boolean;
-    /** A tab is being dragged over this row: the line shows where it would land, above or below. */
-    dropSide: "before" | "after" | null;
     /**
      * Choosing several tabs: the row becomes a checkbox (clicking it, or Space, selects it
      * rather than opening the tab), and its own edit and delete step aside.
@@ -72,11 +72,6 @@ export interface RowProps {
     inArchive: boolean;
     /** Restore, in the archive. Resolves false when it couldn't be saved, so the row comes back. */
     onRestore: () => Promise<boolean>;
-    dragHandlers: {
-        onDragStart: (e: DragEvent) => void;
-        onDragEnd: () => void;
-        onDragOver: (e: DragEvent) => void;
-    };
 }
 
 /** How long a deleted row takes to slide away; none at all with the system's reduce-motion setting. */
@@ -138,7 +133,8 @@ export function TabRow(props: RowProps) {
 
     const rowStyle = {
         "--rc": props.color,
-        background: props.tinted ? `color-mix(in srgb, ${props.color} var(--row-mix), var(--surface))` : "var(--surface)",
+        // (An empty place while it's in hand: its tint goes with the copy.)
+        background: props.dragging ? undefined : props.tinted ? `color-mix(in srgb, ${props.color} var(--row-mix), var(--surface))` : "var(--surface)",
         animationDelay: entrance === "rise" ? `${props.entranceDelayMs}ms` : undefined,
     };
 
@@ -156,15 +152,14 @@ export function TabRow(props: RowProps) {
         tab.note ? styles.withNote : "",
         entrance === "rise" ? styles.rise : entrance === "drop" ? styles.drop : "",
         props.draggable ? styles.draggable : "",
-        props.dragging ? styles.dragging : "",
-        props.dropSide === "before" ? styles.dropBefore : props.dropSide === "after" ? styles.dropAfter : "",
+        props.dragging ? styles.slot : "",
         leaving ? styles.leaving : "",
         props.selecting ? styles.selecting : "",
         props.selected ? styles.selected : "",
     ].join(" ");
 
     return (
-        <li class={classes} style={rowStyle} data-tab-id={tab.id} draggable={props.draggable} {...(props.draggable ? props.dragHandlers : {})}>
+        <li class={classes} style={rowStyle} data-tab-id={tab.id} data-draggable={props.draggable ? "true" : undefined}>
             <span class={styles.lead} aria-hidden="true">
                 {props.selecting ? (
                     <span class={styles.check}>{props.selected && <Icon name="check" size={13} />}</span>

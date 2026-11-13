@@ -33,9 +33,19 @@
     transform: translateY(calc(100% + 56px));
 }
 .compact.visible { transform: none; }
-/* ToastSpace: the toast's height, the gap under it and as much again above it. */
-.space { flex-shrink: 0; height: calc(36px + 12px + 8px); }
-.message { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ToastSpace: the toast's height (taller with a message on two lines), the gap under it and a little above it. */
+.space { flex-shrink: 0; height: calc(var(--toast-height, 36px) + 12px + 8px); }
+/* Up to two lines, so a note saying why (the pinned line, say) is read whole; past that, it ends in "…". */
+.message {
+    flex: 1;
+    min-width: 0;
+    line-height: 16px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+}
 .undo {
     border: 0;
     background: transparent;

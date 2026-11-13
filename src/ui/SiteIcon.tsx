@@ -7,10 +7,10 @@ import styles from "./SiteIcon.module.css";
 // A soft, stable color per site for the letter tile, so neighbouring rows don't all look alike.
 const TILE_HUES = ["#4A90D9", "#6C63C5", "#2DBEA6", "#D47663", "#E8547E", "#E8B93A", "#6B8A68", "#7A8699"];
 
-function tileColor(site: string): string {
+function tileHue(site: string): string {
     let h = 0;
     for (let i = 0; i < site.length; i++) h = (h * 31 + site.charCodeAt(i)) % 997;
-    return `color-mix(in srgb, ${TILE_HUES[h % TILE_HUES.length]} var(--fav-mix), var(--surface))`;
+    return TILE_HUES[h % TILE_HUES.length];
 }
 
 /** Each icon is looked at once per popup, however many rows show it or however often they redraw. */
@@ -39,8 +39,8 @@ function inkOf(img: HTMLImageElement): IconInk {
 const INK_CLASS = { dark: styles.darkInk, light: styles.lightInk };
 
 /**
- * A site's icon from Chrome's own local cache (never the site itself), on a tinted tile that
- * shows the site's first letter if Chrome has nothing for it. A one-color icon that would vanish
+ * A site's icon from Chrome's own local cache (never the site itself), on a tile: plain (in light)
+ * while it shows the icon, tinted with the site's first letter if Chrome has nothing for it. A one-color icon that would vanish
  * on this theme's tile (GitHub's black octocat in dark) is shown flipped (see iconInk).
  */
 export function SiteIcon({ url, large = false, mini = false }: { url: string; large?: boolean; mini?: boolean }) {
@@ -50,8 +50,8 @@ export function SiteIcon({ url, large = false, mini = false }: { url: string; la
     const site = siteName(url);
     return (
         <span
-            class={`${styles.tile} ${large ? styles.large : ""} ${mini ? styles.mini : ""} ${ink ? INK_CLASS[ink] : ""}`}
-            style={{ background: tileColor(site) }}
+            class={`${styles.tile} ${failed ? styles.letter : ""} ${large ? styles.large : ""} ${mini ? styles.mini : ""} ${ink ? INK_CLASS[ink] : ""}`}
+            style={{ "--site-hue": tileHue(site) }}
             data-testid="favicon"
             data-ink={ink ?? undefined}
             aria-hidden="true"

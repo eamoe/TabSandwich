@@ -246,6 +246,29 @@ test.describe("Saved windows", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Gamma", "▾ Research", "Delta", "Epsilon", "Alpha", "Omega"]);
     });
 
+    test("TC-325: a saved window lights up while a dragged tab is in it, and not otherwise", async ({ popup }) => {
+        await seedWindow(popup, { collapsed: false });
+        const rowOf = (title: string) => tabList(popup).locator("li[data-tab-id]").filter({ hasText: title });
+        const rail = () => tabList(popup).getByRole("list", { name: "Research" }).evaluate((ul) => getComputedStyle(ul).borderLeftColor);
+        const plain = await rail();
+        const alpha = (await rowOf("Alpha").boundingBox())!;
+        const delta = (await rowOf("Delta").boundingBox())!;
+        const omega = (await rowOf("Omega").boundingBox())!;
+        await popup.mouse.move(alpha.x + 22, alpha.y + 23);
+        await popup.mouse.down();
+        // Over Delta's lower half: Alpha will go into the window, after Delta.
+        await popup.mouse.move(alpha.x + 150, delta.y + delta.height - 6, { steps: 8 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["▾ Research", "Gamma", "Delta", "Alpha", "Epsilon", "Omega"]);
+        await expect.poll(rail).not.toBe(plain);
+        // Over Omega's lower half, outside it: the window goes back to plain.
+        await popup.mouse.move(alpha.x + 150, omega.y + omega.height - 4, { steps: 8 });
+        await expect.poll(() => rowTitles(popup)).toEqual(["▾ Research", "Gamma", "Delta", "Epsilon", "Omega", "Alpha"]);
+        await expect.poll(rail).toBe(plain);
+        await popup.keyboard.press("Escape");
+        await popup.mouse.up();
+        await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▾ Research", "Gamma", "Delta", "Epsilon", "Omega"]);
+    });
+
     test("TC-243: Show on a page saved inside a closed window opens the window to point at it", async ({ context, popup }) => {
         await seedLibrary(
             popup,

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import {
     addCategory,
+    categoriesWithPlaced,
     CATEGORY_COLOR_PALETTE,
     getCategoryColorHex,
     getTabCategory,
@@ -19,6 +20,8 @@ import { Slotted } from "../Slotted";
 import { showErrorToast, showUndoToast } from "../toastStore";
 import { strings } from "../strings";
 import type { Library } from "../main/useLibrary";
+import { usePointerDrag } from "../usePointerDrag";
+import type { DropSide } from "../dragModel";
 import controls from "../controls.module.css";
 import styles from "./Settings.module.css";
 
@@ -42,34 +45,51 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
     }, [library]);
     const [newName, setNewName] = useState("");
     const [paletteFor, setPaletteFor] = useState<string | null>(null);
-    const [dragName, setDragName] = useState<string | null>(null);
-    // Where a dragged category would land: the line above or below the row under the pointer, kept
-    // while the pointer is anywhere on the list (crossing a row's parts or the line between two),
-    // so letting go lands where it shows.
-    const [dropAt, setDropAt] = useState<{ name: string; side: "before" | "after" } | null>(null);
-    const landing = useRef<{ name: string; side: "before" | "after" } | null>(null);
-    const land = (at: { name: string; side: "before" | "after" } | null) => {
-        landing.current = at;
-        setDropAt((shown) => (shown?.name === at?.name && shown?.side === at?.side ? shown : at));
-    };
-    const endDrag = () => {
-        setDragName(null);
-        land(null);
-    };
-    // Dragged off the list: no line, and letting go moves nothing. (Entering counts too: over a
-    // text field Chrome sends no dragover.)
+    // While a category is dragged, the list shows it where letting go would put it (in the order
+    // reorderCategories will write); after the drop, until the list arrives in that order. `base`:
+    // the order it was worked out from (changed meanwhile, from elsewhere, the drag is off).
+    type To = { name: string; side: DropSide };
+    const [preview, setPreview] = useState<{ dragged: string; to: To; base: string; dropped: boolean } | null>(null);
+    const base = settings.categories.join("\n");
+    const shown = preview !== null && preview.base === base ? preview : null;
+    const order = (shown && categoriesWithPlaced(settings.categories, shown.dragged, shown.to.name, shown.to.side)) || settings.categories;
+    const drag = usePointerDrag<To>({
+        list: listRef,
+        pickUp: (target) => {
+            const li = target.closest<HTMLElement>("li[data-category]");
+            // (Not while it's being renamed, or asks whether to remove it: those are its own.)
+            if (!li?.dataset.category || li.querySelector("input, [role='group']")) return null;
+            return { key: li.dataset.category, el: li };
+        },
+        targets: (list) => [...list.querySelectorAll<HTMLElement>("li[data-category]")].map((el) => ({ key: el.dataset.category!, el })),
+        movers: (list) => [...list.querySelectorAll<HTMLElement>("li[data-category]")].map((el) => ({ key: el.dataset.category!, el })),
+        resolve: (_dragged, at) => ({ name: at.key, side: at.side }),
+        same: (a, b) => a.name === b.name && a.side === b.side,
+        onPreview: (dragged, to) => {
+            setPaletteFor(null);
+            setPreview(to && { dragged, to, base, dropped: false });
+        },
+        onDrop: (dragged, to) => {
+            if (!to) return setPreview(null);
+            setPreview((was) => was && { ...was, dropped: true });
+            void reorderCategories(dragged, to.name, to.side)
+                .catch((err) => showErrorToast(writeErrorMessage(err)))
+                .finally(reload);
+        },
+        elementOf: (name) => listRef.current?.querySelector<HTMLElement>(`li[data-category="${CSS.escape(name)}"]`) ?? null,
+        liftClass: styles.lifted,
+    });
+    // Once the list arrives in its new order it's the list's own again (or after a moment, should
+    // the move have failed); changed from elsewhere mid-drag, the category goes back.
     useEffect(() => {
-        if (!dragName) return;
-        const offList = (e: DragEvent) => {
-            if (!listRef.current?.contains(e.target as Node)) land(null);
-        };
-        document.addEventListener("dragenter", offList);
-        document.addEventListener("dragover", offList);
-        return () => {
-            document.removeEventListener("dragenter", offList);
-            document.removeEventListener("dragover", offList);
-        };
-    }, [dragName]);
+        if (!preview || preview.base === base) {
+            if (!preview?.dropped) return;
+            const forget = setTimeout(() => setPreview(null), 2000);
+            return () => clearTimeout(forget);
+        }
+        if (preview.dropped) setPreview(null);
+        else drag.cancel();
+    });
     const [days, setDays] = useState(String(settings.outdatedDays));
     // Every load resets the field to what's stored, so a change that failed to save doesn't linger.
     useEffect(() => setDays(String(library.settings.outdatedDays)), [library]);
@@ -162,24 +182,9 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                 ref={listRef}
                 class={styles.categories}
                 aria-label={strings.configuredCategories}
-                onDragOver={(e) => {
-                    if (!dragName || !landing.current) return;
-                    e.preventDefault();
-                    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-                }}
-                onDrop={(e) => {
-                    e.preventDefault();
-                    const dragged = dragName;
-                    const to = landing.current;
-                    endDrag();
-                    if (dragged && to) {
-                        void reorderCategories(dragged, to.name, to.side)
-                            .catch((err) => showErrorToast(writeErrorMessage(err)))
-                            .finally(reload);
-                    }
-                }}
+                onPointerDown={drag.onPointerDown}
             >
-                {settings.categories.map((name, index) => (
+                {order.map((name, index) => (
                     <CategoryRow
                         key={name}
                         name={name}
@@ -189,26 +194,10 @@ export function CategoriesTab({ library, reload }: { library: Library; reload: (
                         archivedCount={archived.filter((t) => getTabCategory(t) === name).length}
                         onRemoved={() => (focusRowAt.current = index)}
                         isFirst={index === 0}
-                        isLast={index === settings.categories.length - 1}
+                        isLast={index === order.length - 1}
                         paletteOpen={paletteFor === name}
                         onTogglePalette={(open) => setPaletteFor(open ? name : null)}
-                        dragging={dragName === name}
-                        dropSide={dropAt?.name === name ? dropAt.side : null}
-                        drag={{
-                            onDragStart: (e) => {
-                                setDragName(name);
-                                if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-                            },
-                            onDragEnd: endDrag,
-                            onDragOver: (e) => {
-                                if (!dragName) return;
-                                // Over its own row there's nowhere to go: no line, and no drop.
-                                if (dragName === name) return land(null);
-                                const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                land({ name, side: e.clientY < box.top + box.height / 2 ? "before" : "after" });
-                                e.preventDefault();
-                            },
-                        }}
+                        dragging={drag.dragging === name}
                         reload={reload}
                         {...waitingProps(name)}
                     />
@@ -270,14 +259,8 @@ function CategoryRow(props: WaitingProps & {
     isLast: boolean;
     paletteOpen: boolean;
     onTogglePalette: (open: boolean) => void;
+    /** It's in hand: this row is the empty place it will land in, its copy following the pointer. */
     dragging: boolean;
-    /** A category is dragged over this row: the line shows where it would land, above or below. */
-    dropSide: "before" | "after" | null;
-    drag: {
-        onDragStart: (e: DragEvent) => void;
-        onDragEnd: () => void;
-        onDragOver: (e: DragEvent) => void;
-    };
     reload: () => Promise<void>;
 }) {
     const { name } = props;
@@ -398,7 +381,7 @@ function CategoryRow(props: WaitingProps & {
     if (confirming) {
         const count = props.tabCount + props.archivedCount;
         return (
-            <li class={`${styles.category} ${styles.confirming}`}>
+            <li class={`${styles.category} ${styles.confirming}`} data-category={name}>
                 <div class={styles.confirmText} id={`remove-${name}-detail`}>
                     <strong>{strings.removeConfirmTitle(name)}</strong>
                     <span title={strings.removeConfirmDetail(count, props.archivedCount)}>{strings.removeConfirmDetail(count, props.archivedCount)}</span>
@@ -425,9 +408,9 @@ function CategoryRow(props: WaitingProps & {
         );
     }
 
-    const classes = [styles.category, props.dragging ? styles.dragging : "", props.dropSide === "before" ? styles.dropBefore : props.dropSide === "after" ? styles.dropAfter : ""].join(" ");
+    const classes = [styles.category, props.dragging ? styles.slot : ""].join(" ");
     return (
-        <li ref={rowRef} class={classes} draggable={!renaming} {...(renaming ? {} : props.drag)}>
+        <li ref={rowRef} class={classes} data-category={name}>
             <span class={styles.grip} aria-hidden="true">
                 <Icon name="grip" size={14} />
             </span>

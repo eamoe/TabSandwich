@@ -99,11 +99,24 @@
 /* Fixed height, and the color picker and messages float over it: opening either never moves the rows. */
 .category { position: relative; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 2px; border-bottom: 1px solid var(--line); }
 .category:last-child { border-bottom: 0; }
-.category.dragging { opacity: 0.45; }
-/* Where a dragged category would land: a line on the border above or below the row it's over, as in the tab list. */
-.category.dropBefore::before, .category.dropAfter::before { content: ""; position: absolute; left: 0; right: 0; height: 3px; border-radius: 2px; background: var(--accent); pointer-events: none; z-index: 2; }
-.category.dropBefore::before { top: -2px; }
-.category.dropAfter::before { bottom: -2px; }
+/* A dragged category's row, while it's in hand: the empty place it will land in, as in the tab list. */
+.category.slot {
+    border-bottom-color: transparent;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    outline: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+    outline-offset: -1.5px;
+}
+.category.slot > * { visibility: hidden; }
+/* Its copy in hand, following the pointer (usePointerDrag scales it up a little). */
+/* The card reaches 6px past the row by its shadow, not by padding: its contents stay where they'll land. */
+.lifted {
+    border-bottom-color: transparent;
+    border-radius: 6px;
+    background: var(--surface);
+    box-shadow: 0 0 0 6px var(--surface), 0 0 0 7px var(--line), var(--row-drag);
+    cursor: grabbing;
+}
 .grip { color: var(--ink-3); cursor: grab; display: flex; }
 .colorDot { width: 18px; height: 18px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; flex-shrink: 0; box-shadow: inset 0 0 0 1px var(--ring); }
 .colorDot:hover, .colorDot[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--ring), 0 0 0 3px var(--surface-2); }

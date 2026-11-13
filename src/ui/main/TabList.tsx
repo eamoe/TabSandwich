@@ -6,7 +6,9 @@ import { getTabCategory, UNCATEGORIZED } from "../../domain/CategoryRepository";
 import type { PickerOption } from "../CategoryPicker";
 import { strings } from "../strings";
 import { showNoteToast } from "../toastStore";
-import { dropTarget, edgeScrollSpeed, groupItems, isTabAged, reorderTarget, stoppedAtPinLine, type DropSide, type ListItem, type Move } from "./listModel";
+import { tabsWithPlaced } from "../../domain/TabRepository";
+import { usePointerDrag, type Keyed } from "../usePointerDrag";
+import { dropTarget, groupItems, isTabAged, reorderTarget, stoppedAtPinLine, type ListItem, type Move } from "./listModel";
 import { GroupRow, type GroupAction } from "./GroupRow";
 import { TabRow, type EditOutcome, type TabEdits } from "./TabRow";
 import styles from "./TabList.module.css";
@@ -84,14 +86,13 @@ export function TabList(props: {
     onEscape: () => void;
 }) {
     const listRef = useRef<HTMLUListElement>(null);
-    const [dragId, setDragId] = useState<string | null>(null);
-    // The row a dragged tab is over, and which half: where the insertion line shows.
-    const [dropAt, setDropAt] = useState<{ key: string; side: DropSide } | null>(null);
-    // Where letting go now would put the tab: the place the line shows, kept while the pointer
-    // crosses the gap between two rows (which is no row's), so a drop on the line itself lands.
-    const landing = useRef<{ key: string; side: DropSide; move: Move } | null>(null);
-    // Over a place the pinned line keeps the dragged tab from: let go there, and the note says why it went back.
-    const overPinLine = useRef(false);
+    // While a tab is dragged, the list shows it where letting go would put it (in the order
+    // placeTab will write, so it lands exactly there); after the drop, until the list arrives in
+    // that order. `base` is the list it was worked out from: should another part of the extension
+    // change the library meanwhile, the drag is off.
+    const [preview, setPreview] = useState<{ dragged: string; move: Move; base: string; dropped: boolean } | null>(null);
+    const base = props.tabs.map((t) => `${t.id}:${t.groupId ?? ""}:${t.pinned ? 1 : 0}`).join(" ");
+    const shown = preview !== null && preview.base === base ? preview : null;
     // The row the keyboard is on (the first one until focus lands somewhere), and a row to move
     // focus to once the list has re-rendered: the neighbor of a deleted row, or a moved row
     // (moving a focused element in the page drops its focus).
@@ -99,8 +100,12 @@ export function TabList(props: {
     const pendingFocus = useRef<string | null>(null);
     const [announcement, setAnnouncement] = useState("");
 
-    const items: ListItem[] = props.grouped ? groupItems(props.tabs, props.groups) : props.tabs.map((tab) => ({ kind: "tab", tab }));
-    const rows = screenRows(items);
+    const itemsOf = (tabs: SavedTab[]): ListItem[] => (props.grouped ? groupItems(tabs, props.groups) : tabs.map((tab) => ({ kind: "tab", tab })));
+    // The list as it is: what a move or a drop is worked out from.
+    const items = itemsOf(props.tabs);
+    // The list as shown: while a tab is dragged, with it where it will land.
+    const shownItems = shown ? itemsOf(tabsWithPlaced(props.tabs, shown.dragged, shown.move.to, shown.move.side ?? "before", shown.move.group) ?? props.tabs) : items;
+    const rows = screenRows(shownItems);
     const current = rows.some((r) => r.key === currentKey) ? currentKey : (rows[0]?.key ?? null);
 
     const rowElement = (key: string) =>
@@ -117,24 +122,6 @@ export function TabList(props: {
             pendingFocus.current = null;
             focusRow(key);
         }
-    });
-
-    // Where each row stood just before a drop, until the list shows the new order: then each row
-    // that moved slides from there to its new place instead of jumping. (Forgotten after a while,
-    // should the move have been refused or failed.)
-    const slideFrom = useRef<{ at: number; order: string; tops: Map<string, number>; dropped: string } | null>(null);
-    useLayoutEffect(() => {
-        const from = slideFrom.current;
-        const list = listRef.current;
-        if (!from || !list) return;
-        if (performance.now() - from.at > SLIDE_WAIT_MS) {
-            slideFrom.current = null;
-            return;
-        }
-        const now = placedRows(list);
-        if (now.order === from.order) return;
-        slideFrom.current = null;
-        slideRows(list, from.tops, now.tops, from.dropped);
     });
 
     // A live region only speaks when its text changes, so a repeated message gets a different
@@ -218,42 +205,49 @@ export function TabList(props: {
         (rowElement(props.highlight.id) ?? rowElement(groupKey(props.highlight.id)))?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, [props.highlight]);
 
-    /** The line shows (or goes), and letting go would land there. */
-    const land = (at: { key: string; side: DropSide; move: Move } | null) => {
-        landing.current = at;
-        setDropAt((shown) => (shown?.key === at?.key && shown?.side === at?.side ? shown : at && { key: at.key, side: at.side }));
-    };
-    // While a tab is dragged: off the list (onto the header, the filters, out of the window) there's
-    // no line and no drop; near the list's top or bottom edge, or past it, the list scrolls, so a
-    // tab can go anywhere in it, not only among the rows in view.
+    const pinnedTab = (id: string) => items.some((i) => (i.kind === "tab" ? [i.tab] : i.tabs).some((t) => t.id === id && t.pinned));
+    const drag = usePointerDrag<Move>({
+        list: listRef,
+        pickUp: (target) => {
+            if (!props.canReorder || props.selecting) return null;
+            const li = target.closest<HTMLElement>("li[data-tab-id]");
+            // (Not a row being edited: its form is for typing.)
+            if (!li?.dataset.tabId || !listRef.current?.contains(li) || li.querySelector("form")) return null;
+            return { key: li.dataset.tabId, el: li };
+        },
+        // Each tab's row, and each saved window's own row (not the tabs it holds), top to bottom.
+        targets: (list) =>
+            [...list.querySelectorAll<HTMLElement>("li[data-tab-id], li[data-group-id] > :first-child")].map(
+                (el): Keyed => (el.dataset.tabId ? { key: el.dataset.tabId, el } : { key: groupKey(el.parentElement!.dataset.groupId!), el })
+            ),
+        movers: (list) =>
+            [...list.querySelectorAll<HTMLElement>("li[data-tab-id], li[data-group-id]")].map((el) => ({ key: el.dataset.tabId ?? groupKey(el.dataset.groupId!), el })),
+        // The tested rules of where a tab may go, unchanged: over a saved window's row or a tab's.
+        resolve: (dragged, at) =>
+            at.key.startsWith("group:") ? dropTarget(items, dragged, { groupId: at.key.slice(6) }, at.side) : dropTarget(items, dragged, { tabId: at.key }, at.side),
+        same: (a, b) => a.to === b.to && a.group === b.group && a.side === b.side,
+        onPreview: (dragged, move) => setPreview(move && { dragged, move, base, dropped: false }),
+        onDrop: (dragged, move, refused) => {
+            // Past the pinned line, it lands at the line; the note says why it went no further.
+            if (refused) showNoteToast(strings.pinLineDrag(pinnedTab(dragged)));
+            if (!move) return setPreview(null);
+            setPreview((shown) => shown && { ...shown, dropped: true });
+            void props.onReorder(dragged, move);
+        },
+        elementOf: (key) => rowElement(key) ?? null,
+        liftClass: styles.lifted,
+    });
+    // Once the list arrives in its new order, it's the list's own again (or, should the move have
+    // failed, after a moment). Changed from elsewhere in the middle of a drag, the tab goes back.
     useEffect(() => {
-        if (!dragId) return;
-        const scroller = scrollParent(listRef.current);
-        let pointerY: number | null = null;
-        const track = (e: DragEvent) => {
-            pointerY = e.clientY;
-            if (listRef.current?.contains(e.target as Node)) return;
-            land(null);
-            // (Off the list, letting go is no attempt at the pinned line, so it says nothing about it.)
-            overPinLine.current = false;
-        };
-        let frame = requestAnimationFrame(function scroll() {
-            if (scroller && pointerY !== null) {
-                // Its edges as seen: a list running past the window's bottom scrolls from there.
-                const box = scroller.getBoundingClientRect();
-                scroller.scrollTop += edgeScrollSpeed(pointerY, Math.max(box.top, 0), Math.min(box.bottom, window.innerHeight));
-            }
-            frame = requestAnimationFrame(scroll);
-        });
-        // (Entering counts too: over a text field Chrome sends no dragover at all.)
-        document.addEventListener("dragenter", track);
-        document.addEventListener("dragover", track);
-        return () => {
-            cancelAnimationFrame(frame);
-            document.removeEventListener("dragenter", track);
-            document.removeEventListener("dragover", track);
-        };
-    }, [dragId]);
+        if (!preview || preview.base === base) {
+            if (!preview?.dropped) return;
+            const forget = setTimeout(() => setPreview(null), 2000);
+            return () => clearTimeout(forget);
+        }
+        if (preview.dropped) setPreview(null);
+        else drag.cancel();
+    });
 
     const liveRegion = (
         <p class="visually-hidden" role="status" aria-live="polite">
@@ -272,58 +266,6 @@ export function TabList(props: {
         );
     }
 
-    const endDrag = () => {
-        setDragId(null);
-        land(null);
-        overPinLine.current = false;
-    };
-    const pinnedTab = (id: string) => items.some((i) => (i.kind === "tab" ? [i.tab] : i.tabs).some((t) => t.id === id && t.pinned));
-    /** The half of the row under the pointer: the tab lands above the row, or below it. */
-    const sideOf = (e: DragEvent): DropSide => {
-        const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        return e.clientY < box.top + box.height / 2 ? "before" : "after";
-    };
-    /** Drag handlers for a row, given where a drop on it (on which half) would put the dragged tab. */
-    const dragHandlersFor = (key: string, dragOwnId: string | null, targetFor: (dragged: string, side: DropSide) => Move | null) => ({
-        onDragStart: (e: DragEvent) => {
-            if (!dragOwnId) return;
-            setDragId(dragOwnId);
-            if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-        },
-        onDragEnd: () => {
-            if (dragId && overPinLine.current) showNoteToast(strings.pinLineDrag(pinnedTab(dragId)));
-            endDrag();
-        },
-        onDragOver: (e: DragEvent) => {
-            // (Nothing to do for anything that isn't a tab being dragged.)
-            if (!dragId) return;
-            const side = sideOf(e);
-            // Over its own row there's no place to go; over a place past the pinned line, none either,
-            // and letting go there says why. Either way the line goes, and so does the drop.
-            const move = key === dragId ? null : targetFor(dragId, side);
-            overPinLine.current = key !== dragId && !move;
-            land(move && { key, side, move });
-            if (!move) return;
-            e.preventDefault();
-            if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-        },
-    });
-    // The list's own: a drop in the gap between rows lands where the line shows, as one on a row does.
-    const listDragOver = (e: DragEvent) => {
-        if (!dragId || !landing.current) return;
-        e.preventDefault();
-        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-    };
-    const listDrop = (e: DragEvent) => {
-        e.preventDefault();
-        const dragged = dragId;
-        const to = landing.current?.move;
-        endDrag();
-        if (!dragged || !to) return;
-        if (listRef.current && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) slideFrom.current = { at: performance.now(), ...placedRows(listRef.current), dropped: `tab:${dragged}` };
-        props.onReorder(dragged, to);
-    };
-
     let order = 0;
     const tabRow = (tab: SavedTab) => {
         const category = getTabCategory(tab);
@@ -339,7 +281,8 @@ export function TabList(props: {
                 match={props.matches?.get(tab.id) ?? null}
                 windowName={props.searchActive ? (props.windowOf.get(tab.id) ?? null) : null}
                 showCategory={props.showCategory}
-                entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
+                // (Dragged into or out of a saved window, its row is made anew there: without an entrance.)
+                entrance={props.searchActive || drag.dragging === tab.id ? "none" : props.entered ? "drop" : "rise"}
                 entranceDelayMs={Math.min(index, STAGGER_CAP) * STAGGER_MS}
                 flashSeq={props.highlight?.id === tab.id ? props.highlight.seq : null}
                 draggable={props.canReorder && !props.selecting}
@@ -347,8 +290,7 @@ export function TabList(props: {
                 selecting={props.selecting}
                 selected={props.selected.has(tab.id)}
                 onToggleSelect={(range) => props.onToggleSelect(tab, range)}
-                dragging={dragId === tab.id}
-                dropSide={dropAt?.key === tab.id ? dropAt.side : null}
+                dragging={drag.dragging === tab.id}
                 editOptions={props.editOptions}
                 colorOf={props.colorOf}
                 onOpen={() => props.onOpen(tab)}
@@ -357,7 +299,6 @@ export function TabList(props: {
                 onTogglePin={() => props.onTogglePin(tab)}
                 inArchive={props.inArchive}
                 onRestore={() => props.onRestore(tab)}
-                dragHandlers={dragHandlersFor(tab.id, tab.id, (dragged, side) => dropTarget(items, dragged, { tabId: tab.id }, side))}
             />
         );
     };
@@ -369,27 +310,24 @@ export function TabList(props: {
                 class={styles.list}
                 aria-label={strings.savedTabsLabel}
                 onKeyDown={onKeyDown}
-                onDragOver={listDragOver}
-                onDrop={listDrop}
+                onPointerDown={drag.onPointerDown}
                 onFocusIn={(e) => {
                     const li = (e.target as HTMLElement).closest<HTMLElement>("li[data-tab-id], li[data-group-id]");
                     const key = li?.dataset.tabId ?? (li?.dataset.groupId ? groupKey(li.dataset.groupId) : undefined);
                     if (key) setCurrentKey(key);
                 }}
             >
-                {items.map((item) => {
+                {shownItems.map((item) => {
                     if (item.kind === "tab") return tabRow(item.tab);
                     const { group, tabs } = item;
                     const key = groupKey(group.id);
-                    const drag = dragHandlersFor(key, null, (dragged, side) => dropTarget(items, dragged, { groupId: group.id }, side));
                     return (
                         <GroupRow
                             key={key}
                             group={group}
                             tabs={tabs}
                             current={key === current}
-                            dropSide={dropAt?.key === key ? dropAt.side : null}
-                            dragHandlers={drag}
+                            receiving={drag.dragging !== null && shown?.move.group === group.id}
                             flashSeq={props.highlight?.id === group.id ? props.highlight.seq : null}
                             entrance={props.searchActive ? "none" : props.entered ? "drop" : "rise"}
                             entranceDelayMs={Math.min(order++, STAGGER_CAP) * STAGGER_MS}
@@ -412,52 +350,4 @@ export function TabList(props: {
             {liveRegion}
         </>
     );
-}
-
-/** The element that scrolls the list: in the popup and the side panel, the main area around it. */
-function scrollParent(el: HTMLElement | null): HTMLElement | null {
-    for (let at = el?.parentElement ?? null; at; at = at.parentElement) {
-        if (/auto|scroll/.test(getComputedStyle(at).overflowY)) return at;
-    }
-    return null;
-}
-
-/** How long a dropped tab's rows take to slide into place, and how long a drop waits for its new order. */
-const SLIDE_MS = 220;
-const SLIDE_WAIT_MS = 2000;
-/** A row this far above or below the list's visible part still slides: it's about to come into sight. */
-const SLIDE_MARGIN = 80;
-
-/** Every row on screen (tabs and saved windows), top to bottom: their order, and where each stands. */
-function placedRows(list: HTMLElement): { order: string; tops: Map<string, number> } {
-    const tops = new Map<string, number>();
-    for (const li of list.querySelectorAll<HTMLElement>("li[data-tab-id], li[data-group-id]")) tops.set(rowKeyOf(li), li.getBoundingClientRect().top);
-    return { order: [...tops.keys()].join(" "), tops };
-}
-const rowKeyOf = (li: HTMLElement) => (li.dataset.tabId ? `tab:${li.dataset.tabId}` : `group:${li.dataset.groupId}`);
-
-/**
- * Each row that moved starts where it stood and slides to where it is now; the dropped one
- * (`dropped`) over the rows it passes, not under them. A tab inside a saved window moves with its
- * window, so only its own move within it is its to show. Rows out of sight before and after
- * don't slide: in a library of hundreds, a long move would start hundreds of slides nobody sees.
- */
-function slideRows(list: HTMLElement, before: Map<string, number>, after: Map<string, number>, dropped: string) {
-    const moved = (key: string) => (before.get(key) ?? after.get(key)!) - after.get(key)!;
-    const view = scrollParent(list)?.getBoundingClientRect();
-    const top = Math.max(view?.top ?? 0, 0) - SLIDE_MARGIN;
-    const bottom = Math.min(view?.bottom ?? window.innerHeight, window.innerHeight) + SLIDE_MARGIN;
-    const inSight = (y: number) => y >= top && y <= bottom;
-    for (const li of list.querySelectorAll<HTMLElement>("li[data-tab-id], li[data-group-id]")) {
-        const key = rowKeyOf(li);
-        if (!before.has(key) || !(inSight(before.get(key)!) || inSight(after.get(key)!))) continue;
-        const savedWindow = li.parentElement?.closest<HTMLElement>("li[data-group-id]");
-        const by = moved(key) - (savedWindow ? moved(rowKeyOf(savedWindow)) : 0);
-        if (Math.abs(by) < 1) continue;
-        const slide = li.animate([{ transform: `translateY(${by}px)` }, { transform: "none" }], { duration: SLIDE_MS, easing: "cubic-bezier(0.2, 0, 0, 1)" });
-        if (key === dropped) {
-            li.style.zIndex = "2";
-            void slide.finished.catch(() => undefined).then(() => li.style.removeProperty("z-index"));
-        }
-    }
 }

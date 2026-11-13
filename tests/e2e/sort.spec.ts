@@ -54,11 +54,11 @@ test.describe("Sorting", () => {
     });
 
     test("TC-205: rows can only be dragged in your own order", async ({ popup }) => {
-        await expect(row(popup, "Bravo")).toHaveAttribute("draggable", "true");
+        await expect(row(popup, "Bravo")).toHaveAttribute("data-draggable", "true");
         await chooseSort(popup, "Newest first");
-        await expect(row(popup, "Bravo")).not.toHaveAttribute("draggable", "true");
+        await expect(row(popup, "Bravo")).not.toHaveAttribute("data-draggable", "true");
         await chooseSort(popup, "Your order");
-        await expect(row(popup, "Bravo")).toHaveAttribute("draggable", "true");
+        await expect(row(popup, "Bravo")).toHaveAttribute("data-draggable", "true");
     });
 
     test("TC-206: the sort menu works from the keyboard", async ({ popup }) => {

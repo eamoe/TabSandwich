@@ -110,16 +110,31 @@ test.describe("Categories in Settings", () => {
         await expect.poll(async () => (await storedSettings(popup)).categories).toEqual(["Entertainment", "Work", "Personal", "Reading"]);
     });
 
-    test("TC-159: onto a row's lower half it goes below, whichever way it came, and the line shows where first", async ({ popup }) => {
+    test("TC-159: onto a row's lower half it goes below, whichever way it came, and the rows make room there first", async ({ popup }) => {
         const rowOf = (name: string) => categoryList(popup).getByRole("listitem").filter({ hasText: name });
+        // The categories as the list shows them, top to bottom (the dragged one's empty place included).
+        const shown = () => categoryList(popup).evaluate((ul) => [...ul.querySelectorAll<HTMLElement>("li[data-category]")].map((li) => li.dataset.category));
         const work = (await rowOf("Work").boundingBox())!;
         const personal = (await rowOf("Personal").boundingBox())!;
         await popup.mouse.move(work.x + 10, work.y + 22);
         await popup.mouse.down();
         await popup.mouse.move(personal.x + 120, personal.y + personal.height - 8, { steps: 6 });
-        // The line, on Personal's lower edge (it's only drawn: no role or name to find it by).
-        await expect.poll(() => rowOf("Personal").evaluate((li) => /dropAfter/.test(li.className))).toBe(true);
+        await expect.poll(shown).toEqual(["Personal", "Work", "Reading", "Entertainment"]);
+        expect((await storedSettings(popup)).categories).toEqual(["Work", "Personal", "Reading", "Entertainment"]);
         await popup.mouse.up();
         await expect.poll(async () => (await storedSettings(popup)).categories).toEqual(["Personal", "Work", "Reading", "Entertainment"]);
+
+        // Escape puts one back, and nothing is saved.
+        const reading = (await rowOf("Reading").boundingBox())!;
+        await popup.mouse.move(reading.x + 10, reading.y + 22);
+        await popup.mouse.down();
+        await popup.mouse.move(reading.x + 120, (await rowOf("Personal").boundingBox())!.y + 6, { steps: 6 });
+        await expect.poll(shown).toEqual(["Reading", "Personal", "Work", "Entertainment"]);
+        await popup.keyboard.press("Escape");
+        await expect.poll(shown).toEqual(["Personal", "Work", "Reading", "Entertainment"]);
+        await popup.mouse.up();
+        expect((await storedSettings(popup)).categories).toEqual(["Personal", "Work", "Reading", "Entertainment"]);
+        // Escape went to the drag, not to Settings (which it would close).
+        await expect(categoryList(popup)).toBeVisible();
     });
 });

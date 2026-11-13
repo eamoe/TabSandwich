@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH, tidyTitle, MAX_TITLE_LENGTH, recordOpen } from "../../src/domain/TabRepository";
+import { addTab, addTabs, deleteTab, deleteTabs, moveTab, placeTab, tabsWithPlaced, restoreCategories, restoreTabs, setCategoryOf, undoMoveTab, editTab, putBackTab, refreshTab, reorderTabs, restoreTab, setPinned, archiveTabs, unarchiveTabs, tidyNote, MAX_NOTE_LENGTH, tidyTitle, MAX_TITLE_LENGTH, recordOpen } from "../../src/domain/TabRepository";
 import { makeGroup, makeTab, seed, seedGroups, storedGroups, storedTabs } from "./helpers";
 import { storage } from "./setup";
 
@@ -195,6 +195,27 @@ describe("moveTab / undoMoveTab", () => {
         await placeTab(tabs[2].id, tabs[2].id, "before", null);
         expect(storedTabs()[0]).toEqual(expect.objectContaining({ id: tabs[2].id }));
         expect(storedTabs()[0]).not.toHaveProperty("groupId");
+    });
+
+    it("tabsWithPlaced is the order placeTab writes, so a drag's preview is where the tab lands", async () => {
+        const tabs = [makeTab({ groupId: "g" }), makeTab({ groupId: "g" }), makeTab(), makeTab()];
+        const cases: [string, string, "before" | "after", string | null][] = [
+            [tabs[0].id, tabs[3].id, "before", null],
+            [tabs[0].id, tabs[3].id, "after", null],
+            [tabs[2].id, tabs[1].id, "before", "g"],
+            [tabs[3].id, tabs[0].id, "after", "g"],
+            [tabs[1].id, tabs[1].id, "after", null],
+        ];
+        for (const [dragged, target, side, group] of cases) {
+            seed(tabs);
+            const preview = tabsWithPlaced(tabs, dragged, target, side, group);
+            await placeTab(dragged, target, side, group);
+            expect(preview).toEqual(storedTabs());
+        }
+        // The list it's given stays as it was.
+        expect(tabs[0].groupId).toBe("g");
+        expect(tabsWithPlaced(tabs, "nope", tabs[0].id, "before", null)).toBeNull();
+        expect(tabsWithPlaced(tabs, tabs[0].id, "nope", "before", null)).toBeNull();
     });
 });
 

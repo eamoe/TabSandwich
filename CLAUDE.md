@@ -54,9 +54,9 @@ src/
                             so two overlapping mutations can't lose one's update
   domain/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
-                           move into or out of a saved window, move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
+                           move into or out of a saved window (tabsWithPlaced: the order a drop writes, pure, so a drag can show it first), move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
-    CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
+    CategoryRepository.ts add/rename/remove/reorder categories (categoriesWithPlaced: a drop's order, pure), color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
@@ -112,13 +112,19 @@ src/
                              (a count is a whole sentence per plural form; "{}" marks a key cap or field in a sentence)
     i18n.ts                 which dictionary Chrome's language gets (Chrome's own _locales rule), plural rules, "{}" slots — pure
     Slotted.tsx             a sentence with a key cap or a field inside it, wherever the language puts it
+    usePointerDrag.ts       dragging a row to a new place with the mouse, a pen or a finger (the app's own, not the browser's drag and drop):
+                             picked up after a few pixels (a finger: after holding still 250 ms), a copy follows the pointer, the rows slide apart to show where it
+                             lands (the owner shows the list in that order), the list scrolls at its edges, Escape puts it back;
+                             rows measured once per change, moved only by transforms. The tab list and Settings › Categories use it
+    dragModel.ts            its pure rules: which row and half the pointer is over (no dead space between rows), edge-scroll
+                             speed, when a press becomes a drag (and when a finger's hold gives way to a scroll) — logic-tested
     pageLanguage.ts         each page's lang and tab name, which the HTML can only say in English
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
                             when the popup is too short, never clipped by the list
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
-    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
+    SiteIcon.tsx            a site's icon from Chrome's local cache, on a plain tile (light) or the site's tint (dark), a tinted first letter without one;
                              a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
     CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error; across the popup and panel, sized to its message on the
@@ -151,20 +157,21 @@ src/
       EmptyStates.tsx       the first-run welcome and tips, "no saved tabs match" (offering the archive when it has a match),
                              "everything's in the archive", and the "What's new" note
       TabList.tsx / TabRow.tsx  the list: tinted, outlined rows (buttons Edit · Archive · Pin on hover or keyboard focus,
-                             Pin last so it takes the pin mark's place); edit form; drag to reorder (a drop lands where the line
-                             shows, in the gap too; the list scrolls at its edges; moved rows slide into place); entrance motion;
+                             Pin last so it takes the pin mark's place); edit form; drag to reorder (usePointerDrag: while a tab is
+                             in hand the list shows it where it will land, in the order placeTab writes; a saved window lights up
+                             when it will go in); entrance motion;
                              the list's keys (arrows, Enter, E, P to pin, Delete, Alt+arrows to move, → ← for windows, Space to pick
                              while selecting, Escape), one Tab stop; rows become checkboxes while selecting
       GroupRow.tsx          a saved window's row (a small stack): opens to show its tabs; ⋯ menu; rename in place
       listModel.ts          pure list rules (filter options and order, filtering (the archive only on its own pill), sorting, site names, saved windows
-                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), how fast a drag scrolls the list (edgeScrollSpeed), where a move or drop takes a tab: into or out of a window,
+                             in the list and each tab's window name, random window names, pinned tabs first, the cleanup tip's tabs (staleKeptTabs), where a move or drop takes a tab: into or out of a window,
                              never across the pinned line) — logic-tested
     settings/               the Settings screen: four tabs in an underlined bar (arrow keys move between them)
       SettingsScreen.tsx    header with Back, the tab bar, the panel; opens at least as tall as the main
                              screen so the popup window doesn't resize
       GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, the waiting count on the icon, reminder notifications on or off, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove (in use: asks in the row first; Undo from the toast),
-                             drag; the days field and the moon's legend above the list; the ☾ on each row (its tabs age
+                             drag (usePointerDrag; shown in the order categoriesWithPlaced gives, which is what's written); the days field and the moon's legend above the list; the ☾ on each row (its tabs age
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
@@ -264,7 +271,16 @@ run anywhere else. The image tag in `scripts/visual-docker.sh` and
 `checks.yml` must match `@playwright/test`'s version. Change the approved
 pictures only for an intended visual change: run `pnpm visual:update`, look
 at every changed picture, and show before/after in the pull request. A
-failing run's report has expected, actual and diff side by side.
+failing run's report has expected, actual and diff side by side. A picture
+that is off by a pixel only now and then can be something other than motion:
+Chromium sometimes repaints just the changed part of a tile, and edges that
+part cuts through come out slightly different. Giving that one test
+`test.use({ wholeTileRepaints: true })` (`tests/e2e/fixtures.ts`; the color
+strip's and the keyboard-focus tests have it) makes it repeatable, without a
+mask. That can also change the test's own picture by a few edge pixels (it did
+for 8 other screens), and then it's a
+re-approval like any other, with before/after shown. Never raise
+`maxDiffPixels`.
 
 What automation doesn't cover still needs a person: drag-and-drop feel,
 animation smoothness, and the manual release pass at the top of

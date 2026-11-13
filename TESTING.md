@@ -21,13 +21,13 @@ pnpm check                     # lint, typecheck, logic tests, build, robot test
 Run on the build being released (`dist/`, or the release zip unpacked), about 10 minutes:
 
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
-2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace, not racing (TC-322), and that a dropped tab slides into place (TC-323); confirm drag is off while searching (TC-119).
+2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159): the row lifts and follows the pointer, the others slide apart smoothly, and Escape puts it back (TC-324); drag one into an open saved window and watch it light up (TC-325); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace (TC-322); confirm drag is off while searching (TC-119).
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
 4. Full keyboard pass (TC-090 – TC-092, TC-095).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
-8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored; 4.0 upgrades nothing either, only adding what's new, like reminders, and the update must not disable the extension, since its new permissions show no warning; 4.1.1 changes nothing stored).
+8. Update in place from the previous release on the same profile (TC-256) — always, and especially when the release upgrades stored data (3.2 did: saved windows; 3.3 did: which categories age; 3.3.1 changes nothing stored; 4.0 upgrades nothing either, only adding what's new, like reminders, and the update must not disable the extension, since its new permissions show no warning; 4.1.1 and 4.2 change nothing stored).
 9. One-color icons (GitHub's, Chrome's gray globe) in dark mode on your real profile (TC-258).
 10. The toolbar badge on the real icon, in light and dark Chrome: readable on the purple tile, and the count coming back after a right-click save's ✓ (TC-310, TC-312).
 11. Reminders in real Chrome: set one for tomorrow, allow Chrome's prompt, and on another profile refuse it. So as not to wait a day, set `remindAt` a minute ahead from the worker's console (DevTools from `chrome://extensions`), then check the notification comes once and clicking it opens the tab (TC-304 – TC-306). On a Mac, allow Google Chrome in System Settings › Notifications first, with Focus off, or nothing will appear.
@@ -232,7 +232,7 @@ Each case: **ID**, **Preconditions**, **Steps**, **Expected Result**. Priority: 
 **TC-050 — Reorder persists (P1)** **[auto]**
 - Preconditions: 3+ saved tabs.
 - Steps: Hover a row so its drag handle (⋮⋮) replaces the icon, then drag it by the handle to a new position: once onto a row's upper half, once onto the last row's lower half.
-- Expected: While dragging, the tab being carried fades in its place, and a line in the gap shows where it will land: above the row under the pointer's upper half, below it on the lower half. The line stays put while the pointer crosses from one row into the next, and letting go on the line itself, in the gap, lands the tab there. Over the tab's own row, or off the list (on the header or the filters), there's no line, and letting go moves nothing. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
+- Expected: Once the pointer moves a few pixels, the row is picked up: a copy of it, a little larger and with a deeper shadow, follows the pointer, and where the row was is an empty, dashed place. Before you let go, the other rows slide apart to make that place where the tab will land: above the row under the pointer's upper half, below it on its lower half. The place stays put while the pointer crosses from one row into the next, the gap between them included, and letting go anywhere lands the tab exactly where the place shows; the copy settles into it. The order updates immediately (the very end of the list is reachable) and is preserved after closing/reopening the popup.
 
 **TC-051 — Reorder respects the underlying full list, not just the filtered view (P2)**
 - Preconditions: tabs across 2+ categories, filtered to one category.
@@ -542,8 +542,8 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 
 **TC-159 — Drag-and-drop also reorders categories (P2)** **[auto]**
 - Preconditions: 3+ configured categories.
-- Steps: Drag a category by its handle (⋮⋮) to a different position in the list (not just an adjacent swap).
-- Expected: While dragging, a line on the border above or below the row under the pointer (its upper or lower half, as in the tab list) shows where the category will land, and it sits exactly there when dropped, whichever way it came; order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
+- Steps: Drag a category by its handle (⋮⋮), or anywhere on its row, to a different position in the list (not just an adjacent swap); then pick one up and press Escape. Do it in the popup's Settings and in the library's.
+- Expected: As in the tab list, the row is picked up as a card that follows the pointer, and the other rows slide apart to make an empty place where it will land: above the row under the pointer's upper half, below it on its lower half. Let go, and it sits exactly there, whichever way it came; Escape puts it back and leaves Settings open. The order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
 
 **TC-160 — A category mid-rename is not draggable (P3)**
 - Steps: Click a category's name so the rename field shows → attempt to drag that row.
@@ -938,9 +938,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (for 4.1.1: 4.1.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (for 4.2.0: 4.1.1's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
-- Expected: Every tab, window, category, color, theme and sort is as it was, and so is every ☾. From 4.0.x: "New in 4.1" shows once, in Chrome's language, its last line pointing to Settings › About; your categories keep their names whatever the language (only a fresh install's starter categories come in it). A patch release (4.1.0 to 4.1.1) shows no note. From 3.2.x or earlier, only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (From before 3.3, the stored data is upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
+- Expected: Every tab, window, category, color, theme and sort is as it was, and so is every ☾. From 4.1.x: "New in 4.2" shows once, in Chrome's language (the drag, Esc, the touch hold, the white icon tiles). From 4.0.x it was "New in 4.1"; your categories keep their names whatever the language (only a fresh install's starter categories come in it). A patch release (4.1.0 to 4.1.1) shows no note. From 3.2.x or earlier, only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (From before 3.3, the stored data is upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
 ## 21. Stay Organized (v3.3)
 
@@ -973,7 +973,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-263 — Moving stops at the pinned line (P2)** **[auto]**
 - Steps: With a pinned tab on top, Alt+↑ on the first unpinned tab; drag an unpinned tab onto a pinned one's upper half, then onto the last pinned one's lower half; drag a pinned tab onto a window's row.
-- Expected: Alt+↑ doesn't move it, and a message at the bottom says "Pinned tabs stay above the others. Press P to pin this one."; the drop line shows only where the tab may land: just below the last pinned tab, never above or among them; let go anywhere else and the tab goes back, with a message saying why ("Unpin it to move it lower", or "Pin it to move it up there"); a pinned tab can't go below the line. Pinning only ever changes with the pin or P.
+- Expected: Alt+↑ doesn't move it, and a message at the bottom says "Pinned tabs stay above the others. Press P to pin this one."; dragged up over the pinned tabs, the place the tab will land goes no higher than just below the last pinned one, never above or among them; let go there and it lands just below the line, with a message saying why ("Pin it to move it up there"; a pinned tab dragged down stops at the line the same way, "Unpin it to move it lower"). Pinning only ever changes with the pin or P.
 
 **TC-264 — Archived tabs are out of the list (P1)** **[auto]**
 - Preconditions: a saved window with one of its tabs archived; an old tab in an aging category archived.
@@ -1221,8 +1221,38 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-322 — A long list scrolls while you drag (P1)** **[auto]**
 - Preconditions: More saved tabs than fit in the popup (or the side panel).
 - Steps: Drag the first tab down and hold it near the list's bottom edge; then move it back toward the middle and let go. Do the same upward, holding it near the top edge or over the filter row.
-- Expected: Near an edge the list scrolls, faster the nearer the edge, at full speed past it, and stops as soon as the tab is back away from it. The tab lands where the line shows, however far down or up that is. Scrolling is part of the drag, not decoration, so it happens with the reduce-motion setting too. Checked automatically on its own scrolling; **check by hand in real Chrome** that it doesn't also run Chrome's own (it would race).
+- Expected: Near an edge the list scrolls, faster the nearer the edge, at full speed past it, and stops as soon as the tab is back away from it. The tab lands where the room was made, however far down or up that is. Scrolling is part of the drag, not decoration, so it happens with the reduce-motion setting too.
 
-**TC-323 — A dropped tab slides into place (P2)** **[auto]**
-- Steps: Drag a tab a few rows up, and let go. Then turn on the system's reduce-motion setting and do it again.
-- Expected: The tab slides from where it was to its new place, and the rows it passed slide over by one, instead of everything jumping. With reduce motion, it just moves.
+**TC-323 — The rows slide aside as a tab passes (P2)** **[auto]**
+- Steps: Drag a tab a few rows up, slowly, and let go. Then turn on the system's reduce-motion setting and do it again.
+- Expected: Each row the tab passes slides over by one to make room, instead of jumping; once let go, the tab settles into the room made and nothing moves again. Only the rows in view slide, however long the list. With reduce motion, the rows just move (the copy in hand still follows the pointer).
+
+## 26. Smooth Drag (v4.2)
+
+**TC-324 — Putting a dragged tab back (P1)** **[auto]**
+- Steps: Pick up a tab and carry it a few rows; press Escape. Pick it up again and carry it out of the popup sideways, then let go. Pick a tab up by its title and let go over another row's title.
+- Expected: Escape puts it back where it was, the rows sliding back with it, and the search box doesn't take focus. Out of the window sideways it goes back too, and letting go there moves nothing. A drag never opens a tab, wherever it ends; a plain click on a title still does.
+
+**TC-325 — A saved window lights up as a tab goes in (P2)** **[auto]**
+- Preconditions: an open saved window, and a loose tab.
+- Steps: Drag the loose tab over the window's tabs, then on past the window, and let go; Undo. Drag one of the window's tabs out above its row.
+- Expected: While the tab's place is inside the window, its row and the rail beside its tabs light up in the accent color, and its tab count already includes it; past the window it goes back to plain. Letting go inside says "Moved into Research" with Undo, outside "Moved out of Research". A closed window takes no tabs: the place goes above or below it.
+
+**TC-326 — Dragging stays smooth in a long list (P2)**
+- Preconditions: 200 saved tabs (a backup file is the quickest way).
+- Steps: In the popup, the side panel and Settings › Categories, drag the first row to near the end, holding it at the bottom edge while the list scrolls; in light and dark.
+- Expected: The copy follows the pointer without lagging and the rows slide without stutter: a steady 60 frames a second (measured for the release with a frame recorder during a scripted drag). It lands exactly where its place showed.
+
+**TC-327 — A longer note reads whole (P2)** **[auto]**
+- Steps: In the popup, drag an unpinned tab up over a pinned one and let go (the note "Pinned tabs stay above the others. Pin it to move it up there."); in German or Russian too.
+- Expected: The note shows in full on up to two lines, with Undo (when there is one) still beside it; the list's last row isn't covered while it shows. Only a note longer than two lines ends in "…".
+
+**TC-328 — Dragging with a finger (P2)** **[auto]**
+- Preconditions: a touchscreen, or Chrome DevTools' device toolbar (touch) on the popup page opened as a tab.
+- Steps: Swipe up and down over the rows; hold a row still for a moment, then drag it; tap a title.
+- Expected: A swipe scrolls the list and picks nothing up, and no menu appears. Held still about a quarter of a second (a pixel or two of drift is fine), the row lifts under the finger and then drags just as with the mouse; the list doesn't scroll under it. A tap opens the tab.
+
+**TC-329 — Site icons on a plain tile in light (P3)**
+- Steps: In light, look at rows of different categories with sites that have icons (GitHub, a shop, a page with a white-backed icon) and one with no icon; then in dark.
+- Expected: In light, each icon sits on a white tile with a thin outline, whatever the row's color; a site with no icon shows its first letter on a tinted tile. Dark looks as before (tinted tiles, GitHub's black cat shown light).
+

@@ -149,15 +149,21 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`already-saved-${colorScheme}.png`);
         });
 
-        test("a row reached with the keyboard", async ({ popup }) => {
-            // Into the list from the search box, the way a keyboard user gets there. The search box
-            // restyles itself once focus leaves it and its edge settled a pixel differently from run
-            // to run, so it's masked: this picture is about the focused row (the unfocused search
-            // box is in the main-list pictures).
-            await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
-            await popup.keyboard.press("ArrowDown");
-            await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
-            await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`, { mask: [popup.getByRole("search")] });
+        test.describe(() => {
+            // Leaving the search box restyles it, and the focus ring moves onto a row, so Chromium
+            // repaints parts of the screen. Repainted alone (its default, picked at random), the
+            // edges those parts cut through (the search box's, the save card's site icon) came out
+            // a pixel different in about 1 run in 8. Whole-tile repaints give the approved picture
+            // every time (see `wholeTileRepaints` in tests/e2e/fixtures.ts).
+            test.use({ wholeTileRepaints: true });
+
+            test("a row reached with the keyboard", async ({ popup }) => {
+                // Into the list from the search box, the way a keyboard user gets there.
+                await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
+                await popup.keyboard.press("ArrowDown");
+                await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
+                await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`);
+            });
         });
 
         test("a saved window, closed", async ({ popup }) => {
@@ -194,10 +200,18 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`open-in-${colorScheme}.png`);
         });
 
-        test("settings: categories with the color strip open", async ({ popup }) => {
-            await openSettings(popup, "Categories");
-            await popup.getByRole("button", { name: "Color for Reading" }).click();
-            await expect(popup).toHaveScreenshot(`settings-categories-${colorScheme}.png`);
+        test.describe(() => {
+            // The strip's shadow reaches into the Work row, so opening it repaints the bottom of
+            // Work's dot and moon. Repainted alone (Chromium's default, picked at random) those
+            // edges came out a pixel different in about 1 run in 30. Whole-tile repaints give the
+            // approved picture every time (see `wholeTileRepaints` in tests/e2e/fixtures.ts).
+            test.use({ wholeTileRepaints: true });
+
+            test("settings: categories with the color strip open", async ({ popup }) => {
+                await openSettings(popup, "Categories");
+                await popup.getByRole("button", { name: "Color for Reading" }).click();
+                await expect(popup).toHaveScreenshot(`settings-categories-${colorScheme}.png`);
+            });
         });
 
         test("settings: import choice", async ({ popup }) => {
