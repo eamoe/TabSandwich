@@ -194,10 +194,18 @@ for (const colorScheme of ["light", "dark"] as const) {
             await expect(popup).toHaveScreenshot(`open-in-${colorScheme}.png`);
         });
 
-        test("settings: categories with the color strip open", async ({ popup }) => {
-            await openSettings(popup, "Categories");
-            await popup.getByRole("button", { name: "Color for Reading" }).click();
-            await expect(popup).toHaveScreenshot(`settings-categories-${colorScheme}.png`);
+        test.describe(() => {
+            // The strip's shadow reaches into the Work row, so opening it repaints the bottom of
+            // Work's dot and moon. Repainted alone (Chromium's default, picked at random) those
+            // edges came out a pixel different in about 1 run in 30. Whole-tile repaints give the
+            // approved picture every time (see `wholeTileRepaints` in tests/e2e/fixtures.ts).
+            test.use({ wholeTileRepaints: true });
+
+            test("settings: categories with the color strip open", async ({ popup }) => {
+                await openSettings(popup, "Categories");
+                await popup.getByRole("button", { name: "Color for Reading" }).click();
+                await expect(popup).toHaveScreenshot(`settings-categories-${colorScheme}.png`);
+            });
         });
 
         test("settings: import choice", async ({ popup }) => {

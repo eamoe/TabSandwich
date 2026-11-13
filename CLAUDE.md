@@ -271,7 +271,15 @@ run anywhere else. The image tag in `scripts/visual-docker.sh` and
 `checks.yml` must match `@playwright/test`'s version. Change the approved
 pictures only for an intended visual change: run `pnpm visual:update`, look
 at every changed picture, and show before/after in the pull request. A
-failing run's report has expected, actual and diff side by side.
+failing run's report has expected, actual and diff side by side. A picture
+that is off by a pixel only now and then can be something other than motion:
+Chromium sometimes repaints just the changed part of a tile, and edges that
+part cuts through come out slightly different. Giving that one test
+`test.use({ wholeTileRepaints: true })` (`tests/e2e/fixtures.ts`; the color
+strip's test has it) makes it repeatable. That can also change the test's own
+picture by a few edge pixels (it did for 8 other screens), and then it's a
+re-approval like any other, with before/after shown. Never raise
+`maxDiffPixels`.
 
 What automation doesn't cover still needs a person: drag-and-drop feel,
 animation smoothness, and the manual release pass at the top of

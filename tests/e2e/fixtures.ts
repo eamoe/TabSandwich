@@ -45,6 +45,14 @@ type Fixtures = {
      * menus) follows macOS's own list, and only the extension's pages follow it, through `locale`.
      */
     chromeLanguage: string;
+    /**
+     * Chromium repaints a changed area either alone or with the rest of its tile, and which one it
+     * picks varies from run to run. Edges that the repainted area cuts through can come out a pixel
+     * different. A screenshot test where something opens over another row's edges (the color
+     * strip's shadow over the row above) turns this on so Chromium always repaints the whole tile.
+     * It's off for every other test, whose approved pictures were taken with Chromium's default.
+     */
+    wholeTileRepaints: boolean;
     context: BrowserContext;
     popup: Page;
 };
@@ -53,7 +61,8 @@ export const test = base.extend<Fixtures>({
     keepWelcomePage: [false, { option: true }],
     notificationsAllowed: [false, { option: true }],
     chromeLanguage: ["en", { option: true }],
-    context: async ({ keepWelcomePage, notificationsAllowed, chromeLanguage }, use) => {
+    wholeTileRepaints: [false, { option: true }],
+    context: async ({ keepWelcomePage, notificationsAllowed, chromeLanguage, wholeTileRepaints }, use) => {
         if (!readFileSyncSafe(join(DIST, "manifest.json"))) {
             throw new Error("dist/ is missing — run `pnpm build` before the robot tests.");
         }
@@ -79,7 +88,7 @@ export const test = base.extend<Fixtures>({
             // The full Chromium build (not the stripped headless shell) is what can load extensions headless.
             channel: "chromium",
             viewport: { width: 380, height: 580 },
-            args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
+            args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`, ...(wholeTileRepaints ? ["--disable-partial-raster"] : [])],
             env: { ...process.env, LANGUAGE: chromeLanguage },
             // Playwright gives pages en-US unless told otherwise, and in a page that's also what
             // Chrome says its language is, so the two must agree.
