@@ -542,8 +542,8 @@ Since 3.3 only tabs in the categories whose moon is lit in Settings › Categori
 
 **TC-159 — Drag-and-drop also reorders categories (P2)** **[auto]**
 - Preconditions: 3+ configured categories.
-- Steps: Drag a category by its handle (⋮⋮) to a different position in the list (not just an adjacent swap).
-- Expected: While dragging, a line on the border above or below the row under the pointer (its upper or lower half, as in the tab list) shows where the category will land, and it sits exactly there when dropped, whichever way it came; order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
+- Steps: Drag a category by its handle (⋮⋮), or anywhere on its row, to a different position in the list (not just an adjacent swap); then pick one up and press Escape. Do it in the popup's Settings and in the library's.
+- Expected: As in the tab list, the row is picked up as a card that follows the pointer, and the other rows slide apart to make an empty place where it will land: above the row under the pointer's upper half, below it on its lower half. Let go, and it sits exactly there, whichever way it came; Escape puts it back and leaves Settings open. The order updates immediately and is reflected in both category select dropdowns. Available alongside the up/down buttons, not instead of them (drag has no keyboard equivalent — same documented gap as tab-list reorder, see TC-094).
 
 **TC-160 — A category mid-rename is not draggable (P3)**
 - Steps: Click a category's name so the rename field shows → attempt to drag that row.

@@ -163,13 +163,23 @@ export async function reorderCategories(draggedName: string, targetName: string,
     if (draggedName === targetName) return;
     return withStorageLock(async () => {
         const settings = await getSettings();
-        if (!settings.categories.includes(draggedName) || !settings.categories.includes(targetName)) return;
-
-        const categories = settings.categories.filter((name) => name !== draggedName);
-        categories.splice(categories.indexOf(targetName) + (side === "after" ? 1 : 0), 0, draggedName);
+        const categories = categoriesWithPlaced(settings.categories, draggedName, targetName, side);
+        if (!categories) return;
         settings.categories = categories;
         await setSettings(settings);
     });
+}
+
+/**
+ * The order reorderCategories writes, without writing it: a drag in Settings › Categories shows
+ * the list in this order while you hold the category, so it lands exactly where it was shown.
+ * Null if either is missing (or they're the same one). Pure.
+ */
+export function categoriesWithPlaced(categories: string[], draggedName: string, targetName: string, side: "before" | "after"): string[] | null {
+    if (draggedName === targetName || !categories.includes(draggedName) || !categories.includes(targetName)) return null;
+    const placed = categories.filter((name) => name !== draggedName);
+    placed.splice(placed.indexOf(targetName) + (side === "after" ? 1 : 0), 0, draggedName);
+    return placed;
 }
 
 /** Why a removal was refused; the screens put it into words (src/ui/errors.ts). */

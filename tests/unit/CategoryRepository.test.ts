@@ -8,6 +8,7 @@ import {
     removeCategory,
     renameCategory,
     reorderCategories,
+    categoriesWithPlaced,
     restoreCategory,
     setCategoryColor,
 } from "../../src/domain/CategoryRepository";
@@ -170,6 +171,23 @@ describe("ordering and colors", () => {
         expect(storedSettings().categories).toEqual(["Personal", "Reading", "Work"]);
         await reorderCategories("Personal", "Work", "before");
         expect(storedSettings().categories).toEqual(["Reading", "Personal", "Work"]);
+    });
+
+    it("categoriesWithPlaced is the order a drop writes, so a drag's preview is where it lands", async () => {
+        const cases: [string, string, "before" | "after"][] = [
+            ["Reading", "Work", "before"],
+            ["Work", "Personal", "after"],
+            ["Work", "Reading", "after"],
+            ["Personal", "Work", "before"],
+        ];
+        for (const [dragged, target, side] of cases) {
+            seed([], base);
+            const preview = categoriesWithPlaced(base.categories, dragged, target, side);
+            await reorderCategories(dragged, target, side);
+            expect(preview).toEqual(storedSettings().categories);
+        }
+        expect(categoriesWithPlaced(base.categories, "Work", "Work", "after")).toBeNull();
+        expect(categoriesWithPlaced(base.categories, "Nope", "Work", "after")).toBeNull();
     });
 
     it("can put a category last, below the last one", async () => {

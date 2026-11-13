@@ -56,7 +56,7 @@ src/
     TabRepository.ts      add (one or many, optionally as a saved window)/edit/delete (one or many)/restore/reorder saved tabs,
                            move into or out of a saved window (tabsWithPlaced: the order a drop writes, pure, so a drag can show it first), move many into a category (each with its Undo), refresh from the page (+ its undo), pin/unpin, into a category from the right-click menu (placeInCategory), reminders (set in editTab, ended by opening a due tab, marked once sent), archive/restore (one or many), notes (tidyNote), titles at most 300 characters however they arrive (tidyTitle), counting opens (recordOpen), duplicate detection,
                            ids are crypto.randomUUID() (never derived from Date.now())
-    CategoryRepository.ts add/rename/remove/reorder categories, color palette, "Uncategorized" sentinel; removing one
+    CategoryRepository.ts add/rename/remove/reorder categories (categoriesWithPlaced: a drop's order, pure), color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
     windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
@@ -171,7 +171,7 @@ src/
                              screen so the popup window doesn't resize
       GeneralTab.tsx        Light/Dark/System, what the toolbar icon opens, the waiting count on the icon, reminder notifications on or off, keyboard shortcut and the list's keys, storage meter
       CategoriesTab.tsx     add, rename (click the name), move, remove (in use: asks in the row first; Undo from the toast),
-                             drag; the days field and the moon's legend above the list; the ☾ on each row (its tabs age
+                             drag (usePointerDrag; shown in the order categoriesWithPlaced gives, which is what's written); the days field and the moon's legend above the list; the ☾ on each row (its tabs age
                              and show as Waiting, or are kept), Uncategorized's own row (☾ only); color strip, question
                              and messages stay within or float over the row so nothing shifts
       BackupTab.tsx         export, import with Merge / Replace all / Cancel, Undo from the toast
