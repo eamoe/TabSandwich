@@ -188,6 +188,11 @@ export const en = {
     whatsNewTitle: (release: string) => `New in ${release}`,
     dismissWhatsNew: "Dismiss what's new",
     whatsNewNotes: {
+        "4.2": [
+            "Moving a tab feels like picking it up: the list makes room where it will land.",
+            "Esc puts it back. On a touchscreen, hold a row for a moment to pick it up.",
+            "In light mode, site icons sit on a clean white tile.",
+        ],
         "4.1": [
             "Tab Sandwich now comes in eight languages, following Chrome's own.",
             "Roomier forms, and a library that fits a narrow window.",

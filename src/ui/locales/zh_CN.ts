@@ -159,10 +159,10 @@ export const zh_CN: Strings = {
     whatsNewTitle: (release: string) => `${release} 新功能`,
     dismissWhatsNew: "关闭新功能介绍",
     whatsNewNotes: {
-        "4.1": [
-            "Tab Sandwich 现已支持八种语言，并跟随 Chrome 的语言。",
-            "表单更宽敞，资料库在窄窗口中也能完整显示。",
-            "发现用词别扭，或者有好点子？在 设置 › 关于 中点击“告诉我们”。",
+        "4.2": [
+            "移动标签页就像把它拿起来：列表会在它要落下的地方让出空位。",
+            "按 Esc 可放回原处。在触摸屏上，按住一行片刻即可拿起。",
+            "在浅色模式下，网站图标显示在简洁的白色方块上。",
         ],
     },
     categoryForScreenReaders: (category: string) => `类别：${category}`,

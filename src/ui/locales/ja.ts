@@ -160,10 +160,10 @@ export const ja: Strings = {
     whatsNewTitle: (release: string) => `${release} の新機能`,
     dismissWhatsNew: "新機能のお知らせを閉じる",
     whatsNewNotes: {
-        "4.1": [
-            "Tab Sandwich が8つの言語に対応し、Chrome の言語に合わせて表示されます。",
-            "フォームがゆったりし、ライブラリは狭いウィンドウにも収まります。",
-            "おかしな言葉やアイデアがあれば、設定 › 情報 の「お知らせください」から。",
+        "4.2": [
+            "タブは持ち上げるように動かせます。置く場所にはリストが空きを作ります。",
+            "Esc キーで元に戻ります。タッチ画面では、行を少し長押しすると持ち上がります。",
+            "ライトモードでは、サイトのアイコンがシンプルな白いタイルに載ります。",
         ],
     },
     categoryForScreenReaders: (category: string) => `カテゴリ: ${category}`,
