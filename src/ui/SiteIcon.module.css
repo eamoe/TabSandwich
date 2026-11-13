@@ -8,14 +8,19 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    /* Plain behind an icon (in light; see tokens.css), the site's own tint behind its letter. */
+    background: color-mix(in srgb, var(--site-hue) var(--fav-icon-mix), var(--surface));
+    box-shadow: var(--fav-icon-edge);
     color: var(--ink);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
 }
+.letter { background: color-mix(in srgb, var(--site-hue) var(--fav-mix), var(--surface)); box-shadow: none; }
 .large { width: 28px; height: 28px; font-size: 13px; }
 /* A saved window's row shows a few of its sites at this size, overlapping. */
-.mini { width: 16px; height: 16px; border-radius: 5px; font-size: 9px; box-shadow: 0 0 0 1.5px var(--surface); }
+.mini { width: 16px; height: 16px; border-radius: 5px; font-size: 9px; box-shadow: var(--fav-icon-edge), 0 0 0 1.5px var(--surface); }
+.mini.letter { box-shadow: 0 0 0 1.5px var(--surface); }
 .mini .img { width: 12px; height: 12px; }
 .img { width: 16px; height: 16px; }
 /* A one-color icon flipped where it would vanish: tokens say which theme flips which (none, or invert). */

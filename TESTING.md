@@ -1251,3 +1251,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: a touchscreen, or Chrome DevTools' device toolbar (touch) on the popup page opened as a tab.
 - Steps: Swipe up and down over the rows; hold a row still for a moment, then drag it; tap a title.
 - Expected: A swipe scrolls the list and picks nothing up, and no menu appears. Held still about a quarter of a second (a pixel or two of drift is fine), the row lifts under the finger and then drags just as with the mouse; the list doesn't scroll under it. A tap opens the tab.
+
+**TC-329 — Site icons on a plain tile in light (P3)**
+- Steps: In light, look at rows of different categories with sites that have icons (GitHub, a shop, a page with a white-backed icon) and one with no icon; then in dark.
+- Expected: In light, each icon sits on a white tile with a thin outline, whatever the row's color; a site with no icon shows its first letter on a tinted tile. Dark looks as before (tinted tiles, GitHub's black cat shown light).
+

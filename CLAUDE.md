@@ -124,7 +124,7 @@ src/
                             when the popup is too short, never clipped by the list
     Icon.tsx                the stroke icon set (decorative; the control holding it carries the name)
     Logo.tsx                the app's mark in the purple header: the icon without its tile, colors from tokens
-    SiteIcon.tsx            a site's icon from Chrome's local cache, on a tinted first-letter tile;
+    SiteIcon.tsx            a site's icon from Chrome's local cache, on a plain tile (light) or the site's tint (dark), a tinted first letter without one;
                              a one-color icon that would vanish on the theme's tile is flipped (util/iconInk.ts)
     CategoryPicker.tsx      native <select> with the chosen category's color dot (and a sparkle while it's a suggestion)
     Toast.tsx / toastStore.ts  the one bottom toast (Undo or error; across the popup and panel, sized to its message on the
