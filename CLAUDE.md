@@ -2,8 +2,9 @@
 
 Guidance for Claude Code (or any AI collaborator) working in this repo.
 
-**Playbook:** eamoe/development-playbook@v0.2.0 · **Modules:** A (UI), B (stored data), C (Chrome Web Store listing) · **Deviations:**
-- CORE-6.10: the roadmap ("Tab Sandwich Roadmap 2026–27") lives in Claude Docs, not in this repo; it's still the plan of record (CORE-3.1) and is updated before scope changes in code (the owner's choice, decided 2026-10-04).
+**Playbook:** eamoe/development-playbook@v0.2.0 · **Modules:** A (UI), B (stored data), C (Chrome Web Store listing) · **Deviations:** none.
+
+**Roadmap** (the plan of record, CORE-3.1): "Tab Sandwich Roadmap 2026–27" in Claude Docs, not in this repo (the owner's choice, 2026-10-04); it's updated before scope changes in code. CORE-6.10 covers only docs that describe the code, so this isn't a deviation.
 
 Where things stand (current release and stage, what's waiting on whom, the next step): `PROGRESS.md`, updated in each commit.
 
