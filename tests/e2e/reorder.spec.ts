@@ -154,6 +154,43 @@ test.describe("Drag to reorder", () => {
         await expect.poll(tabs).toBe(before + 1);
     });
 
+    test("TC-328: on a touchscreen, a row held still is picked up; a swipe isn't, and a tap still opens", async ({ popup }) => {
+        const cdp = await popup.context().newCDPSession(popup);
+        await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+        const touch = (type: "touchStart" | "touchMove" | "touchEnd", x = 0, y = 0) =>
+            cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+        const tabs = () => popup.evaluate(async () => (await chrome.tabs.query({})).length);
+        const before = await tabs();
+        const alpha = (await row(popup, "Alpha").boundingBox())!;
+        const charlie = (await row(popup, "Charlie").boundingBox())!;
+        const [x, y] = [charlie.x + 250, charlie.y + 23];
+
+        // A swipe: moving at once, the finger scrolls; nothing is picked up.
+        await touch("touchStart", x, y);
+        for (let i = 1; i <= 6; i++) await touch("touchMove", x, y - i * 12);
+        await popup.waitForTimeout(400);
+        expect(await copyBox(popup)).toBeNull();
+        await touch("touchEnd");
+        expect(await rowTitles(popup)).toEqual(["Alpha", "Bravo", "Charlie"]);
+
+        // Held still a moment (a pixel or two of drift is fine): the row lifts; carried up, it lands there.
+        await touch("touchStart", x, y);
+        await touch("touchMove", x + 2, y + 1);
+        await expect.poll(() => copyBox(popup)).not.toBeNull();
+        for (let i = 1; i <= 8; i++) await touch("touchMove", x, y + ((alpha.y + 6 - y) * i) / 8);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Charlie", "Alpha", "Bravo"]);
+        await touch("touchEnd");
+        await expect.poll(async () => (await storedTabs(popup)).map((t) => t.title)).toEqual(["Charlie", "Alpha", "Bravo"]);
+        await popup.waitForTimeout(300);
+        expect(await tabs()).toBe(before);
+
+        // A tap opens the tab, as ever.
+        const title = (await row(popup, "Bravo").getByRole("button", { name: "Bravo", exact: true }).boundingBox())!;
+        await touch("touchStart", title.x + 20, title.y + 8);
+        await touch("touchEnd");
+        await expect.poll(tabs).toBe(before + 1);
+    });
+
     test("TC-323: the rows it passes slide aside to make room, and it slides into place", async ({ popup }) => {
         await recordSlides(popup);
         const alpha = (await row(popup, "Alpha").boundingBox())!;

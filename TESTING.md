@@ -1247,3 +1247,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: In the popup, drag an unpinned tab up over a pinned one and let go (the note "Pinned tabs stay above the others. Pin it to move it up there."); in German or Russian too.
 - Expected: The note shows in full on up to two lines, with Undo (when there is one) still beside it; the list's last row isn't covered while it shows. Only a note longer than two lines ends in "…".
 
+**TC-328 — Dragging with a finger (P2)** **[auto]**
+- Preconditions: a touchscreen, or Chrome DevTools' device toolbar (touch) on the popup page opened as a tab.
+- Steps: Swipe up and down over the rows; hold a row still for a moment, then drag it; tap a title.
+- Expected: A swipe scrolls the list and picks nothing up, and no menu appears. Held still about a quarter of a second (a pixel or two of drift is fine), the row lifts under the finger and then drags just as with the mouse; the list doesn't scroll under it. A tap opens the tab.

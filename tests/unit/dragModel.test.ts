@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { edgeScrollSpeed, EDGE_SCROLL_MAX, EDGE_SCROLL_ZONE, isDrag, pointedAt, type RowBox } from "../../src/ui/dragModel";
+import { edgeScrollSpeed, EDGE_SCROLL_MAX, EDGE_SCROLL_ZONE, holdBroken, isDrag, pointedAt, type RowBox } from "../../src/ui/dragModel";
 
 describe("which row a dragged one is over", () => {
     // Three rows 40 tall with 5 between them; "b" is the dragged one's own place.
@@ -68,5 +68,13 @@ describe("scrolling while dragging", () => {
     it("keeps the middle still in a short list, whose edge zones would otherwise meet", () => {
         expect(edgeScrollSpeed(150, 100, 200)).toBe(0);
         expect(edgeScrollSpeed(105, 100, 200)).toBeLessThan(0);
+    });
+});
+
+describe("a finger holding a row", () => {
+    it("keeps the drag on while it drifts a few pixels, and gives it up for a scroll past that", () => {
+        expect(holdBroken(0, 0)).toBe(false);
+        expect(holdBroken(3, 4)).toBe(false);
+        expect(holdBroken(0, 6)).toBe(true);
     });
 });

@@ -56,3 +56,16 @@ export const DRAG_THRESHOLD = 4;
 export function isDrag(dx: number, dy: number): boolean {
     return Math.hypot(dx, dy) >= DRAG_THRESHOLD;
 }
+
+/**
+ * On a touchscreen a finger moving on a row is scrolling the list, so a drag starts only once it
+ * has held still this long (as in Android's and iOS's own lists) ...
+ */
+export const TOUCH_HOLD_MS = 250;
+/** ... drifting no further than this meanwhile: further, and it's a scroll after all. */
+export const TOUCH_SLOP = 5;
+
+/** Whether a finger that has moved by (dx, dy) before the hold was up has given the drag up for a scroll. */
+export function holdBroken(dx: number, dy: number): boolean {
+    return Math.hypot(dx, dy) > TOUCH_SLOP;
+}

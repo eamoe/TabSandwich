@@ -1,6 +1,6 @@
 import type { RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { edgeScrollSpeed, isDrag, pointedAt, type Pointed, type RowBox } from "./dragModel";
+import { edgeScrollSpeed, holdBroken, isDrag, pointedAt, TOUCH_HOLD_MS, type Pointed, type RowBox } from "./dragModel";
 
 /** A row of the list, and the key its owner knows it by. */
 export interface Keyed {
@@ -61,6 +61,9 @@ interface Session<T> {
     slides: Animation[];
     /** Once let go: ends the settling at once (a new press doesn't wait for it). */
     settled: (() => void) | null;
+    /** A finger: the drag starts once it has held still (TOUCH_HOLD_MS), not on moving. */
+    touch: boolean;
+    hold: ReturnType<typeof setTimeout> | undefined;
 }
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -89,6 +92,12 @@ export function usePointerDrag<T>(options: PointerDragOptions<T>) {
     const [engine] = useState(() => dragEngine(opts, setDragging));
     useLayoutEffect(() => engine.rendered());
     useEffect(() => engine.dispose, []);
+    // Chrome lets a page stop a finger scrolling only if it was listening when the touch began
+    // (on the page as a whole: the list itself may not be there yet).
+    useEffect(() => {
+        document.addEventListener("touchmove", engine.holdStill, { passive: false });
+        return () => document.removeEventListener("touchmove", engine.holdStill);
+    }, []);
     return {
         /** The key of the row in hand, from the moment it's picked up until it has settled. */
         dragging,
@@ -232,6 +241,7 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
         window.removeEventListener("keydown", onKey, true);
         window.removeEventListener("blur", onCancel);
         window.removeEventListener("dragstart", noNativeDrag, true);
+        window.removeEventListener("contextmenu", noMenu, true);
     };
 
     /** Done: the row in hand settles into its place (the new one, or back), then the list is its own again. */
@@ -239,6 +249,7 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
         const s = session.current;
         if (!s) return;
         stopListening();
+        clearTimeout(s.hold);
         if (!s.started) {
             session.current = null;
             return;
@@ -287,7 +298,10 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
         // Let go where the window never heard of it (outside the popup): a release all the same.
         if (e.buttons === 0) return onUp(e);
         if (!s.started) {
-            if (!isDrag(e.clientX - s.startX, e.clientY - s.startY)) return;
+            const [dx, dy] = [e.clientX - s.startX, e.clientY - s.startY];
+            // A finger on the move before the hold is up is scrolling the list: no drag this time.
+            if (s.touch) return void (holdBroken(dx, dy) && finish(false));
+            if (!isDrag(dx, dy)) return;
             start(s);
         }
         s.pointerY = e.clientY;
@@ -316,7 +330,7 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
     }
 
     const onPointerDown = (e: PointerEvent) => {
-        if (e.button !== 0 || e.pointerType === "touch") return;
+        if (e.button !== 0) return;
         // The last one still settling into place: it's there now. One whose release never arrived
         // (let go outside the window) is over: it goes back.
         session.current?.settled?.();
@@ -351,7 +365,17 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
             scrolledTo: 0,
             slides: [],
             settled: null,
+            touch: e.pointerType === "touch",
+            hold: undefined,
         };
+        const s = session.current;
+        // Held still long enough: the row lifts under the finger.
+        if (s.touch)
+            s.hold = setTimeout(() => {
+                if (session.current !== s || s.started) return;
+                start(s);
+                follow(s);
+            }, TOUCH_HOLD_MS);
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
         window.addEventListener("pointercancel", onCancel);
@@ -359,11 +383,17 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
         window.addEventListener("blur", onCancel);
         // A press on the site icon or a link would otherwise start the browser's own drag of it.
         window.addEventListener("dragstart", noNativeDrag, true);
+        // A long press would otherwise open the page's menu instead of picking the row up.
+        window.addEventListener("contextmenu", noMenu, true);
     };
 
     return {
         onPointerDown,
         cancel: () => finish(false),
+        /** A finger carrying a row moves it, not the list. */
+        holdStill: (e: TouchEvent) => {
+            if (session.current?.started && e.cancelable) e.preventDefault();
+        },
         /** The list has rendered: if it was to show a change, it does now. */
         rendered: () => {
             const s = session.current;
@@ -382,6 +412,10 @@ function dragEngine<T>(opts: { current: PointerDragOptions<T> }, setDragging: (k
 }
 
 function noNativeDrag(e: DragEvent) {
+    e.preventDefault();
+}
+
+function noMenu(e: MouseEvent) {
     e.preventDefault();
 }
 

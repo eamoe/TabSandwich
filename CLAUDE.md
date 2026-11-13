@@ -112,12 +112,12 @@ src/
                              (a count is a whole sentence per plural form; "{}" marks a key cap or field in a sentence)
     i18n.ts                 which dictionary Chrome's language gets (Chrome's own _locales rule), plural rules, "{}" slots — pure
     Slotted.tsx             a sentence with a key cap or a field inside it, wherever the language puts it
-    usePointerDrag.ts       dragging a row to a new place with the mouse or a pen (the app's own, not the browser's drag and drop):
-                             picked up after a few pixels, a copy follows the pointer, the rows slide apart to show where it
+    usePointerDrag.ts       dragging a row to a new place with the mouse, a pen or a finger (the app's own, not the browser's drag and drop):
+                             picked up after a few pixels (a finger: after holding still 250 ms), a copy follows the pointer, the rows slide apart to show where it
                              lands (the owner shows the list in that order), the list scrolls at its edges, Escape puts it back;
                              rows measured once per change, moved only by transforms. The tab list and Settings › Categories use it
     dragModel.ts            its pure rules: which row and half the pointer is over (no dead space between rows), edge-scroll
-                             speed, when a press becomes a drag — logic-tested
+                             speed, when a press becomes a drag (and when a finger's hold gives way to a scroll) — logic-tested
     pageLanguage.ts         each page's lang and tab name, which the HTML can only say in English
     useShortcut.ts          the keyboard shortcut that opens the popup, read from Chrome (Settings and the first-run tips)
     useMenuPlacement.ts     floating menus (sort, a saved window's ⋯) placed against the window: below, or above
