@@ -190,7 +190,8 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
     };
 
     const focusSearch = () => document.getElementById("search-input")?.focus();
-    const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view li[data-tab-id] [data-row-title]")?.focus();
+    // The list's first row, whatever it is: a tab, or a saved window's head (never a tab inside it ahead of its head).
+    const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view :is(li[data-tab-id], li[data-group-id]) [data-row-title]")?.focus();
 
     const colorOf = useCallback(
         (category: string) => getCategoryColorHex(category, library?.settings.categoryColors ?? {}),

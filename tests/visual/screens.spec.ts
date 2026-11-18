@@ -168,11 +168,9 @@ for (const colorScheme of ["light", "dark"] as const) {
             test("a saved window reached with the keyboard", async ({ popup }) => {
                 // The ring goes round the whole head, its ⋯ included, as a tab's goes round its row.
                 await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
-                // Into the list from the search box, then onto the window (keyboard focus all along).
+                // Into the list from the search box: the window is its first row.
                 await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
-                const head = popup.locator(`button[data-group-name="${WINDOW.name}"]`);
-                await head.focus();
-                await expect(head).toBeFocused();
+                await expect(popup.locator(`button[data-group-name="${WINDOW.name}"]`)).toBeFocused();
                 await popup.mouse.move(0, 599);
                 await expect(popup).toHaveScreenshot(`keyboard-focus-window-${colorScheme}.png`);
             });

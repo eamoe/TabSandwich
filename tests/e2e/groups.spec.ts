@@ -187,6 +187,29 @@ test.describe("Saved windows", () => {
         await expect.poll(() => rowTitles(popup)).toEqual(["Alpha", "▸ Research", "Omega"]);
     });
 
+    test("TC-333: with a saved window first, ↓ from the search box and Tab into the list both land on its head", async ({ popup }) => {
+        const search = popup.getByRole("textbox", { name: "Search saved tabs" });
+        for (const collapsed of [true, false]) {
+            await seedLibrary(
+                popup,
+                [
+                    { title: "Gamma", url: "https://gamma.example.com/", groupId: "g", category: "Work" },
+                    { title: "Delta", url: "https://delta.example.com/", groupId: "g", category: "Work" },
+                    { title: "Omega", url: "https://omega.example.com/", category: "Work" },
+                ],
+                {},
+                { groups: [{ id: "g", name: "Research", collapsed }] }
+            );
+            await expect(windowRow(popup, "Research")).toHaveAttribute("aria-expanded", String(!collapsed));
+            await search.press("ArrowDown");
+            await expect(windowRow(popup, "Research")).toBeFocused();
+            // Tab from the search box on, through the header and the filter row, into the list.
+            await search.focus();
+            for (let i = 0; i < 20 && !(await tabList(popup).locator(":focus").count()); i++) await popup.keyboard.press("Tab");
+            await expect(windowRow(popup, "Research")).toBeFocused();
+        }
+    });
+
     test("TC-242: Alt+arrows move a tab within a window, and step it out past the window's edge", async ({ popup }) => {
         await seedWindow(popup, { collapsed: false });
         const order = async () => (await storedTabs(popup)).map((t) => t.title);

@@ -1270,3 +1270,8 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Steps: In the library, Tab through the table's column headers (Title, Category, Site, Saved, Opened), in light and dark; scroll the table first, then Tab through them again.
 - Expected: Each header shows a rounded accent ring inside it, on all four sides (it used to show only its left and bottom edges), however far the table is scrolled. Enter or Space still sorts by that column.
 
+**TC-333 — ↓ from the search box reaches a saved window in first place (P2)** **[auto]**
+- Preconditions: a saved window as the list's first row; closed, then open.
+- Steps: Press ↓ in the search box. Then Tab from the search box on into the list.
+- Expected: Both land on the window's head (it used to be skipped by ↓, for the first tab below it, or for its own first tab while open).
+
