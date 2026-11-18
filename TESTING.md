@@ -23,7 +23,7 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
 2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159): the row lifts and follows the pointer, the others slide apart smoothly, and Escape puts it back (TC-324); drag one into an open saved window and watch it light up (TC-325); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace (TC-322); confirm drag is off while searching (TC-119).
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
-4. Full keyboard pass (TC-090 – TC-092, TC-095).
+4. Full keyboard pass (TC-090 – TC-092, TC-095), watching that every focus ring is whole, the first row's and the library's column headers' included (TC-330 – TC-332).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
@@ -1255,4 +1255,18 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-329 — Site icons on a plain tile in light (P3)**
 - Steps: In light, look at rows of different categories with sites that have icons (GitHub, a shop, a page with a white-backed icon) and one with no icon; then in dark.
 - Expected: In light, each icon sits on a white tile with a thin outline, whatever the row's color; a site with no icon shows its first letter on a tinted tile. Dark looks as before (tinted tiles, GitHub's black cat shown light).
+
+## 27. Polish (v4.2.1)
+
+**TC-330 — A row's focus ring is whole (P2)** **[auto]**
+- Steps: In the popup, press ↓ in the search box to reach the first saved tab; then ↓ to the next. Do the same in the side panel, and in light and dark.
+- Expected: The row's edge turns into an accent ring of even thickness on all four sides, drawn inside the row, the first row's top edge included (it used to be cut thinner there). The edit, archive and pin buttons show as on hover; nothing moves.
+
+**TC-331 — A saved window's focus ring goes round its whole head (P2)** **[auto]**
+- Steps: Reach a saved window's head with the keyboard (↓/↑ in the list), closed and open.
+- Expected: The same ring as a tab's row, round the whole head, its ⋯ button included (it used to stop short of it). Tab on to ⋯: it shows its own ring, and the head's goes.
+
+**TC-332 — The library's column headers show their whole focus ring (P2)** **[auto]**
+- Steps: In the library, Tab through the table's column headers (Title, Category, Site, Saved, Opened), in light and dark; scroll the table first, then Tab through them again.
+- Expected: Each header shows a rounded accent ring inside it, on all four sides (it used to show only its left and bottom edges), however far the table is scrolled. Enter or Space still sorts by that column.
 

@@ -80,7 +80,9 @@
 /* The title opens the tab; stretching its click area over the whole row makes the row the target. */
 .title::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
 .title:focus-visible { outline: none; }
-.title:focus-visible::after { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Keyboard focus: the row's own edge turns into a 2px accent ring, drawn inside the row, so the
+   list's scrolling edge can never cut it off (the first row sits only 2px below it). */
+.title:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -2px; }
 .title mark,
 .meta mark { background: var(--mark-bg); color: var(--mark-ink); border-radius: 3px; }
 
@@ -183,7 +185,9 @@
     text-align: left;
     cursor: pointer;
 }
-.groupToggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* A saved window's head takes the same ring as a tab's row, around the whole head (⋯ has its own). */
+.groupToggle:focus-visible { outline: none; }
+.groupHead:has(> .groupToggle:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
 .groupToggle .lead { color: var(--ink-2); transition: transform 0.15s ease; }
 .groupToggle[aria-expanded="true"] .lead { transform: rotate(90deg); }
 .groupName {
