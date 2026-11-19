@@ -65,13 +65,16 @@ export const pt_BR: Strings = {
     savingWindow: "Salvando…",
     windowSaved: (count: number) => (count === 0 ? "Nada novo para salvar" : n(count, { one: `${count} guia salva`, other: `${count} guias salvas` })),
     windowSkippedCount: (count: number) => n(count, { one: `${count} pulada`, other: `${count} puladas` }),
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
         [
             alreadySaved > 0 && n(alreadySaved, { one: `${alreadySaved} já salva`, other: `${alreadySaved} já salvas` }),
+            inArchive > 0 && `${inArchive} no seu arquivo`,
             browserPages > 0 && n(browserPages, { one: `${browserPages} página do navegador`, other: `${browserPages} páginas do navegador` }),
         ]
             .filter(Boolean)
             .join(", "),
+    windowInArchive: (count: number) => n(count, { one: `${count} guia aberta está no seu arquivo`, other: `${count} guias abertas estão no seu arquivo` }),
+    restoreThemTooltip: "Trazer de volta para sua lista",
     closeTabs: (count: number) => n(count, { one: `Fechar ${count} guia`, other: `Fechar ${count} guias` }),
     closeTabsTooltip: "Fechar as guias salvas desta janela. A guia em que você está continua aberta.",
     closedTabs: (count: number) => n(count, { one: `${count} guia fechada`, other: `${count} guias fechadas` }),

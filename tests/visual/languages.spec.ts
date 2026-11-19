@@ -220,13 +220,25 @@ for (const language of Object.keys(dictionaries)) {
 
             await seedLibrary(popup, LIBRARY, {}, { groups: GROUPS });
             await answerPermissionPrompt(context, popup, "grant");
-            await openSiteTab(context, popup, "Mike 2026");
+            const mike = await openSiteTab(context, popup, "Mike 2026");
             await openSiteTab(context, popup, "Lima 2026");
             await popup.getByRole("button", { name: d.addNote }).click();
             await look(popup, "save-window");
             await popup.getByTitle(d.saveWindowTooltip).click();
             await expect(popup.getByTitle(d.closeTabsTooltip)).toBeVisible();
             await look(popup, "window-saved");
+
+            // The window's pages in the archive: the line says so and offers them back.
+            const archived = (title: string, at: string): SeedTab => ({ title, url: at, archivedDaysAgo: 1 });
+            await seedLibrary(popup, [...LIBRARY, archived("Lima 2026", url), archived("Mike 2026", mike)], {}, { groups: GROUPS });
+            const line = popup.getByRole("paragraph").filter({ hasText: d.windowInArchive(2) });
+            await expect(line.getByTitle(d.restoreThemTooltip)).toBeVisible();
+            await look(popup, "window-in-archive");
+            // On one line, as the "Restored" note that takes its place is: two would shrink the card under the pointer.
+            expect.soft((await line.boundingBox())!.height, `${language}: the archive line wraps`).toBeLessThan(2 * 16);
+            await line.getByTitle(d.restoreThemTooltip).click();
+            await expect(popup.getByRole("region", { name: d.currentTab }).getByRole("status").filter({ hasText: d.restoredTabs(2) })).toBeVisible();
+            await look(popup, "window-restored");
         });
 
         test("Settings speaks it, and everything fits", async ({ context, popup }) => {

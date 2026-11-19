@@ -58,8 +58,10 @@ export const ja: Strings = {
     savingWindow: "保存中…",
     windowSaved: (count: number) => (count === 0 ? "新しく保存するものはありません" : `${count} 件のタブを保存しました`),
     windowSkippedCount: (count: number) => `${count} 件をスキップ`,
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
-        [alreadySaved > 0 && `保存済み ${alreadySaved} 件`, browserPages > 0 && `ブラウザのページ ${browserPages} 件`].filter(Boolean).join("、"),
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
+        [alreadySaved > 0 && `保存済み ${alreadySaved} 件`, inArchive > 0 && `アーカイブ済み ${inArchive} 件`, browserPages > 0 && `ブラウザのページ ${browserPages} 件`].filter(Boolean).join("、"),
+    windowInArchive: (count: number) => `開いているタブ ${count} 件がアーカイブ済み`,
+    restoreThemTooltip: "リストに戻します",
     closeTabs: (count: number) => `${count} 件のタブを閉じる`,
     closeTabsTooltip: "このウィンドウの保存したタブを閉じます。表示中のタブは開いたままです。",
     closedTabs: (count: number) => `${count} 件のタブを閉じました`,

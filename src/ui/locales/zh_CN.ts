@@ -57,8 +57,10 @@ export const zh_CN: Strings = {
     savingWindow: "正在保存…",
     windowSaved: (count: number) => (count === 0 ? "没有新的内容可保存" : `已保存 ${count} 个标签页`),
     windowSkippedCount: (count: number) => `跳过 ${count} 个`,
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
-        [alreadySaved > 0 && `${alreadySaved} 个已保存过`, browserPages > 0 && `${browserPages} 个浏览器页面`].filter(Boolean).join("，"),
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
+        [alreadySaved > 0 && `${alreadySaved} 个已保存过`, inArchive > 0 && `${inArchive} 个在归档中`, browserPages > 0 && `${browserPages} 个浏览器页面`].filter(Boolean).join("，"),
+    windowInArchive: (count: number) => `${count} 个打开的标签页在归档中`,
+    restoreThemTooltip: "放回你的列表",
     closeTabs: (count: number) => `关闭 ${count} 个标签页`,
     closeTabsTooltip: "关闭此窗口中已保存的标签页。你当前所在的标签页会保持打开。",
     closedTabs: (count: number) => `已关闭 ${count} 个标签页`,

@@ -190,7 +190,8 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
     };
 
     const focusSearch = () => document.getElementById("search-input")?.focus();
-    const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view li[data-tab-id] [data-row-title]")?.focus();
+    // The list's first row, whatever it is: a tab, or a saved window's head (never a tab inside it ahead of its head).
+    const focusFirstRow = () => document.querySelector<HTMLElement>("#main-view :is(li[data-tab-id], li[data-group-id]) [data-row-title]")?.focus();
 
     const colorOf = useCallback(
         (category: string) => getCategoryColorHex(category, library?.settings.categoryColors ?? {}),
@@ -278,18 +279,19 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
         flash(id);
     };
 
-    // From the save card or the + form: an archived page back in the list, shown where it landed.
-    const restoreSaved = async (id: string) => {
+    // From the save card or the + form: archived pages back in the list (one, or the open window's),
+    // shown where the first landed. Resolves to how many came back.
+    const restoreSaved = async (ids: string[]): Promise<number> => {
         setManualOpen(false);
         try {
-            const restored = await unarchiveTabs([id]);
+            const restored = await unarchiveTabs(ids);
             await reload();
-            if (restored.length === 0) return;
+            if (restored.length === 0) return 0;
             setFilter(ALL);
             setQuery("");
-            await openWindowHolding(id, true);
-            flash(id);
-            showUndoToast(strings.restoredToast, async () => {
+            await openWindowHolding(restored[0], true);
+            flash(restored[0]);
+            showUndoToast(ids.length === 1 ? strings.restoredToast : strings.restoredTabs(restored.length), async () => {
                 try {
                     await archiveTabs(restored);
                 } catch (err) {
@@ -297,8 +299,10 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
                 }
                 await reload();
             });
+            return restored.length;
         } catch (err) {
             showErrorToast(writeErrorMessage(err));
+            return 0;
         }
     };
 
@@ -718,7 +722,7 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
                         colorOf={colorOf}
                         onAdded={afterSave}
                         onDuplicate={flash}
-                        onRestore={(id) => void restoreSaved(id)}
+                        onRestore={(id) => void restoreSaved([id])}
                         onClose={() => setManualOpen(false)}
                     />
                 ) : (
@@ -729,7 +733,8 @@ export function App(props: { surface: Surface; whatsNew?: string | null }) {
                         colorOf={colorOf}
                         onSaved={afterSave}
                         onShow={reveal}
-                        onRestore={(id) => void restoreSaved(id)}
+                        onRestore={(id) => void restoreSaved([id])}
+                        onRestoreMany={restoreSaved}
                         onUpdated={afterUpdate}
                         onWindowSaved={afterWindowSave}
                     />

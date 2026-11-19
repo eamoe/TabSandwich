@@ -1,6 +1,9 @@
 import { test, expect, TEST_SITE } from "./fixtures";
 import { answerPermissionPrompt, openSiteTab, openTabUrls, promptsShown, rowTitles, seedLibrary, storedTabs } from "./helpers";
 
+const storedArchived = (popup: import("@playwright/test").Page) =>
+    popup.evaluate(async () => ((await chrome.storage.local.get("tabSandwich.tabs"))["tabSandwich.tabs"] as Array<{ title: string; archivedAt?: number }>).filter((t) => t.archivedAt).map((t) => t.title));
+
 const card = (popup: import("@playwright/test").Page) => popup.getByRole("region", { name: "Current tab" });
 
 test.describe("Saving a whole window", () => {
@@ -99,5 +102,64 @@ test.describe("Saving a whole window", () => {
 
         await popup.reload();
         await expect(card(popup).getByRole("button", { name: /from this window|in this window/ })).toHaveCount(0);
+    });
+
+    test("TC-334: when the window's pages are in the archive, the line says so and Restore brings them back, with Undo", async ({ context, popup }) => {
+        // A saved window, archived whole, and one page still in the list.
+        await seedLibrary(
+            popup,
+            [
+                { title: "Alpha", url: `${TEST_SITE}/Alpha`, groupId: "g", archivedDaysAgo: 1 },
+                { title: "Beta", url: `${TEST_SITE}/Beta`, groupId: "g", archivedDaysAgo: 1 },
+                { title: "Gamma", url: `${TEST_SITE}/Gamma` },
+            ],
+            {},
+            { groups: [{ id: "g", name: "Research" }] }
+        );
+        await answerPermissionPrompt(context, popup, "grant");
+        await openSiteTab(context, popup, "Alpha");
+        await openSiteTab(context, popup, "Beta");
+        await openSiteTab(context, popup, "Gamma");
+
+        // Before the permission, the line can only count open tabs; saving finds nothing new, says
+        // the pages are in the archive, and offers them back.
+        await card(popup).getByRole("button", { name: /^Save all \d+ tabs in this window$/ }).click();
+        await expect(card(popup).getByRole("status").filter({ hasText: "Nothing new to save" })).toContainText(/\(1 already saved, 2 in your archive, \d+ browser pages?\)/);
+        await card(popup).getByRole("button", { name: "Restore" }).click();
+
+        // Back in the list as the saved window they were archived from, and the line says so.
+        await expect(card(popup).getByRole("status").filter({ hasText: "Restored 2 tabs" })).toBeVisible();
+        // (opened, to show where they landed).
+        await expect.poll(() => rowTitles(popup)).toEqual(["▾ Research", "Alpha", "Beta", "Gamma"]);
+        expect(await storedArchived(popup)).toEqual([]);
+
+        // Undo puts them back in the archive.
+        await popup.getByRole("button", { name: "Undo" }).click();
+        await expect.poll(() => storedArchived(popup)).toEqual(["Alpha", "Beta"]);
+        await expect.poll(() => rowTitles(popup)).toEqual(["Gamma"]);
+
+        // Opened again, with the permission now known: the line says so straight away, and offers no save.
+        await popup.reload();
+        await expect(card(popup)).toContainText("2 open tabs are in your archive");
+        await expect(card(popup).getByRole("button", { name: /from this window|in this window/ })).toHaveCount(0);
+        await card(popup).getByRole("button", { name: "Restore" }).click();
+        await expect(card(popup).getByRole("status").filter({ hasText: "Restored 2 tabs" })).toBeVisible();
+        await expect.poll(() => storedArchived(popup)).toEqual([]);
+    });
+
+    test("TC-334: with new pages too, the line saves those, and the note counts the archived ones apart", async ({ context, popup }) => {
+        await seedLibrary(popup, [
+            { title: "Alpha", url: `${TEST_SITE}/Alpha`, archivedDaysAgo: 1 },
+            { title: "Gamma", url: `${TEST_SITE}/Gamma` },
+        ]);
+        await answerPermissionPrompt(context, popup, "grant");
+        await openSiteTab(context, popup, "Alpha");
+        await openSiteTab(context, popup, "Beta");
+        await openSiteTab(context, popup, "Gamma");
+        await card(popup).getByRole("button", { name: /^Save all \d+ tabs in this window$/ }).click();
+        await expect(card(popup).getByRole("status").filter({ hasText: "Saved 1 tab" })).toContainText(/\d+ skipped \(1 already saved, 1 in your archive, \d+ browser pages?\)/);
+        // Something was saved, so the line offers to close the tabs, not to restore.
+        await expect(card(popup).getByRole("button", { name: "Restore" })).toHaveCount(0);
+        expect(await storedArchived(popup)).toEqual(["Alpha"]);
     });
 });

@@ -44,6 +44,8 @@ export function SaveCard(props: {
     onShow: (id: string) => void;
     /** The page's saved copy is archived: Restore brings it back to the list. */
     onRestore: (id: string) => void;
+    /** Several archived tabs back in the list (the window's pages); resolves to how many came back. */
+    onRestoreMany: (ids: string[]) => Promise<number>;
     onUpdated: (previous: SavedTab) => void;
     onWindowSaved: (added: SavedTab[], group: TabGroup | null) => void;
     /** In the side panel, which needs permission to see the page. */
@@ -259,6 +261,7 @@ export function SaveCard(props: {
                     category={showSaved || !pickedHere ? undefined : chosen === UNCATEGORIZED ? null : chosen}
                     suggest={(url) => suggestCategory(url, props.tabs, categories)}
                     onSaved={props.onWindowSaved}
+                    onRestore={props.onRestoreMany}
                 />
             )}
             <p class="visually-hidden" role="status" aria-live="polite">

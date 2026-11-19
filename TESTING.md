@@ -23,7 +23,7 @@ Run on the build being released (`dist/`, or the release zip unpacked), about 10
 1. Open the popup from the toolbar icon and with the keyboard shortcut (TC-072) on a real web page, and save it (TC-001). Check its icon shows in the list (or a letter tile for a site Chrome has no icon for, TC-102) and that no request goes to the site for it (TC-105).
 2. Drag to reorder tabs and categories (TC-050, TC-051, TC-159): the row lifts and follows the pointer, the others slide apart smoothly, and Escape puts it back (TC-324); drag one into an open saved window and watch it light up (TC-325); with more tabs than fit, hold a dragged tab at the list's bottom edge and check it scrolls at an even pace (TC-322); confirm drag is off while searching (TC-119).
 3. Watch the animations: rows rise in on open, a saved row drops in and flashes, a deleted row slides away, Save presses and pops and the logo hops; all of it stops with the system's reduce-motion setting (TC-049, TC-192, TC-228).
-4. Full keyboard pass (TC-090 – TC-092, TC-095).
+4. Full keyboard pass (TC-090 – TC-092, TC-095), watching that every focus ring is whole, the first row's and the library's column headers' included (TC-330 – TC-332).
 5. Shortcut display and the **Customize** link (TC-070, TC-071).
 6. Glance at every screen in both themes on your own computer (TC-193): the approved screenshots are Linux renders, so fonts on a Mac or Windows PC look slightly different — check nothing is cut off or crowded.
 7. Save all tabs in a real window: Chrome's permission prompt, allowed and (on another profile) denied (TC-233); saved windows in real Chrome: open all in a new window, drag tabs in, out and around (TC-245).
@@ -840,7 +840,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-232 — Counting new tabs once allowed (P2)** **[auto]**
 - Steps: After allowing once, close and reopen the popup; open a page you haven't saved.
-- Expected: No second prompt. The line counts only what's new ("Save 1 new tab from this window"), and disappears when every page in the window is already saved. Without the permission it counts every open tab ("Save all 7 tabs in this window").
+- Expected: No second prompt. The line counts only what's new ("Save 1 new tab from this window"), and disappears when every page in the window is already saved in your list (in the archive, see TC-334). Without the permission it counts every open tab ("Save all 7 tabs in this window").
 
 **TC-233 — The real permission prompt (P1, release gate)**
 - Steps: In a normal Chrome with the release build, on a fresh install, open the popup from the toolbar in a window with several tabs and click **Save all N tabs in this window**. Allow Chrome's prompt. Repeat on another profile choosing **Deny**. Afterwards, in `chrome://extensions` › Tab Sandwich › Details, remove the "Read your browsing history" permission and reopen the popup.
@@ -938,9 +938,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Expected: Space picks and unpicks the row (screen readers hear a checkbox, checked or not); arrows move as usual; E and Delete do nothing while selecting; → and ← still open and close windows.
 
 **TC-256 — Updating an existing install keeps everything (P1, release gate)**
-- Preconditions: The previous release (for 4.2.0: 4.1.1's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
+- Preconditions: The previous release (for 4.2.1: 4.2.0's zip from GitHub Releases) loaded unpacked, with a few saved tabs in several categories (some saved 10+ days ago, in Reading and Uncategorized), a saved window, a custom category and color, a theme and a sort chosen, and the "What's new" note dismissed.
 - Steps: Replace that folder's contents with this release's `dist/` (or the release zip unpacked) and press **Reload** on the extension in `chrome://extensions`. Open the popup.
-- Expected: Every tab, window, category, color, theme and sort is as it was, and so is every ☾. From 4.1.x: "New in 4.2" shows once, in Chrome's language (the drag, Esc, the touch hold, the white icon tiles). From 4.0.x it was "New in 4.1"; your categories keep their names whatever the language (only a fresh install's starter categories come in it). A patch release (4.1.0 to 4.1.1) shows no note. From 3.2.x or earlier, only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (From before 3.3, the stored data is upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
+- Expected: Every tab, window, category, color, theme and sort is as it was, and so is every ☾. From 4.1.x: "New in 4.2" shows once, in Chrome's language (the drag, Esc, the touch hold, the white icon tiles). From 4.0.x it was "New in 4.1"; your categories keep their names whatever the language (only a fresh install's starter categories come in it). A patch release (4.1.0 to 4.1.1, 4.2.0 to 4.2.1) shows no note. From 3.2.x or earlier, only Uncategorized's old tabs show as Waiting (Reading's no longer do: in Settings › Categories only Uncategorized's ☾ is lit — or none, if "Outdated tabs" was off). Export a backup, import it with **Replace all**, and Undo: all of it works. (From before 3.3, the stored data is upgraded to version 3, with a backup copy; the robot tests cover the upgrade itself (TC-184, TC-259), but not an existing install updating in place.)
 
 ## 21. Stay Organized (v3.3)
 
@@ -1255,4 +1255,28 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 **TC-329 — Site icons on a plain tile in light (P3)**
 - Steps: In light, look at rows of different categories with sites that have icons (GitHub, a shop, a page with a white-backed icon) and one with no icon; then in dark.
 - Expected: In light, each icon sits on a white tile with a thin outline, whatever the row's color; a site with no icon shows its first letter on a tinted tile. Dark looks as before (tinted tiles, GitHub's black cat shown light).
+
+## 27. Polish (v4.2.1)
+
+**TC-330 — A row's focus ring is whole (P2)** **[auto]**
+- Steps: In the popup, press ↓ in the search box to reach the first saved tab; then ↓ to the next. Do the same in the side panel, and in light and dark.
+- Expected: The row's edge turns into an accent ring of even thickness on all four sides, drawn inside the row, the first row's top edge included (it used to be cut thinner there). The edit, archive and pin buttons show as on hover; nothing moves.
+
+**TC-331 — A saved window's focus ring goes round its whole head (P2)** **[auto]**
+- Steps: Reach a saved window's head with the keyboard (↓/↑ in the list), closed and open.
+- Expected: The same ring as a tab's row, round the whole head, its ⋯ button included (it used to stop short of it). Tab on to ⋯: it shows its own ring, and the head's goes.
+
+**TC-332 — The library's column headers show their whole focus ring (P2)** **[auto]**
+- Steps: In the library, Tab through the table's column headers (Title, Category, Site, Saved, Opened), in light and dark; scroll the table first, then Tab through them again.
+- Expected: Each header shows a rounded accent ring inside it, on all four sides (it used to show only its left and bottom edges), however far the table is scrolled. Enter or Space still sorts by that column.
+
+**TC-333 — ↓ from the search box reaches a saved window in first place (P2)** **[auto]**
+- Preconditions: a saved window as the list's first row; closed, then open.
+- Steps: Press ↓ in the search box. Then Tab from the search box on into the list.
+- Expected: Both land on the window's head (it used to be skipped by ↓, for the first tab below it, or for its own first tab while open).
+
+**TC-334 — A window whose pages are in the archive (P2)** **[auto]**
+- Preconditions: a saved window archived from the Archived filter (or a few archived tabs), and its pages open in a Chrome window, plus a page saved in your list.
+- Steps: Open the popup on one of them. Without the "tabs" permission yet, press **Save all N tabs in this window**; then **Restore**; then **Undo** in the toast. Open the popup again (the permission now given) and press **Restore** on the line. In German or Russian too.
+- Expected: Nothing new is saved: the note says "Nothing new to save · N skipped", the reasons on hover naming how many are in your archive, and offers **Restore**. Once the permission is given, the line says straight away "2 open tabs are in your archive · Restore" (on one line, in every language) in place of vanishing. **Restore** brings them back to the list, as the saved window they were archived from (open, to show them), the line says "Restored 2 tabs", and the toast's **Undo** archives them again. When some pages are new too, the line saves those and the note counts the archived ones apart from those already saved.
 

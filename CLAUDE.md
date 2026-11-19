@@ -60,8 +60,8 @@ src/
     CategoryRepository.ts add/rename/remove/reorder categories (categoriesWithPlaced: a drop's order, pure), color palette, "Uncategorized" sentinel; removing one
                             releases its tabs (archived too) to Uncategorized, restoreCategory is its Undo
     GroupRepository.ts    saved windows: rename, open/closed, break apart (+ Undo); archiving one is archiving its tabs
-    windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why,
-                            which tabs "Close" may close — pure
+    windowSave.ts          "Save all tabs in this window": which open tabs are new, what's skipped and why
+                            (already saved, in the archive, browser pages), which tabs "Close" may close — pure
     reminders.ts           when a reminder comes (9:00 by the calendar), which are due, which are still to send, the next one — pure
     whatsNew.ts            when the "What's new" note shows (feature releases only, never on a fresh install) — pure
     suggest.ts             category suggestions: where pages sharing most of a new page's address went
@@ -147,7 +147,8 @@ src/
                              ("In your archive · Restore" for an archived one); "Add a note" before saving; a new page's
                              picker starts on its suggested category (a sparkle until you pick)
       SaveWindow.tsx        the save card's last line: save every tab in the window (asks for the optional
-                             "tabs" permission the first time), what was saved and skipped, Close the saved tabs
+                             "tabs" permission the first time), what was saved and skipped, Close the saved tabs;
+                             with nothing new but pages in the archive, says so and offers Restore (one line, then "Restored N tabs")
       useWindowTabs.ts      the window's open tabs, kept current, and whether that permission is granted
       ManualForm.tsx        add a link by hand (with an optional note), shown in place of the save card; an already-saved
                              link offers Open (an archived one, Restore)

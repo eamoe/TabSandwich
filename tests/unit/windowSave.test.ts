@@ -26,6 +26,29 @@ describe("planWindowSave", () => {
     });
 });
 
+describe("planWindowSave and the archive", () => {
+    it("counts pages whose only saved copy is archived apart, each once, and a copy in the list wins", () => {
+        const archivedA = makeTab({ url: "https://a.example.com/", archivedAt: 1 });
+        const archivedB = makeTab({ url: "https://b.example.com/", archivedAt: 1 });
+        const liveC = makeTab({ url: "https://c.example.com/" });
+        const archivedC = makeTab({ url: "https://c.example.com/", archivedAt: 1 });
+        const plan = planWindowSave(
+            [
+                { url: "https://a.example.com/" },
+                { url: "https://b.example.com/" },
+                { url: "https://a.example.com/#again" },
+                { url: "https://c.example.com/" },
+                { url: "https://new.example.com/" },
+            ],
+            [archivedA, archivedB, liveC, archivedC]
+        );
+        expect(plan.inArchive).toEqual([archivedA.id, archivedB.id]);
+        // a.example.com open twice: the second is a repeat; c has a copy in the list.
+        expect(plan.alreadySaved).toBe(2);
+        expect(plan.toSave).toEqual([{ title: "https://new.example.com/", url: "https://new.example.com/" }]);
+    });
+});
+
 describe("closableTabIds", () => {
     it("closes saved web pages only, never the tab you're on", () => {
         const saved = [makeTab({ url: "https://a.example.com/" }), makeTab({ url: "https://b.example.com/" })];

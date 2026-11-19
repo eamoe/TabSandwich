@@ -1,5 +1,5 @@
 import { test, expect, LIBRARY_URL, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
-import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
+import { answerPermissionPrompt, openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
  * One approved picture per screen and state, in light and dark (see playwright.visual.config.ts).
@@ -158,12 +158,41 @@ for (const colorScheme of ["light", "dark"] as const) {
             test.use({ wholeTileRepaints: true });
 
             test("a row reached with the keyboard", async ({ popup }) => {
-                // Into the list from the search box, the way a keyboard user gets there.
+                // Into the list from the search box, the way a keyboard user gets there. The first
+                // row sits just below the list's scrolling edge, which once cut off its ring's top.
                 await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
-                await popup.keyboard.press("ArrowDown");
-                await expect(popup.getByRole("button", { name: "Q3 Roadmap", exact: true })).toBeFocused();
+                await expect(popup.getByRole("button", { name: LIBRARY[0].title, exact: true })).toBeFocused();
                 await expect(popup).toHaveScreenshot(`keyboard-focus-${colorScheme}.png`);
             });
+
+            test("a saved window reached with the keyboard", async ({ popup }) => {
+                // The ring goes round the whole head, its ⋯ included, as a tab's goes round its row.
+                await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+                // Into the list from the search box: the window is its first row.
+                await popup.getByRole("textbox", { name: "Search saved tabs" }).press("ArrowDown");
+                await expect(popup.locator(`button[data-group-name="${WINDOW.name}"]`)).toBeFocused();
+                await popup.mouse.move(0, 599);
+                await expect(popup).toHaveScreenshot(`keyboard-focus-window-${colorScheme}.png`);
+            });
+        });
+
+        test("the save card, with the window's pages in the archive", async ({ context, popup }) => {
+            // Saving once gives the line Chrome's OK to see every tab; reopened, it knows they're archived.
+            await answerPermissionPrompt(context, popup, "grant");
+            const lisbon = await openSiteTab(context, popup, "Lisbon in 3 days");
+            const url = await openSiteTab(context, popup, "Designing calm interfaces");
+            const archived = [
+                { title: "Lisbon in 3 days", url: lisbon, category: "Travel", groupId: "a", archivedDaysAgo: 1 },
+                { title: "Designing calm interfaces", url, category: "Reading", groupId: "a", archivedDaysAgo: 1 },
+            ];
+            await seedLibrary(popup, [...LIBRARY.slice(0, 5), ...archived], SETTINGS, { groups: [{ id: "a", name: "Warm Roll" }] });
+            await popup.getByRole("button", { name: /^Save all \d+ tabs in this window$/ }).click();
+            await expect(popup.getByRole("button", { name: "Restore" }).last()).toBeVisible();
+            await popup.reload();
+            await waitUntilReady(popup);
+            await expect(popup.getByText("2 open tabs are in your archive")).toBeVisible();
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`window-in-archive-${colorScheme}.png`);
         });
 
         test("a saved window, closed", async ({ popup }) => {
@@ -251,6 +280,22 @@ for (const colorScheme of ["light", "dark"] as const) {
         await waitUntilReady(popup);
         await popup.mouse.move(640, 5);
         await expect(popup).toHaveScreenshot(`library-${colorScheme}.png`);
+    });
+
+    test(`the library, a column header reached with the keyboard (${colorScheme})`, async ({ popup }) => {
+        await popup.clock.setFixedTime(TODAY);
+        await popup.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        await seedLibrary(popup, WINDOW_LIBRARY, SETTINGS, { groups: [WINDOW] });
+        await popup.setViewportSize({ width: 1280, height: 800 });
+        await popup.goto(LIBRARY_URL);
+        await waitUntilReady(popup);
+        // Tab from the header before it: the button fills its sticky header cell, whose
+        // neighbor and the table's top edge once cut its ring down to two sides.
+        await popup.getByRole("columnheader", { name: "Title" }).getByRole("button").focus();
+        await popup.keyboard.press("Tab");
+        await expect(popup.getByRole("columnheader", { name: "Category" }).getByRole("button")).toBeFocused();
+        await popup.mouse.move(640, 5);
+        await expect(popup).toHaveScreenshot(`library-header-focus-${colorScheme}.png`);
     });
 
     test(`the library, with tabs picked and a row hovered (${colorScheme})`, async ({ popup }) => {
