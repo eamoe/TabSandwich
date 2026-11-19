@@ -70,13 +70,16 @@ export const ru: Strings = {
     savingWindow: "Сохраняем…",
     windowSaved: (count: number) => (count === 0 ? "Нового для сохранения нет" : r(count, `Сохранена ${count} вкладка`, `Сохранены ${count} вкладки`, `Сохранено ${count} вкладок`)),
     windowSkippedCount: (count: number) => `Пропущено: ${count}`,
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
         [
             alreadySaved > 0 && `уже сохранено: ${alreadySaved}`,
+            inArchive > 0 && `в архиве: ${inArchive}`,
             browserPages > 0 && `страниц браузера: ${browserPages}`,
         ]
             .filter(Boolean)
             .join(", "),
+    windowInArchive: (count: number) => r(count, `${count} открытая вкладка в архиве`, `${count} открытые вкладки в архиве`, `${count} открытых вкладок в архиве`),
+    restoreThemTooltip: "Вернуть их в ваш список",
     closeTabs: (count: number) => r(count, `Закрыть ${count} вкладку`, `Закрыть ${count} вкладки`, `Закрыть ${count} вкладок`),
     closeTabsTooltip: "Закрыть сохранённые вкладки этого окна. Вкладка, на которой вы сейчас, останется открытой.",
     closedTabs: (count: number) => r(count, `Закрыта ${count} вкладка`, `Закрыты ${count} вкладки`, `Закрыто ${count} вкладок`),

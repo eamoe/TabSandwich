@@ -1,5 +1,5 @@
 import { test, expect, LIBRARY_URL, SIDE_PANEL_URL, WELCOME_URL, waitUntilReady } from "../e2e/fixtures";
-import { openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
+import { answerPermissionPrompt, openSettings, openSiteTab, seedLibrary, tabList } from "../e2e/helpers";
 
 /**
  * One approved picture per screen and state, in light and dark (see playwright.visual.config.ts).
@@ -174,6 +174,25 @@ for (const colorScheme of ["light", "dark"] as const) {
                 await popup.mouse.move(0, 599);
                 await expect(popup).toHaveScreenshot(`keyboard-focus-window-${colorScheme}.png`);
             });
+        });
+
+        test("the save card, with the window's pages in the archive", async ({ context, popup }) => {
+            // Saving once gives the line Chrome's OK to see every tab; reopened, it knows they're archived.
+            await answerPermissionPrompt(context, popup, "grant");
+            const lisbon = await openSiteTab(context, popup, "Lisbon in 3 days");
+            const url = await openSiteTab(context, popup, "Designing calm interfaces");
+            const archived = [
+                { title: "Lisbon in 3 days", url: lisbon, category: "Travel", groupId: "a", archivedDaysAgo: 1 },
+                { title: "Designing calm interfaces", url, category: "Reading", groupId: "a", archivedDaysAgo: 1 },
+            ];
+            await seedLibrary(popup, [...LIBRARY.slice(0, 5), ...archived], SETTINGS, { groups: [{ id: "a", name: "Warm Roll" }] });
+            await popup.getByRole("button", { name: /^Save all \d+ tabs in this window$/ }).click();
+            await expect(popup.getByRole("button", { name: "Restore" }).last()).toBeVisible();
+            await popup.reload();
+            await waitUntilReady(popup);
+            await expect(popup.getByText("2 open tabs are in your archive")).toBeVisible();
+            await popup.mouse.move(0, 599);
+            await expect(popup).toHaveScreenshot(`window-in-archive-${colorScheme}.png`);
         });
 
         test("a saved window, closed", async ({ popup }) => {

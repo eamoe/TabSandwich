@@ -66,13 +66,16 @@ export const fr: Strings = {
     savingWindow: "Enregistrement…",
     windowSaved: (count: number) => (count === 0 ? "Rien de nouveau à enregistrer" : n(count, { one: `${count} onglet enregistré`, other: `${count} onglets enregistrés` })),
     windowSkippedCount: (count: number) => n(count, { one: `${count} ignoré`, other: `${count} ignorés` }),
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
         [
             alreadySaved > 0 && n(alreadySaved, { one: `${alreadySaved} déjà enregistré`, other: `${alreadySaved} déjà enregistrés` }),
+            inArchive > 0 && `${inArchive} dans vos archives`,
             browserPages > 0 && n(browserPages, { one: `${browserPages} page du navigateur`, other: `${browserPages} pages du navigateur` }),
         ]
             .filter(Boolean)
             .join(", "),
+    windowInArchive: (count: number) => n(count, { one: `${count} onglet ouvert est archivé`, other: `${count} onglets ouverts sont archivés` }),
+    restoreThemTooltip: "Les remettre dans votre liste",
     closeTabs: (count: number) => n(count, { one: `Fermer ${count} onglet`, other: `Fermer ${count} onglets` }),
     closeTabsTooltip: "Fermer les onglets enregistrés de cette fenêtre. L'onglet où vous êtes reste ouvert.",
     closedTabs: (count: number) => n(count, { one: `${count} onglet fermé`, other: `${count} onglets fermés` }),

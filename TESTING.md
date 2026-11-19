@@ -840,7 +840,7 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 
 **TC-232 — Counting new tabs once allowed (P2)** **[auto]**
 - Steps: After allowing once, close and reopen the popup; open a page you haven't saved.
-- Expected: No second prompt. The line counts only what's new ("Save 1 new tab from this window"), and disappears when every page in the window is already saved. Without the permission it counts every open tab ("Save all 7 tabs in this window").
+- Expected: No second prompt. The line counts only what's new ("Save 1 new tab from this window"), and disappears when every page in the window is already saved in your list (in the archive, see TC-334). Without the permission it counts every open tab ("Save all 7 tabs in this window").
 
 **TC-233 — The real permission prompt (P1, release gate)**
 - Steps: In a normal Chrome with the release build, on a fresh install, open the popup from the toolbar in a window with several tabs and click **Save all N tabs in this window**. Allow Chrome's prompt. Repeat on another profile choosing **Deny**. Afterwards, in `chrome://extensions` › Tab Sandwich › Details, remove the "Read your browsing history" permission and reopen the popup.
@@ -1274,4 +1274,9 @@ Restore it afterward with `chrome.storage.local.set = __origSet;` before continu
 - Preconditions: a saved window as the list's first row; closed, then open.
 - Steps: Press ↓ in the search box. Then Tab from the search box on into the list.
 - Expected: Both land on the window's head (it used to be skipped by ↓, for the first tab below it, or for its own first tab while open).
+
+**TC-334 — A window whose pages are in the archive (P2)** **[auto]**
+- Preconditions: a saved window archived from the Archived filter (or a few archived tabs), and its pages open in a Chrome window, plus a page saved in your list.
+- Steps: Open the popup on one of them. Without the "tabs" permission yet, press **Save all N tabs in this window**; then **Restore**; then **Undo** in the toast. Open the popup again (the permission now given) and press **Restore** on the line. In German or Russian too.
+- Expected: Nothing new is saved: the note says "Nothing new to save · N skipped", the reasons on hover naming how many are in your archive, and offers **Restore**. Once the permission is given, the line says straight away "2 open tabs are in your archive · Restore" (on one line, in every language) in place of vanishing. **Restore** brings them back to the list, as the saved window they were archived from (open, to show them), the line says "Restored 2 tabs", and the toast's **Undo** archives them again. When some pages are new too, the line saves those and the note counts the archived ones apart from those already saved.
 

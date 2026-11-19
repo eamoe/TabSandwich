@@ -63,13 +63,16 @@ export const de: Strings = {
     savingWindow: "Wird gespeichert…",
     windowSaved: (count: number) => (count === 0 ? "Nichts Neues zu speichern" : n(count, { one: `${count} Tab gespeichert`, other: `${count} Tabs gespeichert` })),
     windowSkippedCount: (count: number) => `${count} übersprungen`,
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
         [
             alreadySaved > 0 && `${alreadySaved} schon gespeichert`,
+            inArchive > 0 && `${inArchive} in deinem Archiv`,
             browserPages > 0 && n(browserPages, { one: `${browserPages} Browserseite`, other: `${browserPages} Browserseiten` }),
         ]
             .filter(Boolean)
             .join(", "),
+    windowInArchive: (count: number) => n(count, { one: `${count} offener Tab ist im Archiv`, other: `${count} offene Tabs sind im Archiv` }),
+    restoreThemTooltip: "Zurück in deine Liste holen",
     closeTabs: (count: number) => n(count, { one: `${count} Tab schließen`, other: `${count} Tabs schließen` }),
     closeTabsTooltip: "Die gespeicherten Tabs in diesem Fenster schließen. Der Tab, auf dem du bist, bleibt offen.",
     closedTabs: (count: number) => n(count, { one: `${count} Tab geschlossen`, other: `${count} Tabs geschlossen` }),

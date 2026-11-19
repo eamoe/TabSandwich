@@ -73,13 +73,16 @@ export const en = {
     savingWindow: "Saving…",
     windowSaved: (count: number) => (count === 0 ? "Nothing new to save" : n(count, { one: `Saved ${count} tab`, other: `Saved ${count} tabs` })),
     windowSkippedCount: (count: number) => `${count} skipped`,
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
         [
             alreadySaved > 0 && `${alreadySaved} already saved`,
+            inArchive > 0 && `${inArchive} in your archive`,
             browserPages > 0 && n(browserPages, { one: `${browserPages} browser page`, other: `${browserPages} browser pages` }),
         ]
             .filter(Boolean)
             .join(", "),
+    windowInArchive: (count: number) => n(count, { one: `${count} open tab is in your archive`, other: `${count} open tabs are in your archive` }),
+    restoreThemTooltip: "Bring them back to your list",
     closeTabs: (count: number) => n(count, { one: `Close ${count} tab`, other: `Close ${count} tabs` }),
     closeTabsTooltip: "Close the saved tabs in this window. The tab you're on stays open.",
     closedTabs: (count: number) => n(count, { one: `Closed ${count} tab`, other: `Closed ${count} tabs` }),

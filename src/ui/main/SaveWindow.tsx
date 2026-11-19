@@ -14,8 +14,9 @@ type Phase =
     | { kind: "idle" }
     | { kind: "busy" }
     | { kind: "denied" }
-    | { kind: "saved"; count: number; alreadySaved: number; browserPages: number }
-    | { kind: "closed"; count: number };
+    | { kind: "saved"; count: number; alreadySaved: number; inArchive: string[]; browserPages: number }
+    | { kind: "closed"; count: number }
+    | { kind: "restored"; count: number };
 
 /**
  * "Save all tabs in this window": the last line of the save card. Reading every open tab needs
@@ -30,6 +31,8 @@ export function SaveWindow(props: {
     category: string | null | undefined;
     suggest: (url: string) => string | undefined;
     onSaved: (added: SavedTab[], group: TabGroup | null) => void;
+    /** Takes these archived tabs out of the archive (back into their saved window, if they were in one); resolves to how many came back. */
+    onRestore: (ids: string[]) => Promise<number>;
 }) {
     const windowTabs = useWindowTabs();
     const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -48,7 +51,7 @@ export function SaveWindow(props: {
                 // Two or more new pages stay together as one saved window, named at random.
                 const pages = props.category === undefined ? plan.toSave.map((p) => ({ ...p, category: props.suggest(p.url) })) : plan.toSave;
                 const result = await addTabs(pages, props.category ?? undefined, (taken) => newGroupName(taken));
-                setPhase({ kind: "saved", count: result.added.length, alreadySaved: plan.alreadySaved + result.duplicates, browserPages: plan.browserPages });
+                setPhase({ kind: "saved", count: result.added.length, alreadySaved: plan.alreadySaved + result.duplicates, inArchive: plan.inArchive, browserPages: plan.browserPages });
                 if (result.added.length > 0) props.onSaved(result.added, result.group);
             } catch (err) {
                 setPhase({ kind: "idle" });
@@ -68,17 +71,26 @@ export function SaveWindow(props: {
 
     if (!windowTabs) return null;
 
-    if (phase.kind === "saved" || phase.kind === "closed") {
+    const restore = async (ids: string[]) => {
+        const count = await props.onRestore(ids);
+        // The line stays, saying what happened, so the card doesn't shrink under the pointer.
+        if (count > 0) setPhase({ kind: "restored", count });
+    };
+
+    if (phase.kind === "saved" || phase.kind === "closed" || phase.kind === "restored") {
         const closable = phase.kind === "saved" ? closableTabIds(windowTabs.tabs, props.tabs) : [];
-        const skipped = phase.kind === "saved" ? phase.alreadySaved + phase.browserPages : 0;
+        const skipped = phase.kind === "saved" ? phase.alreadySaved + phase.inArchive.length + phase.browserPages : 0;
         // Why each was skipped: on hover, and read out with the count.
-        const why = phase.kind === "saved" ? strings.windowSkipped(phase.alreadySaved, phase.browserPages) : "";
+        const why = phase.kind === "saved" ? strings.windowSkipped(phase.alreadySaved, phase.inArchive.length, phase.browserPages) : "";
+        // Nothing new after all, only pages in the archive: offer them back (before the permission, the
+        // line couldn't tell, so this is where it first finds out).
+        const restorable = phase.kind === "saved" && phase.count === 0 ? phase.inArchive : [];
         return (
             <div class={styles.windowRow}>
                 <p class={styles.windowNote} role="status">
                     <span class={styles.savedNote}>
                         <Icon name="check" size={12} />
-                        {phase.kind === "saved" ? strings.windowSaved(phase.count) : strings.closedTabs(phase.count)}
+                        {phase.kind === "saved" ? strings.windowSaved(phase.count) : phase.kind === "restored" ? strings.restoredTabs(phase.count) : strings.closedTabs(phase.count)}
                     </span>
                     {skipped > 0 && (
                         <span class={styles.skipped} title={why}>
@@ -88,7 +100,11 @@ export function SaveWindow(props: {
                         </span>
                     )}
                 </p>
-                {closable.length > 0 && (
+                {restorable.length > 0 ? (
+                    <button type="button" class={styles.inlineLink} title={strings.restoreThemTooltip} onClick={() => void restore(restorable)}>
+                        {strings.restore}
+                    </button>
+                ) : closable.length > 0 && (
                     <button type="button" class={styles.inlineLink} title={strings.closeTabsTooltip} onClick={() => close(closable)}>
                         {strings.closeTabs(closable.length)}
                     </button>
@@ -100,6 +116,25 @@ export function SaveWindow(props: {
     // With the permission, the line counts exactly what's new; without it, every tab in the window.
     const plan = windowTabs.canSeeAll ? planWindowSave(windowTabs.tabs, props.tabs) : null;
     const count = plan ? plan.toSave.length : windowTabs.tabs.length;
+    // Nothing new, but some of the window's pages are in the archive: say so (else the line would
+    // just vanish, with no hint why), and offer them back, as the card does for a single page.
+    if (plan && count === 0 && plan.inArchive.length > 0) {
+        const ids = plan.inArchive;
+        return (
+            <div class={styles.windowRow}>
+                <p class={styles.windowNote}>
+                    <span class={styles.savedNote}>
+                        <Icon name="archive" size={12} />
+                        {strings.windowInArchive(ids.length)}
+                    </span>
+                    <span class={styles.dot}>{" · "}</span>
+                    <button type="button" class={styles.addNote} title={strings.restoreThemTooltip} onClick={() => void restore(ids)}>
+                        {strings.restore}
+                    </button>
+                </p>
+            </div>
+        );
+    }
     if (plan ? count === 0 : count < 2) return null;
 
     return (

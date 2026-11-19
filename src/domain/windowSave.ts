@@ -12,8 +12,10 @@ export interface OpenTab {
 export interface WindowSavePlan {
     /** New pages, in the window's order, each once. */
     toSave: { title: string; url: string }[];
-    /** Open tabs whose page is already saved, or open twice in this window. */
+    /** Open tabs whose page is already saved (in the list), or open twice in this window. */
     alreadySaved: number;
+    /** The saved copies, in your archive, of pages open in this window: each once, to restore them together. */
+    inArchive: string[];
     /** Browser pages (settings, new tab, extensions) and anything else that isn't a web page. */
     browserPages: number;
 }
@@ -25,19 +27,23 @@ export interface WindowSavePlan {
  */
 export function planWindowSave(open: OpenTab[], saved: SavedTab[]): WindowSavePlan {
     const toSave: WindowSavePlan["toSave"] = [];
+    const inArchive: string[] = [];
     let alreadySaved = 0;
     let browserPages = 0;
     for (const tab of open) {
         const url = tab.url;
         if (!isSupportedTabUrl(url)) {
             browserPages++;
-        } else if (saved.some((s) => urlsMatch(s.url, url)) || toSave.some((s) => urlsMatch(s.url, url))) {
-            alreadySaved++;
-        } else {
-            toSave.push({ title: tab.title?.trim() || url, url });
+            continue;
         }
+        const copies = saved.filter((s) => urlsMatch(s.url, url));
+        // A page with a copy in the list is saved; one whose only copy is archived is in the archive.
+        const archived = copies.length > 0 && copies.every((s) => s.archivedAt) ? copies[0] : undefined;
+        if (archived && !inArchive.includes(archived.id)) inArchive.push(archived.id);
+        else if (copies.length > 0 || toSave.some((s) => urlsMatch(s.url, url))) alreadySaved++;
+        else toSave.push({ title: tab.title?.trim() || url, url });
     }
-    return { toSave, alreadySaved, browserPages };
+    return { toSave, alreadySaved, inArchive, browserPages };
 }
 
 /**

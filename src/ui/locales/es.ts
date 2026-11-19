@@ -65,13 +65,16 @@ export const es: Strings = {
     savingWindow: "Guardando…",
     windowSaved: (count: number) => (count === 0 ? "Nada nuevo que guardar" : n(count, { one: `${count} pestaña guardada`, other: `${count} pestañas guardadas` })),
     windowSkippedCount: (count: number) => n(count, { one: `${count} omitida`, other: `${count} omitidas` }),
-    windowSkipped: (alreadySaved: number, browserPages: number) =>
+    windowSkipped: (alreadySaved: number, inArchive: number, browserPages: number) =>
         [
             alreadySaved > 0 && n(alreadySaved, { one: `${alreadySaved} ya guardada`, other: `${alreadySaved} ya guardadas` }),
+            inArchive > 0 && `${inArchive} en tu archivo`,
             browserPages > 0 && n(browserPages, { one: `${browserPages} página del navegador`, other: `${browserPages} páginas del navegador` }),
         ]
             .filter(Boolean)
             .join(", "),
+    windowInArchive: (count: number) => n(count, { one: `${count} pestaña abierta está en tu archivo`, other: `${count} pestañas abiertas están en tu archivo` }),
+    restoreThemTooltip: "Devolverlas a tu lista",
     closeTabs: (count: number) => n(count, { one: `Cerrar ${count} pestaña`, other: `Cerrar ${count} pestañas` }),
     closeTabsTooltip: "Cerrar las pestañas guardadas de esta ventana. La pestaña en la que estás sigue abierta.",
     closedTabs: (count: number) => n(count, { one: `${count} pestaña cerrada`, other: `${count} pestañas cerradas` }),
