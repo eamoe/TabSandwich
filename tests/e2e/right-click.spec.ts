@@ -82,8 +82,10 @@ test.describe("Saving from the right-click menu", () => {
         expect((await storedTabs(popup))[0]).toMatchObject({ url: `${TEST_SITE}/${PAGE_TITLE}`, category: "Work" });
 
         await clickMenu(context, popup, "Reading", { linkUrl: "https://alpha.example.com/" });
+        // Wait for the write itself: the first save's ✓ can still be showing, so the badge alone
+        // doesn't say this one is done.
+        await expect.poll(async () => (await storedTabs(popup)).map((t) => [t.title, t.category])).toEqual([[PAGE_TITLE, "Work"], ["Alpha", "Reading"]]);
         await expect.poll(() => badge(popup)).toBe("✓");
-        expect((await storedTabs(popup)).map((t) => [t.title, t.category])).toEqual([[PAGE_TITLE, "Work"], ["Alpha", "Reading"]]);
 
         await expect.poll(() => badge(popup), { timeout: 6000 }).toBe("");
         await clickMenu(context, popup, "Reading", { linkUrl: "https://alpha.example.com/" });

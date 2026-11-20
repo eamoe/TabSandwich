@@ -36,7 +36,14 @@ test.describe("A fresh install", () => {
         expect(context.pages().filter((p) => p.url() === WELCOME_URL)).toHaveLength(1);
 
         const closed = welcome.waitForEvent("close");
-        await welcome.getByRole("button", { name: "Got it" }).click();
+        // Got it closes the page, sometimes before Playwright's click has finished reporting back:
+        // the page closing is the outcome this checks, so only an error with the page still open fails.
+        await welcome
+            .getByRole("button", { name: "Got it" })
+            .click()
+            .catch((err: unknown) => {
+                if (!welcome.isClosed()) throw err;
+            });
         await closed;
     });
 });
